@@ -1,6 +1,6 @@
 # PRD.md
 
-# Cloover Energy Transition Planner
+# MAXergy Energy Transition Planner
 
 ## Vision
 
@@ -8,7 +8,7 @@ Enable homeowners to understand and purchase a complete home-energy upgrade base
 
 **Monthly Savings**
 
-Instead of selling solar panels, batteries, heat pumps, EV chargers, financing, and tariffs separately, Cloover presents a unified energy transition plan that minimizes total monthly household spending.
+Instead of selling solar panels, batteries, heat pumps, EV chargers, financing, and tariffs separately, MAXergy presents a unified energy transition plan that minimizes total monthly household spending.
 
 ## Problem Statement
 

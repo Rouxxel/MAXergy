@@ -1,4 +1,4 @@
-# MAXergy — Energy Transition Planner (Frontend)
+# MAXergy - Energy Transition Planner (Frontend)
 
 MAXergy is an AI-powered home-energy upgrade planner for German households. This repository is the **mobile-first web shell** of the product: a fully navigable UI built with mocked data, ready to be wired to a real backend and later ported to React Native.
 
