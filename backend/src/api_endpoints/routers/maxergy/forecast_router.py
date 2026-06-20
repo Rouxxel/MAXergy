@@ -52,7 +52,7 @@ async def generate_forecast(request: Request, assessment: HouseholdAssessment) -
         forecasting_service = get_forecasting_service()
         
         log_handler.info(
-            "Generating forecast for location %s, %s",
+            "[forecast_router] Generating forecast for location %s, %s",
             assessment.location.postcode,
             assessment.location.country,
         )
@@ -60,12 +60,12 @@ async def generate_forecast(request: Request, assessment: HouseholdAssessment) -
         forecast = forecasting_service.generate_forecast(assessment)
         
         log_handler.info(
-            "Forecast generated successfully with %d scenarios",
+            "[forecast_router] Forecast generated successfully with %d scenarios",
             len(forecast.scenarios),
         )
         
         return forecast
         
     except Exception as e:
-        log_handler.error("Forecast generation failed: %s", str(e))
+        log_handler.error("[forecast_router] Forecast generation failed: %s", str(e))
         raise HTTPException(status_code=500, detail=f"Forecast generation failed: {str(e)}")

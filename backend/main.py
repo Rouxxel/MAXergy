@@ -17,10 +17,12 @@ from contextlib import asynccontextmanager
 
 #Third-party imports
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
+import json
 load_dotenv()
 
 #Other files imports
@@ -63,6 +65,21 @@ app.state.limiter = limiter
 
 #Add global exception handler for rate limits
 app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
+
+#Add global exception handler for validation errors
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    log_handler.error(
+        "Validation error on %s %s: %s",
+        request.method,
+        request.url,
+        json.dumps(exc.errors(), indent=2)
+    )
+    log_handler.error("Request body: %s", exc.body)
+    return {
+        "detail": exc.errors(),
+        "body": exc.body,
+    }
 
 #Setup CORS for web app and future React Native app
 app.add_middleware(

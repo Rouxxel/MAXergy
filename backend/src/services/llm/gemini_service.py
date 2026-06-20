@@ -43,7 +43,7 @@ class GeminiService:
         # Security: Validate API key format and don't log the actual key
         if self.api_key and self.api_key != "key_here":
             if not self._validate_api_key(self.api_key):
-                log_handler.warning("Invalid GEMINI_API_KEY format, service will not be initialized")
+                log_handler.warning("[gemini_service] Invalid GEMINI_API_KEY format, service will not be initialized")
                 self.api_key = None
             else:
                 self._initialize()
@@ -67,16 +67,16 @@ class GeminiService:
     def _initialize(self):
         """Initialize the Gemini client."""
         if not GEMINI_AVAILABLE:
-            log_handler.warning("google-generativeai package not installed, using mock responses")
+            log_handler.warning("[gemini_service] google-generativeai package not installed, using mock responses")
             return
         
         try:
             genai.configure(api_key=self.api_key)
             self.model = genai.GenerativeModel('gemini-1.5-flash')
             self._initialized = True
-            log_handler.info("Gemini service initialized successfully")
+            log_handler.info("[gemini_service] Gemini service initialized successfully")
         except Exception as e:
-            log_handler.error("Failed to initialize Gemini service: %s", str(e))
+            log_handler.error("[gemini_service] Failed to initialize Gemini service: %s", str(e))
     
     def is_available(self) -> bool:
         """Check if the Gemini service is available."""
@@ -100,7 +100,7 @@ class GeminiService:
             AdvisorResponse with message, context used, and suggestions.
         """
         if not self.is_available():
-            log_handler.warning("Gemini service not available, using mock response")
+            log_handler.warning("[gemini_service] Gemini service not available, using mock response")
             return self._generate_mock_response(user_message, forecast_result)
         
         try:
@@ -115,7 +115,7 @@ class GeminiService:
             
             suggestions = self._extract_suggestions(advisor_message)
             
-            log_handler.info("Generated advice for assessment %s", assessment_id)
+            log_handler.info("[gemini_service] Generated advice for assessment %s", assessment_id)
             
             return AdvisorResponse(
                 advisor_message=advisor_message,
@@ -123,7 +123,7 @@ class GeminiService:
                 suggestions=suggestions,
             )
         except Exception as e:
-            log_handler.error("Failed to generate advice: %s", str(e))
+            log_handler.error("[gemini_service] Failed to generate advice: %s", str(e))
             return self._generate_mock_response(user_message, forecast_result)
     
     def _build_prompt(self, user_message: str, forecast_result: Optional[Dict]) -> str:
@@ -235,7 +235,7 @@ Format your response as a clear message followed by 2-3 bullet point suggestions
                 suggestions=suggestions,
             )
         except Exception as e:
-            log_handler.error("Failed to generate recommendation summary: %s", str(e))
+            log_handler.error("[gemini_service] Failed to generate recommendation summary: %s", str(e))
             return self._generate_mock_recommendation_summary(forecast_result)
     
     def generate_savings_explanation(self, forecast_result: Dict) -> AdvisorResponse:
@@ -263,7 +263,7 @@ Format your response as a clear message followed by 2-3 bullet point suggestions
                 suggestions=suggestions,
             )
         except Exception as e:
-            log_handler.error("Failed to generate savings explanation: %s", str(e))
+            log_handler.error("[gemini_service] Failed to generate savings explanation: %s", str(e))
             return self._generate_mock_savings_explanation(forecast_result)
     
     def detect_upsell_opportunities(self, forecast_result: Dict) -> AdvisorResponse:
@@ -291,7 +291,7 @@ Format your response as a clear message followed by 2-3 bullet point suggestions
                 suggestions=suggestions,
             )
         except Exception as e:
-            log_handler.error("Failed to detect upsell opportunities: %s", str(e))
+            log_handler.error("[gemini_service] Failed to detect upsell opportunities: %s", str(e))
             return self._generate_mock_upsell_opportunities(forecast_result)
     
     def _build_recommendation_summary_prompt(self, forecast_result: Dict) -> str:

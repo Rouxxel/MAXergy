@@ -46,7 +46,7 @@ class BaselineForecastingService:
         cache_key = self._create_cache_key(assessment)
         
         if use_cache and cache_key in self._cache:
-            log_handler.info("Returning cached forecast for key: %s", cache_key[:16])
+            log_handler.info("[baseline_service] Returning cached forecast for key: %s", cache_key[:16])
             return self._cache[cache_key]
         
         try:
@@ -54,7 +54,7 @@ class BaselineForecastingService:
             from run_baseline_model import run_model
             
             log_handler.info(
-                "Generating forecast for location %s, %s",
+                "[baseline_service] Generating forecast for location %s, %s",
                 assessment.location.postcode,
                 assessment.location.country,
             )
@@ -86,14 +86,14 @@ class BaselineForecastingService:
                 self._cache[cache_key] = forecast
             
             log_handler.info(
-                "Forecast generated successfully with %d scenarios",
+                "[baseline_service] Forecast generated successfully with %d scenarios",
                 len(forecast.scenarios),
             )
             
             return forecast
             
         except Exception as e:
-            log_handler.error("Forecast generation failed: %s", str(e))
+            log_handler.error("[baseline_service] Forecast generation failed: %s", str(e))
             raise
     
     def _create_cache_key(self, assessment: HouseholdAssessment) -> str:
@@ -108,7 +108,7 @@ class BaselineForecastingService:
     def clear_cache(self):
         """Clear the forecast cache."""
         self._cache.clear()
-        log_handler.info("Forecast cache cleared")
+        log_handler.info("[baseline_service] Forecast cache cleared")
 
 
 # Singleton instance

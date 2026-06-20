@@ -58,7 +58,7 @@ async def generate_forecast_chart(
         visualization_service = get_visualization_service()
         
         log_handler.info(
-            "Generating %s forecast chart with %d scenarios",
+            "[visualization_router] Generating %s forecast chart with %d scenarios",
             format,
             len(forecast.scenarios),
         )
@@ -76,5 +76,5 @@ async def generate_forecast_chart(
         )
         
     except Exception as e:
-        log_handler.error("Chart generation failed: %s", str(e))
+        log_handler.error("[visualization_router] Chart generation failed: %s", str(e))
         raise HTTPException(status_code=500, detail=f"Chart generation failed: {str(e)}")

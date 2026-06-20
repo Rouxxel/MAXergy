@@ -39,26 +39,27 @@ router = APIRouter(
 async def submit_assessment(request: Request, assessment: HouseholdAssessment) -> AssessmentResponse:
     """
     Submit a household assessment for energy forecasting.
-    
+
     Parameters:
         request (Request): Incoming HTTP request (required by rate limiter).
         assessment (HouseholdAssessment): Household assessment data.
-    
+
     Returns:
         AssessmentResponse: Assessment ID and status.
     """
+    log_handler.info("[assessment_router] Received assessment request: %s", assessment.model_dump_json(indent=2))
     assessment_id = str(uuid.uuid4())
-    
+
     # Store assessment (in-memory for demo)
     _assessments_store[assessment_id] = assessment
-    
+
     log_handler.info(
-        "Assessment submitted: %s for location %s, %s",
+        "[assessment_router] Assessment submitted: %s for location %s, %s",
         assessment_id,
         assessment.location.postcode,
         assessment.location.country,
     )
-    
+
     return AssessmentResponse(
         assessment_id=assessment_id,
         status="submitted",

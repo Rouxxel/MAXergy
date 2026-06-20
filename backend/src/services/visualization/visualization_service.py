@@ -50,7 +50,7 @@ class VisualizationService:
         cache_key = self._create_cache_key(forecast, format)
         
         if use_cache and cache_key in self._cache:
-            log_handler.info("Returning cached chart for key: %s", cache_key[:16])
+            log_handler.info("[visualization_service] Returning cached chart for key: %s", cache_key[:16])
             return self._cache[cache_key]
         
         try:
@@ -58,7 +58,7 @@ class VisualizationService:
             from visualize_forecast import main as visualize_main
             import matplotlib.pyplot as plt
             
-            log_handler.info("Generating %s forecast chart", format)
+            log_handler.info("[visualization_service] Generating %s forecast chart", format)
             
             # Create temporary files for forecast data
             with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as forecast_file:
@@ -89,7 +89,7 @@ class VisualizationService:
                 if use_cache:
                     self._cache[cache_key] = chart_data
                 
-                log_handler.info("Chart generated successfully (%d bytes)", len(chart_data))
+                log_handler.info("[visualization_service] Chart generated successfully (%d bytes)", len(chart_data))
                 
                 return chart_data
                 
@@ -103,7 +103,7 @@ class VisualizationService:
                 output_path.unlink()
                 
         except Exception as e:
-            log_handler.error("Chart generation failed: %s", str(e))
+            log_handler.error("[visualization_service] Chart generation failed: %s", str(e))
             raise
     
     def _create_cache_key(self, forecast: ForecastResult, format: str) -> str:
@@ -124,7 +124,7 @@ class VisualizationService:
     def clear_cache(self):
         """Clear the chart cache."""
         self._cache.clear()
-        log_handler.info("Chart cache cleared")
+        log_handler.info("[visualization_service] Chart cache cleared")
 
 
 # Singleton instance

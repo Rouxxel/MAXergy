@@ -56,7 +56,7 @@ async def generate_recommendation(
         from src.api_endpoints.routers.maxergy.forecast_router import generate_forecast
         
         log_handler.info(
-            "Generating recommendation for location %s, %s",
+            "[recommendation_router] Generating recommendation for location %s, %s",
             assessment.location.postcode,
             assessment.location.country,
         )
@@ -95,7 +95,7 @@ async def generate_recommendation(
             )
         
         log_handler.info(
-            "Recommendation generated: %s with €%.2f/month savings",
+            "[recommendation_router] Recommendation generated: %s with €%.2f/month savings",
             top_scenario_id,
             top_savings,
         )
@@ -108,5 +108,5 @@ async def generate_recommendation(
         )
         
     except Exception as e:
-        log_handler.error("Recommendation generation failed: %s", str(e))
+        log_handler.error("[recommendation_router] Recommendation generation failed: %s", str(e))
         raise HTTPException(status_code=500, detail=f"Recommendation generation failed: {str(e)}")

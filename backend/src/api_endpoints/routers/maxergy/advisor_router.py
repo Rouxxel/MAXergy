@@ -52,7 +52,7 @@ async def advisor_chat(request: Request, chat_request: AdvisorChatRequest) -> Ad
     try:
         gemini_service = get_gemini_service()
         
-        log_handler.info("AI advisor chat request for assessment %s", chat_request.assessment_id)
+        log_handler.info("[advisor_router] AI advisor chat request for assessment %s", chat_request.assessment_id)
         
         # Convert forecast_result to dict if it's a Pydantic model
         forecast_dict = None
@@ -72,5 +72,5 @@ async def advisor_chat(request: Request, chat_request: AdvisorChatRequest) -> Ad
         )
         
     except Exception as e:
-        log_handler.error("Advisor chat failed: %s", str(e))
+        log_handler.error("[advisor_router] Advisor chat failed: %s", str(e))
         raise HTTPException(status_code=500, detail=f"Advisor chat failed: {str(e)}")

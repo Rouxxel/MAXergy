@@ -33,10 +33,15 @@
   },
 
   "mobility": {
-    "vehicle_type": "petrol",
-    "annual_mileage_km": 12000,
-    "fuel_consumption_l_per_100km": 6.5,
-    "annual_fuel_spend_eur": 1100
+    "vehicle_count": 1,
+    "vehicles": [
+      {
+        "vehicle_type": "petrol",
+        "annual_mileage_km": 12000,
+        "fuel_consumption_l_per_100km": 6.5,
+        "annual_fuel_spend_eur": 1100
+      }
+    ]
   },
 
   "upgrade_candidates": {

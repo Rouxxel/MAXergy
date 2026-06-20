@@ -21,14 +21,18 @@ class Location(BaseModel):
     postcode: str = Field(..., description="Postal code")
     country: str = Field(..., description="Country code (e.g., 'DE')")
 
+    model_config = {"extra": "ignore"}
+
 
 class Roof(BaseModel):
     """Roof characteristics for solar PV potential."""
     available: bool = Field(..., description="Whether roof is available for solar")
-    usable_area_m2: float = Field(..., description="Usable roof area in square meters")
-    orientation: str = Field(..., description="Roof orientation (e.g., 'south')")
-    tilt_deg: float = Field(..., description="Roof tilt in degrees")
-    shading_factor: float = Field(..., description="Shading factor (0-1)")
+    usable_area_m2: Optional[float] = Field(None, description="Usable roof area in square meters")
+    orientation: Optional[str] = Field(None, description="Roof orientation (e.g., 'south')")
+    tilt_deg: Optional[float] = Field(None, description="Roof tilt in degrees")
+    shading_factor: Optional[float] = Field(None, description="Shading factor (0-1)")
+
+    model_config = {"extra": "ignore"}
 
 
 class Electricity(BaseModel):
@@ -37,7 +41,9 @@ class Electricity(BaseModel):
     current_tariff_type: str = Field(..., description="Current tariff type (e.g., 'fixed')")
     arbeitspreis_eur_per_kwh: float = Field(..., description="Energy price in EUR/kWh")
     grundpreis_eur_per_month: float = Field(..., description="Base price in EUR/month")
-    contract_end_date: str = Field(..., description="Contract end date (YYYY-MM-DD)")
+    contract_end_date: Optional[str] = Field(None, description="Contract end date (YYYY-MM-DD)")
+
+    model_config = {"extra": "ignore"}
 
 
 class Household(BaseModel):
@@ -46,27 +52,43 @@ class Household(BaseModel):
     electricity: Electricity = Field(..., description="Electricity consumption and tariff")
     roof: Roof = Field(..., description="Roof characteristics")
 
+    model_config = {"extra": "ignore"}
+
 
 class Building(BaseModel):
     """Building characteristics for heating calculations."""
     floor_area_m2: float = Field(..., description="Floor area in square meters")
     insulation_class: str = Field(..., description="Insulation class (e.g., 'average')")
 
+    model_config = {"extra": "ignore"}
+
 
 class Heating(BaseModel):
     """Heating system information."""
     fuel_type: str = Field(..., description="Fuel type (e.g., 'gas', 'oil')")
-    annual_consumption: float = Field(..., description="Annual consumption in kWh or liters")
+    annual_consumption: Optional[float] = Field(None, description="Annual consumption in kWh or liters")
     annual_spend_eur: Optional[float] = Field(None, description="Annual spending in EUR")
     building: Building = Field(..., description="Building characteristics")
+
+    model_config = {"extra": "ignore"}
+
+
+class Vehicle(BaseModel):
+    """Individual vehicle information."""
+    vehicle_type: str = Field(..., description="Vehicle type (e.g., 'petrol', 'ev')")
+    annual_mileage_km: Optional[float] = Field(None, description="Annual mileage in kilometers")
+    fuel_consumption_l_per_100km: Optional[float] = Field(None, description="Fuel consumption in L/100km")
+    annual_fuel_spend_eur: Optional[float] = Field(None, description="Annual fuel spending in EUR")
+
+    model_config = {"extra": "ignore"}
 
 
 class Mobility(BaseModel):
     """Mobility/vehicle information."""
-    vehicle_type: str = Field(..., description="Vehicle type (e.g., 'petrol', 'ev')")
-    annual_mileage_km: float = Field(..., description="Annual mileage in kilometers")
-    fuel_consumption_l_per_100km: float = Field(..., description="Fuel consumption in L/100km")
-    annual_fuel_spend_eur: Optional[float] = Field(None, description="Annual fuel spending in EUR")
+    vehicle_count: int = Field(default=0, description="Number of vehicles")
+    vehicles: list[Vehicle] = Field(default_factory=list, description="List of vehicles")
+
+    model_config = {"extra": "ignore"}
 
 
 class UpgradeCandidates(BaseModel):
@@ -79,6 +101,8 @@ class UpgradeCandidates(BaseModel):
     battery_kwh: Optional[float] = Field(None, description="Override battery size in kWh")
     heat_pump_kw: Optional[float] = Field(None, description="Override heat pump size in kW")
 
+    model_config = {"extra": "ignore"}
+
 
 class Financing(BaseModel):
     """Financing parameters for upgrades."""
@@ -86,11 +110,15 @@ class Financing(BaseModel):
     loan_rate_pct: float = Field(..., description="Loan interest rate in percent")
     known_subsidy_eur: Optional[float] = Field(None, description="Known subsidy amount in EUR")
 
+    model_config = {"extra": "ignore"}
+
 
 class ForecastHorizon(BaseModel):
     """Forecast time horizon parameters."""
     short_term_months: int = Field(..., description="Short-term forecast months")
     long_term_years: int = Field(..., description="Long-term forecast years")
+
+    model_config = {"extra": "ignore"}
 
 
 class HouseholdAssessment(BaseModel):
@@ -98,10 +126,12 @@ class HouseholdAssessment(BaseModel):
     location: Location = Field(..., description="Location information")
     household: Household = Field(..., description="Household details")
     heating: Heating = Field(..., description="Heating system information")
-    mobility: Mobility = Field(..., description="Mobility information")
+    mobility: Mobility = Field(default_factory=lambda: Mobility(), description="Mobility information")
     upgrade_candidates: UpgradeCandidates = Field(..., description="Available upgrades")
     financing: Financing = Field(..., description="Financing parameters")
     forecast_horizon: ForecastHorizon = Field(..., description="Forecast horizon")
+
+    model_config = {"extra": "ignore"}
 
 
 # ============================================================================
