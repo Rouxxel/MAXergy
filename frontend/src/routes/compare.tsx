@@ -28,6 +28,12 @@ function Compare() {
     );
   }, [forecast, sortDesc]);
 
+  const recommendedId = useMemo(() => {
+    if (!forecast) return undefined;
+    const top = [...forecast.scenarios].sort((a, b) => b.monthly_saving_eur - a.monthly_saving_eur)[0];
+    return top?.id;
+  }, [forecast]);
+
   if (!forecast) {
     return (
       <AppShell>
@@ -80,18 +86,20 @@ function Compare() {
         {sorted.map((s) => {
           const selected = selectedScenarioId === s.id;
           const open = openId === s.id;
+          const recommended = recommendedId === s.id;
           const components = [
             s.components.solar_pv && "Solar PV",
             s.components.battery && "Battery",
             s.components.heat_pump && "Heat Pump",
             s.components.ev_charger && "EV Charger",
           ].filter(Boolean);
+          const isNegativeSavings = s.monthly_saving_eur < 0;
           return (
             <li
               key={s.id}
               className={
                 "overflow-hidden rounded-2xl border bg-card transition " +
-                (selected ? "border-primary" : "border-border")
+                (selected ? "border-primary" : isNegativeSavings ? "border-orange-500/30" : "border-border")
               }
             >
               <button
@@ -101,6 +109,11 @@ function Compare() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="truncate font-semibold">Scenario {s.id}</span>
+                    {recommended && (
+                      <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                        Recommended
+                      </span>
+                    )}
                     {selected ? (
                       <span className="rounded-full bg-secondary/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
                         Selected
@@ -112,7 +125,7 @@ function Compare() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-primary tabular-nums">
+                  <div className={`text-lg font-bold tabular-nums ${isNegativeSavings ? "text-orange-500" : "text-primary"}`}>
                     {euro(s.monthly_saving_eur)}
                   </div>
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -123,6 +136,16 @@ function Compare() {
 
               {open ? (
                 <div className="border-t border-border p-4">
+                  <div className="mb-3 space-y-2">
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Component sizing
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      {s.sizing.solar_pv_kwp && <div className="rounded-lg bg-background/40 p-2 text-center">Solar: {s.sizing.solar_pv_kwp} kWp</div>}
+                      {s.sizing.battery_kwh && <div className="rounded-lg bg-background/40 p-2 text-center">Battery: {s.sizing.battery_kwh} kWh</div>}
+                      {s.sizing.heat_pump_kw && <div className="rounded-lg bg-background/40 p-2 text-center">Heat Pump: {s.sizing.heat_pump_kw} kW</div>}
+                    </div>
+                  </div>
                   <div className="grid grid-cols-3 gap-3 text-center">
                     <Stat label="Monthly payment" value={euro(s.financing_installment_eur)} />
                     <Stat label="Self-consumption" value={`${(s.self_consumption_ratio * 100).toFixed(0)}%`} />

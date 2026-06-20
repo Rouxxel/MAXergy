@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { MessageSquare, LineChart, Leaf, Clock, TrendingUp } from "lucide-react";
+import { MessageSquare, LineChart, Leaf, Clock, TrendingUp, Zap, Flame, Car, DollarSign } from "lucide-react";
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 import { AppShell, BrandMark } from "@/components/app-shell";
 import { MetricCard } from "@/components/metric-card";
@@ -82,6 +83,35 @@ function Results() {
           </div>
         </div>
 
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">
+            Baseline monthly costs
+          </div>
+          <div className="mt-3 space-y-2">
+            <CostRow icon={<Zap className="h-4 w-4" />} label="Electricity" value={euro(forecast.baseline.monthly_cost_eur.electricity)} />
+            <CostRow icon={<Flame className="h-4 w-4" />} label="Heating" value={euro(forecast.baseline.monthly_cost_eur.gas_oil)} />
+            <CostRow icon={<Car className="h-4 w-4" />} label="Mobility" value={euro(forecast.baseline.monthly_cost_eur.fuel)} />
+            <div className="mt-2 border-t border-border pt-2">
+              <CostRow icon={<DollarSign className="h-4 w-4" />} label="Total" value={euro(forecast.baseline.monthly_cost_eur.total)} bold />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">
+            Scenario monthly costs
+          </div>
+          <div className="mt-3 space-y-2">
+            <CostRow icon={<Zap className="h-4 w-4" />} label="Electricity" value={euro(selectedScenario.monthly_cost_eur.electricity)} />
+            <CostRow icon={<Flame className="h-4 w-4" />} label="Heating" value={euro(selectedScenario.monthly_cost_eur.gas_oil)} />
+            <CostRow icon={<Car className="h-4 w-4" />} label="Mobility" value={euro(selectedScenario.monthly_cost_eur.fuel)} />
+            <CostRow icon={<DollarSign className="h-4 w-4" />} label="Financing" value={euro(selectedScenario.financing_installment_eur)} />
+            <div className="mt-2 border-t border-border pt-2">
+              <CostRow icon={<DollarSign className="h-4 w-4" />} label="Total" value={euro(selectedScenario.monthly_cost_eur.total)} bold />
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <MetricCard
             label="Monthly payment"
@@ -138,6 +168,61 @@ function Results() {
           </p>
         </div>
 
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">
+            Short-term forecast (12 months)
+          </div>
+          <div className="mt-3 h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsLineChart data={selectedScenario.short_term_forecast}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Line type="monotone" dataKey="cost_eur" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Scenario" />
+                <Line type="monotone" dataKey="cost_eur" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Baseline" data={forecast.baseline.short_term_forecast} />
+              </RechartsLineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">
+            Long-term forecast (20 years)
+          </div>
+          <div className="mt-3 h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsLineChart data={selectedScenario.long_term_forecast}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="year" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Line type="monotone" dataKey="cost_eur" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Scenario" />
+                <Line type="monotone" dataKey="cost_eur" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Baseline" data={forecast.baseline.long_term_forecast} />
+              </RechartsLineChart>
+            </ResponsiveContainer>
+          </div>
+          {selectedScenario.payback_month && (
+            <div className="mt-2 text-center text-xs text-muted-foreground">
+              Payoff: Year {Math.ceil(selectedScenario.payback_month / 12)}
+            </div>
+          )}
+        </div>
+
+        {selectedScenario.monthly_saving_eur < 0 && (
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">
+              Post-payoff savings
+            </div>
+            <div className="mt-2 text-lg font-semibold text-primary">
+              {euro(selectedScenario.monthly_saving_post_payoff_eur)}/month
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              After loan is paid off
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-2 pt-2 text-xs text-muted-foreground">
           <Detail icon={<LineChart className="h-3.5 w-3.5" />} label="Modeled" />
           <Detail icon={<Clock className="h-3.5 w-3.5" />} label="Live tariffs" />
@@ -192,6 +277,18 @@ function Detail({ icon, label }: { icon: React.ReactNode; label: string }) {
     <div className="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card/50 px-2 py-1.5">
       {icon}
       <span>{label}</span>
+    </div>
+  );
+}
+
+function CostRow({ icon, label, value, bold = false }: { icon: React.ReactNode; label: string; value: string; bold?: boolean }) {
+  return (
+    <div className={`flex items-center justify-between ${bold ? "font-semibold" : ""}`}>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <span className="tabular-nums">{value}</span>
     </div>
   );
 }

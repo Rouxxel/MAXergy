@@ -12,6 +12,9 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  server: {
+    port: 8080,
+  },
   build: {
     chunkSizeWarningLimit: 1000,
   },
