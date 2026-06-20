@@ -83,10 +83,6 @@ app.add_middleware(
 #Root
 app.include_router(root_router)
 
-#Example router (see src/api_endpoints/routers/specific_router_group/example_router.py)
-app.include_router(example_router_1)
-app.include_router(example_router_2)
-
 #MAXergy routers
 app.include_router(assessment_router)
 app.include_router(forecast_router)
