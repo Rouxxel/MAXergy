@@ -5,6 +5,7 @@ import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { AppShell, BrandMark } from "@/components/app-shell";
 import { MetricCard } from "@/components/metric-card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useResultsStore } from "@/stores/resultsStore";
 
 export const Route = createFileRoute("/results")({

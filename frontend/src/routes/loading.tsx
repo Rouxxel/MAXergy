@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 
 import { AppShell, BrandMark } from "@/components/app-shell";
+import { Progress } from "@/components/ui/progress";
 import { useAssessmentStore } from "@/stores/assessmentStore";
 import { useResultsStore } from "@/stores/resultsStore";
 import { useUiStore } from "@/stores/uiStore";
@@ -80,6 +81,10 @@ function LoadingScreen() {
         </div>
         <h1 className="mt-10 text-xl font-semibold">{STAGES[stage]}</h1>
         <p className="mt-2 text-sm text-muted-foreground">This usually takes 5–10 seconds.</p>
+
+        <div className="mt-6 w-full max-w-xs">
+          <Progress value={((stage + 1) / STAGES.length) * 100} className="h-2" />
+        </div>
 
         <ul className="mt-10 w-full space-y-2 text-left text-sm">
           {STAGES.map((s, i) => (

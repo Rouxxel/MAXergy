@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Home, BarChart3, LayoutGrid, MessageSquare } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { ErrorBanner } from "@/components/error-banner";
 
 export function AppShell({
   children,
@@ -12,6 +13,7 @@ export function AppShell({
 }) {
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
+      <ErrorBanner />
       <div className="mx-auto w-full max-w-md px-5 pb-28 pt-8">{children}</div>
       {hideNav ? null : <BottomNav />}
     </div>
