@@ -271,3 +271,6 @@ apprunner-service.json
 # Local test files
 test_*.py
 *_test.py
+
+# Allow tests in src/tests
+!src/tests/
