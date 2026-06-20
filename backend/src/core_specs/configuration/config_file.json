@@ -6,7 +6,7 @@
     "logging":{
         "logging_level":"debug",
         "dir_name":"logs",
-        "log_file_name":"x_bcknd"
+        "log_file_name":"MAXergy_bcknd"
     },
     "email_validation":{
         "allowed_providers":["gmail","outlook","yahoo","hotmail","icloud","protonmail","aol","zoho","gmx","mail"],
