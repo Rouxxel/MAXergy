@@ -73,10 +73,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Cloover — Energy Transition Planner" },
+      { title: "MAXergy — Energy Transition Planner" },
       { name: "description", content: "See how much you could save every month by upgrading your home's energy." },
-      { name: "author", content: "Cloover" },
-      { property: "og:title", content: "Cloover — Energy Transition Planner" },
+      { name: "author", content: "MAXergy" },
+      { property: "og:title", content: "MAXergy — Energy Transition Planner" },
       { property: "og:description", content: "AI-powered home energy upgrades, priced as monthly savings." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -91,6 +91,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        href: "/src/assets/tab_icon.png",
       },
     ],
   }),

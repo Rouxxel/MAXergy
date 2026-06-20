@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Home, BarChart3, LayoutGrid, MessageSquare } from "lucide-react";
+import { Logo } from "@/components/logo";
 
 export function AppShell({
   children,
@@ -47,12 +48,8 @@ function BottomNav() {
 export function BrandMark() {
   return (
     <div className="flex items-center gap-2">
-      <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M13 2 4 14h7l-1 8 9-12h-7z" />
-        </svg>
-      </div>
-      <div className="text-lg font-bold tracking-tight">Cloover</div>
+      <Logo size={64} className="h-9 w-9" />
+      <div className="text-lg font-bold tracking-tight">MAXergy</div>
     </div>
   );
 }

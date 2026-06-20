@@ -5,95 +5,136 @@ import type {
   HouseholdAssessment,
   Recommendation,
   Scenario,
+  ForecastPoint,
+  MonthlyCostEur,
+  Baseline,
 } from "@/types";
+
+const createForecastPoints = (months: number, baseCost: number): ForecastPoint[] =>
+  Array.from({ length: months }, (_, i) => ({
+    month: (i % 12) + 1,
+    year: Math.floor(i / 12) + 1,
+    cost_eur: baseCost * (1 + 0.03 * (i / 12)), // 3% annual escalation
+  }));
+
+const createMonthlyCost = (total: number): MonthlyCostEur => ({
+  electricity: total * 0.4,
+  gas_oil: total * 0.35,
+  fuel: total * 0.25,
+  total,
+});
 
 const scenarios: Scenario[] = [
   {
-    id: "solar",
-    name: "Solar Only",
-    components: ["Rooftop Solar"],
-    monthlySavings: 92,
-    upfrontCost: 8500,
-    financingCost: 120,
-    paybackYears: 7.5,
-    carbonReductionKg: 1800,
+    id: "solar_only",
+    components: { solar_pv: true, battery: false, heat_pump: false, ev_charger: false },
+    sizing: { solar_pv_kwp: 5, battery_kwh: null, heat_pump_kw: null },
+    monthly_cost_eur: createMonthlyCost(245),
+    financing_installment_eur: 120,
+    monthly_saving_eur: 92,
+    monthly_saving_post_payoff_eur: 212,
+    self_consumption_ratio: 0.3,
+    payback_month: 90,
+    short_term_forecast: createForecastPoints(12, 245),
+    long_term_forecast: createForecastPoints(240, 245),
   },
   {
-    id: "solar-battery",
-    name: "Solar + Battery",
-    components: ["Rooftop Solar", "Home Battery"],
-    monthlySavings: 138,
-    upfrontCost: 14200,
-    financingCost: 198,
-    paybackYears: 7.1,
-    carbonReductionKg: 2400,
+    id: "pv_battery",
+    components: { solar_pv: true, battery: true, heat_pump: false, ev_charger: false },
+    sizing: { solar_pv_kwp: 5, battery_kwh: 7.5, heat_pump_kw: null },
+    monthly_cost_eur: createMonthlyCost(199),
+    financing_installment_eur: 198,
+    monthly_saving_eur: 138,
+    monthly_saving_post_payoff_eur: 336,
+    self_consumption_ratio: 0.65,
+    payback_month: 85,
+    short_term_forecast: createForecastPoints(12, 199),
+    long_term_forecast: createForecastPoints(240, 199),
   },
   {
-    id: "solar-battery-hp",
-    name: "Solar + Battery + Heat Pump",
-    components: ["Rooftop Solar", "Home Battery", "Heat Pump"],
-    monthlySavings: 214,
-    upfrontCost: 22800,
-    financingCost: 318,
-    paybackYears: 6.4,
-    carbonReductionKg: 4100,
-    recommended: true,
+    id: "pv_heatpump",
+    components: { solar_pv: true, battery: false, heat_pump: true, ev_charger: false },
+    sizing: { solar_pv_kwp: 5, battery_kwh: null, heat_pump_kw: 9 },
+    monthly_cost_eur: createMonthlyCost(123),
+    financing_installment_eur: 250,
+    monthly_saving_eur: 214,
+    monthly_saving_post_payoff_eur: 464,
+    self_consumption_ratio: 0.45,
+    payback_month: 77,
+    short_term_forecast: createForecastPoints(12, 123),
+    long_term_forecast: createForecastPoints(240, 123),
   },
   {
-    id: "solar-battery-ev",
-    name: "Solar + Battery + EV Charger",
-    components: ["Rooftop Solar", "Home Battery", "EV Charger"],
-    monthlySavings: 176,
-    upfrontCost: 16400,
-    financingCost: 228,
-    paybackYears: 6.8,
-    carbonReductionKg: 3200,
+    id: "pv_ev",
+    components: { solar_pv: true, battery: false, heat_pump: false, ev_charger: true },
+    sizing: { solar_pv_kwp: 5, battery_kwh: null, heat_pump_kw: null },
+    monthly_cost_eur: createMonthlyCost(161),
+    financing_installment_eur: 180,
+    monthly_saving_eur: 176,
+    monthly_saving_post_payoff_eur: 356,
+    self_consumption_ratio: 0.4,
+    payback_month: 82,
+    short_term_forecast: createForecastPoints(12, 161),
+    long_term_forecast: createForecastPoints(240, 161),
   },
   {
-    id: "full",
-    name: "Full Upgrade",
-    components: ["Solar", "Battery", "Heat Pump", "EV Charger", "Insulation"],
-    monthlySavings: 268,
-    upfrontCost: 31500,
-    financingCost: 439,
-    paybackYears: 6.9,
-    carbonReductionKg: 5400,
+    id: "pv_battery_heatpump",
+    components: { solar_pv: true, battery: true, heat_pump: true, ev_charger: false },
+    sizing: { solar_pv_kwp: 5, battery_kwh: 7.5, heat_pump_kw: 9 },
+    monthly_cost_eur: createMonthlyCost(77),
+    financing_installment_eur: 318,
+    monthly_saving_eur: 260,
+    monthly_saving_post_payoff_eur: 578,
+    self_consumption_ratio: 0.75,
+    payback_month: 72,
+    short_term_forecast: createForecastPoints(12, 77),
+    long_term_forecast: createForecastPoints(240, 77),
+  },
+  {
+    id: "full_upgrade",
+    components: { solar_pv: true, battery: true, heat_pump: true, ev_charger: true },
+    sizing: { solar_pv_kwp: 5, battery_kwh: 7.5, heat_pump_kw: 9 },
+    monthly_cost_eur: createMonthlyCost(41),
+    financing_installment_eur: 439,
+    monthly_saving_eur: 296,
+    monthly_saving_post_payoff_eur: 735,
+    self_consumption_ratio: 0.8,
+    payback_month: 68,
+    short_term_forecast: createForecastPoints(12, 41),
+    long_term_forecast: createForecastPoints(240, 41),
   },
 ];
 
 export const mockAssessmentResponse = (
   _a: HouseholdAssessment,
-): AssessmentResponse => ({ id: "mock_" + Date.now(), ok: true });
+): AssessmentResponse => ({ id: "mock_" + Date.now(), status: "created" });
 
-export const mockForecast = (a: HouseholdAssessment): ForecastResult => {
-  const current =
-    a.monthlyElectricitySpend + a.heatingSpend + (a.fuelSpend ?? 0);
-  const recommended = scenarios.find((s) => s.recommended) ?? scenarios[2];
-  const future = Math.max(0, current - recommended.monthlySavings);
+export const mockForecast = (_a: HouseholdAssessment): ForecastResult => {
+  const baseline: Baseline = {
+    monthly_cost_eur: createMonthlyCost(337),
+    short_term_forecast: createForecastPoints(12, 337),
+    long_term_forecast: createForecastPoints(240, 337),
+  };
+
   return {
-    monthlySavings: recommended.monthlySavings,
-    currentSpend: current,
-    futureSpend: future,
-    financingCost: recommended.financingCost,
-    roi: 14.2,
-    paybackTimeline: recommended.paybackYears,
-    carbonReduction: recommended.carbonReductionKg,
+    baseline,
     scenarios,
   };
 };
 
-export const mockRecommendation = (a: HouseholdAssessment): Recommendation => {
-  const s = scenarios.find((x) => x.recommended) ?? scenarios[2];
+export const mockRecommendation = (_a: HouseholdAssessment): Recommendation => {
+  const selected = scenarios[4]; // pv_battery_heatpump
   return {
-    scenario: s,
-    reasoning: `Based on your roof of ${a.roofSize} m², heating type "${a.heatingType}", and current spend, this bundle maximizes monthly savings within a ${Math.round(a.financingTermMonths / 12)}-year financing term.`,
+    selected_scenario: selected,
+    ranked_scenarios: scenarios.sort((a, b) => b.monthly_saving_eur - a.monthly_saving_eur),
+    reasoning: "Based on your household profile, the Solar + Battery + Heat Pump combination offers the best balance of monthly savings and payback period. The battery increases self-consumption to 75%, while the heat pump replaces your most expensive heating fuel.",
   };
 };
 
 const advisorReplies = [
-  "Your recommendation pairs rooftop solar with a battery and a heat pump. Solar covers daytime load, the battery shifts excess to evening, and the heat pump replaces your most expensive fuel — together they cut your bill by an estimated €214/month.",
+  "Your recommendation pairs rooftop solar with a battery and a heat pump. Solar covers daytime load, the battery shifts excess to evening, and the heat pump replaces your most expensive fuel — together they cut your bill by an estimated €260/month.",
   "We chose this configuration because your heating spend is the largest single line item. Electrifying it with a heat pump powered by your own solar gives the highest return per euro financed.",
-  "Extending your financing term lowers the monthly payment but increases total interest. Most households break even faster on a 7-year term because savings outpace the slightly higher payment.",
+  "Extending your financing term lowers the monthly payment but increases total interest. Most households break even faster on a 6-year term because savings outpace the slightly higher payment.",
 ];
 
 export const mockAdvisorReply = (msg: string): AdvisorChatResponse => {
