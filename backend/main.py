@@ -18,6 +18,7 @@ from contextlib import asynccontextmanager
 #Third-party imports
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
 load_dotenv()
@@ -35,6 +36,10 @@ from src.core_specs.data.data_loader import data_loader
 from src.api_endpoints.root_endpoint import router as root_router
 from src.api_endpoints.routers.specific_router_group_1.example_router import router as example_router_1
 from src.api_endpoints.routers.specific_router_group_2.example_router import router as example_router_2
+from src.api_endpoints.routers.maxergy.assessment_router import router as assessment_router
+from src.api_endpoints.routers.maxergy.forecast_router import router as forecast_router
+from src.api_endpoints.routers.maxergy.recommendation_router import router as recommendation_router
+from src.api_endpoints.routers.maxergy.advisor_router import router as advisor_router
 
 """API APP-----------------------------------------------------------"""
 #Lifespan event manager (startup and shutdown)
@@ -60,6 +65,21 @@ app.state.limiter = limiter
 #Add global exception handler for rate limits
 app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
+#Setup CORS for web app and future React Native app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8080",  # TanStack Start dev server
+        "http://127.0.0.1:8080",
+        "http://localhost:3000",  # Alternative dev port
+        "http://127.0.0.1:3000",
+        # Add production frontend URLs when deployed
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 """Routers-----------------------------------------------------------"""
 #Root
 app.include_router(root_router)
@@ -67,6 +87,12 @@ app.include_router(root_router)
 #Example router (see src/api_endpoints/routers/specific_router_group/example_router.py)
 app.include_router(example_router_1)
 app.include_router(example_router_2)
+
+#MAXergy routers
+app.include_router(assessment_router)
+app.include_router(forecast_router)
+app.include_router(recommendation_router)
+app.include_router(advisor_router)
 
 """Start server-----------------------------------------------------------"""
 if __name__ == "__main__":
