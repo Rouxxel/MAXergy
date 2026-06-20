@@ -1,12 +1,14 @@
 /**
- * Typed fetch wrapper for the Cloover FastAPI backend.
+ * Typed fetch wrapper for the MAXergy FastAPI backend.
  *
  * Configure via Vite env vars:
- *   VITE_API_BASE_URL  e.g. http://localhost:8000  or  https://cloover.onrender.com
- *   VITE_USE_MOCKS     "true" to short-circuit calls and return fixtures (default in dev)
+ *   VITE_DEPLOYED_API_BASE_URL  e.g. https://maxergy-backend.com (checked first)
+ *   VITE_API_BASE_URL           e.g. http://localhost:8000 (fallback)
+ *   VITE_USE_MOCKS              "true" to short-circuit calls and return fixtures (default in dev)
  */
 
 const BASE_URL =
+  (import.meta.env.VITE_DEPLOYED_API_BASE_URL as string | undefined) ??
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
   "http://localhost:8000";
 
