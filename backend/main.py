@@ -34,8 +34,6 @@ from src.core_specs.data.data_loader import data_loader
 
 #Endpoints imports
 from src.api_endpoints.root_endpoint import router as root_router
-from src.api_endpoints.routers.specific_router_group_1.example_router import router as example_router_1
-from src.api_endpoints.routers.specific_router_group_2.example_router import router as example_router_2
 from src.api_endpoints.routers.maxergy.assessment_router import router as assessment_router
 from src.api_endpoints.routers.maxergy.forecast_router import router as forecast_router
 from src.api_endpoints.routers.maxergy.recommendation_router import router as recommendation_router
@@ -47,16 +45,16 @@ from src.api_endpoints.routers.maxergy.visualization_router import router as vis
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     port = config_loader["network"]["server_port"]
-    log_handler.info(f"REST API Template server starting on port {port}")
+    log_handler.info(f"MAXnergy Template server starting on port {port}")
     yield
-    log_handler.info("REST API Template server shutting down")
+    log_handler.info("MAXnergy Template server shutting down")
 
 #Create FastAPI app
 app = FastAPI(
     lifespan=lifespan, 
-    title=os.getenv("API_TITLE", "REST API Template"),
+    title=os.getenv("API_TITLE", "MAXnergy Template"),
     version=os.getenv("API_VERSION", "1.0.0"),
-    description=os.getenv("API_DESCRIPTION", "A template for building REST APIs with FastAPI")
+    description=os.getenv("API_DESCRIPTION", "A template for building MAXnergys with FastAPI")
 )
 
 """VARIOUS-----------------------------------------------------------"""

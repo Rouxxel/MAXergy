@@ -1,7 +1,7 @@
 @echo off
-REM REST API Template - Development Startup Script (Windows)
+REM MAXnergy Template - Development Startup Script (Windows)
 
-echo 🚀 REST API Template - Development Setup
+echo MAXnergy Template - Development Setup
 echo ========================================
 
 REM Check if Python is installed

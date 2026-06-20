@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# REST API Template - Development Startup Script
+# MAXnergy Template - Development Startup Script
 
-echo "🚀 REST API Template - Development Setup"
+echo "MAXnergy Template - Development Setup"
 echo "========================================"
 
 # Check if Python is installed

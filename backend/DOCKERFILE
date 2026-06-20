@@ -1,5 +1,5 @@
 #############################################################################
-### Multi-stage Dockerfile for REST API Template
+### Multi-stage Dockerfile for MAXnergy Template
 ### FastAPI + Uvicorn + Python 3.12
 ### Optimized for production deployment
 #############################################################################
