@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { AppShell, BrandMark } from "@/components/app-shell";
@@ -18,6 +19,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { useAssessmentStore } from "@/stores/assessmentStore";
+import { useUiStore } from "@/stores/uiStore";
+import { HouseholdAssessmentSchema } from "@/services/validation";
+import { postAssessment } from "@/services/endpoints";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -79,11 +83,26 @@ type StepId =
   | "heating"
   | "mobility"
   | "upgrades"
-  | "financing";
+  | "financing"
+  | "horizon";
 
 function Onboarding() {
   const navigate = useNavigate();
-  const { draft, setField, step, setStep } = useAssessmentStore();
+  const { draft, setField, step, setStep, setSubmittedId } = useAssessmentStore();
+  const { setError: setGlobalError } = useUiStore();
+
+  const submitAssessment = useMutation({
+    mutationFn: postAssessment,
+    onSuccess: (data) => {
+      setSubmittedId(data.id);
+      navigate({ to: "/loading" });
+    },
+    onError: (error) => {
+      const errorMsg = error instanceof Error ? error.message : "Failed to submit assessment";
+      setError(errorMsg);
+      setGlobalError(errorMsg);
+    },
+  });
 
   const steps: StepId[] = [
     "country",
@@ -95,6 +114,7 @@ function Onboarding() {
     "mobility",
     "upgrades",
     "financing",
+    "horizon",
   ];
 
   const safeStep = Math.min(step, steps.length - 1);
@@ -102,35 +122,20 @@ function Onboarding() {
   const [error, setError] = useState<string | undefined>();
 
   const validate = (): string | undefined => {
-    switch (current) {
-      case "country":
-        return draft.location?.country ? undefined : "Pick a country";
-      case "postcode":
-        return draft.location?.postcode && draft.location.postcode.length >= 3
-          ? undefined
-          : "Enter a valid postal code";
-      case "occupants":
-        return draft.household?.occupants?.count && draft.household.occupants.count > 0
-          ? undefined
-          : "Enter number of occupants";
-      case "electricity":
-        return draft.household?.electricity?.annual_kwh && draft.household.electricity.annual_kwh > 0
-          ? undefined
-          : "Enter your annual electricity consumption";
-      case "roof":
-        return draft.household?.roof?.usable_area_m2 && draft.household.roof.usable_area_m2 > 0
-          ? undefined
-          : "Enter your roof size";
-      case "heating":
-        return draft.heating?.fuel_type ? undefined : "Pick a heating type";
-      case "mobility":
-        return draft.mobility?.vehicle_type ? undefined : "Pick a vehicle type";
-      case "financing":
-        return draft.financing?.loan_term_years && draft.financing.loan_term_years > 0
-          ? undefined
-          : "Pick a financing term";
+    try {
+      HouseholdAssessmentSchema.parse(draft);
+      return undefined;
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        const firstError = e.errors[0];
+        if (firstError) {
+          const path = firstError.path.join(".");
+          const message = firstError.message;
+          return `${path}: ${message}`;
+        }
+      }
+      return "Please check your inputs";
     }
-    return undefined;
   };
 
   const onNext = () => {
@@ -141,7 +146,12 @@ function Onboarding() {
     }
     setError(undefined);
     if (safeStep === steps.length - 1) {
-      navigate({ to: "/loading" });
+      const completed = useAssessmentStore.getState().getCompleted();
+      if (completed) {
+        submitAssessment.mutate(completed);
+      } else {
+        setError("Please complete all required fields");
+      }
       return;
     }
     setStep(safeStep + 1);
@@ -267,37 +277,149 @@ function StepView({ step }: { step: StepId }) {
     case "electricity":
       return (
         <Field title="Annual electricity consumption" subtitle="In kWh per year. Check your bill.">
-          <div className="relative">
-            <Input
-              inputMode="numeric"
-              className="h-12 pr-12"
-              type="number"
-              value={draft.household?.electricity?.annual_kwh ?? ""}
-              onChange={(e) => {
-                const n = Number(e.target.value);
-                setField("household", {
-                  occupants: draft.household?.occupants ?? { count: 2 },
-                  electricity: {
-                    annual_kwh: Number.isFinite(n) ? n : 0,
-                    current_tariff_type: draft.household?.electricity?.current_tariff_type ?? "standard",
-                    arbeitspreis_eur_per_kwh: draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
-                    grundpreis_eur_per_month: draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
-                    contract_end_date: draft.household?.electricity?.contract_end_date ?? null,
-                  },
-                  roof: draft.household?.roof ?? {
-                    available: true,
-                    usable_area_m2: 50,
-                    orientation: "south",
-                    tilt_deg: 30,
-                    shading_factor: 0.1,
-                  },
-                });
-              }}
-              placeholder="3000"
-            />
-            <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
-              kWh
-            </span>
+          <div className="space-y-4">
+            <div className="relative">
+              <Input
+                inputMode="numeric"
+                className="h-12 pr-12"
+                type="number"
+                value={draft.household?.electricity?.annual_kwh ?? ""}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  setField("household", {
+                    occupants: draft.household?.occupants ?? { count: 2 },
+                    electricity: {
+                      annual_kwh: Number.isFinite(n) ? n : 0,
+                      current_tariff_type: draft.household?.electricity?.current_tariff_type ?? "standard",
+                      arbeitspreis_eur_per_kwh: draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
+                      grundpreis_eur_per_month: draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
+                      contract_end_date: draft.household?.electricity?.contract_end_date ?? null,
+                    },
+                    roof: draft.household?.roof ?? {
+                      available: true,
+                      usable_area_m2: 50,
+                      orientation: "south",
+                      tilt_deg: 30,
+                      shading_factor: 0.1,
+                    },
+                  });
+                }}
+                placeholder="3000"
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
+                kWh
+              </span>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Tariff type</Label>
+              <Select
+                value={draft.household?.electricity?.current_tariff_type ?? "standard"}
+                onValueChange={(v) =>
+                  setField("household", {
+                    occupants: draft.household?.occupants ?? { count: 2 },
+                    electricity: {
+                      annual_kwh: draft.household?.electricity?.annual_kwh ?? 3000,
+                      current_tariff_type: v,
+                      arbeitspreis_eur_per_kwh: draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
+                      grundpreis_eur_per_month: draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
+                      contract_end_date: draft.household?.electricity?.contract_end_date ?? null,
+                    },
+                    roof: draft.household?.roof ?? {
+                      available: true,
+                      usable_area_m2: 50,
+                      orientation: "south",
+                      tilt_deg: 30,
+                      shading_factor: 0.1,
+                    },
+                  })
+                }
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select tariff type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="ht">HT (High Tariff)</SelectItem>
+                  <SelectItem value="nt">NT (Low Tariff)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Energy price (€/kWh)</Label>
+                <div className="relative">
+                  <Input
+                    inputMode="decimal"
+                    className="h-12 pr-8"
+                    type="number"
+                    step="0.01"
+                    value={draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? ""}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setField("household", {
+                        occupants: draft.household?.occupants ?? { count: 2 },
+                        electricity: {
+                          annual_kwh: draft.household?.electricity?.annual_kwh ?? 3000,
+                          current_tariff_type: draft.household?.electricity?.current_tariff_type ?? "standard",
+                          arbeitspreis_eur_per_kwh: Number.isFinite(n) ? n : 0.35,
+                          grundpreis_eur_per_month: draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
+                          contract_end_date: draft.household?.electricity?.contract_end_date ?? null,
+                        },
+                        roof: draft.household?.roof ?? {
+                          available: true,
+                          usable_area_m2: 50,
+                          orientation: "south",
+                          tilt_deg: 30,
+                          shading_factor: 0.1,
+                        },
+                      });
+                    }}
+                    placeholder="0.35"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 grid place-items-center text-xs text-muted-foreground">
+                    €
+                  </span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Arbeitspreis - price per kWh consumed</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Base fee (€/month)</Label>
+                <div className="relative">
+                  <Input
+                    inputMode="decimal"
+                    className="h-12 pr-8"
+                    type="number"
+                    step="0.01"
+                    value={draft.household?.electricity?.grundpreis_eur_per_month ?? ""}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setField("household", {
+                        occupants: draft.household?.occupants ?? { count: 2 },
+                        electricity: {
+                          annual_kwh: draft.household?.electricity?.annual_kwh ?? 3000,
+                          current_tariff_type: draft.household?.electricity?.current_tariff_type ?? "standard",
+                          arbeitspreis_eur_per_kwh: draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
+                          grundpreis_eur_per_month: Number.isFinite(n) ? n : 10,
+                          contract_end_date: draft.household?.electricity?.contract_end_date ?? null,
+                        },
+                        roof: draft.household?.roof ?? {
+                          available: true,
+                          usable_area_m2: 50,
+                          orientation: "south",
+                          tilt_deg: 30,
+                          shading_factor: 0.1,
+                        },
+                      });
+                    }}
+                    placeholder="10"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 grid place-items-center text-xs text-muted-foreground">
+                    €
+                  </span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Grundpreis - fixed monthly fee</p>
+              </div>
+            </div>
           </div>
         </Field>
       );
@@ -342,24 +464,24 @@ function StepView({ step }: { step: StepId }) {
               <Select
                 value={draft.household?.roof?.orientation ?? "south"}
                 onValueChange={(v) =>
-                setField("household", {
-                  occupants: draft.household?.occupants ?? { count: 2 },
-                  electricity: draft.household?.electricity ?? {
-                    annual_kwh: 3000,
-                    current_tariff_type: "standard",
-                    arbeitspreis_eur_per_kwh: 0.35,
-                    grundpreis_eur_per_month: 10,
-                    contract_end_date: null,
-                  },
-                  roof: {
-                    available: true,
-                    usable_area_m2: draft.household?.roof?.usable_area_m2 ?? 50,
-                    orientation: v,
-                    tilt_deg: draft.household?.roof?.tilt_deg ?? 30,
-                    shading_factor: draft.household?.roof?.shading_factor ?? 0.1,
-                  },
-                })
-              }
+                  setField("household", {
+                    occupants: draft.household?.occupants ?? { count: 2 },
+                    electricity: draft.household?.electricity ?? {
+                      annual_kwh: 3000,
+                      current_tariff_type: "standard",
+                      arbeitspreis_eur_per_kwh: 0.35,
+                      grundpreis_eur_per_month: 10,
+                      contract_end_date: null,
+                    },
+                    roof: {
+                      available: true,
+                      usable_area_m2: draft.household?.roof?.usable_area_m2 ?? 50,
+                      orientation: v,
+                      tilt_deg: draft.household?.roof?.tilt_deg ?? 30,
+                      shading_factor: draft.household?.roof?.shading_factor ?? 0.1,
+                    },
+                  })
+                }
               >
                 <SelectTrigger className="h-12">
                   <SelectValue placeholder="Select orientation" />
@@ -372,6 +494,81 @@ function StepView({ step }: { step: StepId }) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Tilt angle (degrees)</Label>
+                <div className="relative">
+                  <Input
+                    inputMode="decimal"
+                    className="h-12 pr-8"
+                    type="number"
+                    step="1"
+                    value={draft.household?.roof?.tilt_deg ?? ""}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setField("household", {
+                        occupants: draft.household?.occupants ?? { count: 2 },
+                        electricity: draft.household?.electricity ?? {
+                          annual_kwh: 3000,
+                          current_tariff_type: "standard",
+                          arbeitspreis_eur_per_kwh: 0.35,
+                          grundpreis_eur_per_month: 10,
+                          contract_end_date: null,
+                        },
+                        roof: {
+                          available: true,
+                          usable_area_m2: draft.household?.roof?.usable_area_m2 ?? 50,
+                          orientation: draft.household?.roof?.orientation ?? "south",
+                          tilt_deg: Number.isFinite(n) ? n : 30,
+                          shading_factor: draft.household?.roof?.shading_factor ?? 0.1,
+                        },
+                      });
+                    }}
+                    placeholder="30"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 grid place-items-center text-xs text-muted-foreground">
+                    °
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Shading factor</Label>
+                <div className="relative">
+                  <Input
+                    inputMode="decimal"
+                    className="h-12 pr-8"
+                    type="number"
+                    step="0.1"
+                    value={draft.household?.roof?.shading_factor ?? ""}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setField("household", {
+                        occupants: draft.household?.occupants ?? { count: 2 },
+                        electricity: draft.household?.electricity ?? {
+                          annual_kwh: 3000,
+                          current_tariff_type: "standard",
+                          arbeitspreis_eur_per_kwh: 0.35,
+                          grundpreis_eur_per_month: 10,
+                          contract_end_date: null,
+                        },
+                        roof: {
+                          available: true,
+                          usable_area_m2: draft.household?.roof?.usable_area_m2 ?? 50,
+                          orientation: draft.household?.roof?.orientation ?? "south",
+                          tilt_deg: draft.household?.roof?.tilt_deg ?? 30,
+                          shading_factor: Number.isFinite(n) ? n : 0.1,
+                        },
+                      });
+                    }}
+                    placeholder="0.1"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 grid place-items-center text-xs text-muted-foreground">
+                    0-1
+                  </span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">0 = no shading, 1 = full shading</p>
+              </div>
             </div>
           </div>
         </Field>
@@ -462,6 +659,64 @@ function StepView({ step }: { step: StepId }) {
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-[10px] text-muted-foreground">Affects heating demand calculations</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Annual consumption</Label>
+                <div className="relative">
+                  <Input
+                    inputMode="numeric"
+                    className="h-12 pr-12"
+                    type="number"
+                    value={draft.heating?.annual_consumption ?? ""}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setField("heating", {
+                        fuel_type: draft.heating?.fuel_type ?? "gas",
+                        annual_consumption: Number.isFinite(n) ? n : null,
+                        annual_spend_eur: draft.heating?.annual_spend_eur ?? null,
+                        building: draft.heating?.building ?? {
+                          floor_area_m2: 120,
+                          insulation_class: "medium",
+                        },
+                      });
+                    }}
+                    placeholder="20000"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-xs text-muted-foreground">
+                    kWh
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Annual spend</Label>
+                <div className="relative">
+                  <Input
+                    inputMode="decimal"
+                    className="h-12 pr-8"
+                    type="number"
+                    step="0.01"
+                    value={draft.heating?.annual_spend_eur ?? ""}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setField("heating", {
+                        fuel_type: draft.heating?.fuel_type ?? "gas",
+                        annual_consumption: draft.heating?.annual_consumption ?? null,
+                        annual_spend_eur: Number.isFinite(n) ? n : null,
+                        building: draft.heating?.building ?? {
+                          floor_area_m2: 120,
+                          insulation_class: "medium",
+                        },
+                      });
+                    }}
+                    placeholder="2000"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 grid place-items-center text-xs text-muted-foreground">
+                    €
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </Field>
@@ -517,6 +772,58 @@ function StepView({ step }: { step: StepId }) {
                 <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
                   km
                 </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Fuel consumption</Label>
+                <div className="relative">
+                  <Input
+                    inputMode="decimal"
+                    className="h-12 pr-12"
+                    type="number"
+                    step="0.1"
+                    value={draft.mobility?.fuel_consumption_l_per_100km ?? ""}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setField("mobility", {
+                        vehicle_type: draft.mobility?.vehicle_type ?? "gas",
+                        annual_mileage_km: draft.mobility?.annual_mileage_km ?? null,
+                        fuel_consumption_l_per_100km: Number.isFinite(n) ? n : null,
+                        annual_fuel_spend_eur: draft.mobility?.annual_fuel_spend_eur ?? null,
+                      });
+                    }}
+                    placeholder="7"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-xs text-muted-foreground">
+                    L/100km
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Annual fuel spend</Label>
+                <div className="relative">
+                  <Input
+                    inputMode="decimal"
+                    className="h-12 pr-8"
+                    type="number"
+                    step="0.01"
+                    value={draft.mobility?.annual_fuel_spend_eur ?? ""}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setField("mobility", {
+                        vehicle_type: draft.mobility?.vehicle_type ?? "gas",
+                        annual_mileage_km: draft.mobility?.annual_mileage_km ?? null,
+                        fuel_consumption_l_per_100km: draft.mobility?.fuel_consumption_l_per_100km ?? null,
+                        annual_fuel_spend_eur: Number.isFinite(n) ? n : null,
+                      });
+                    }}
+                    placeholder="1500"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 grid place-items-center text-xs text-muted-foreground">
+                    €
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -594,11 +901,87 @@ function StepView({ step }: { step: StepId }) {
                 }
               />
             </div>
+            <div className="space-y-3 pt-2">
+              <p className="text-xs text-muted-foreground">Optional size overrides (leave blank for auto-sizing)</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Solar (kWp)</Label>
+                  <Input
+                    inputMode="decimal"
+                    className="h-10"
+                    type="number"
+                    step="0.1"
+                    value={draft.upgrade_candidates?.solar_pv_kwp ?? ""}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setField("upgrade_candidates", {
+                        solar_pv: draft.upgrade_candidates?.solar_pv ?? true,
+                        battery: draft.upgrade_candidates?.battery ?? false,
+                        heat_pump: draft.upgrade_candidates?.heat_pump ?? false,
+                        ev_charger: draft.upgrade_candidates?.ev_charger ?? false,
+                        solar_pv_kwp: Number.isFinite(n) ? n : null,
+                        battery_kwh: draft.upgrade_candidates?.battery_kwh ?? null,
+                        heat_pump_kw: draft.upgrade_candidates?.heat_pump_kw ?? null,
+                      });
+                    }}
+                    placeholder="Auto"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Battery (kWh)</Label>
+                  <Input
+                    inputMode="decimal"
+                    className="h-10"
+                    type="number"
+                    step="0.1"
+                    value={draft.upgrade_candidates?.battery_kwh ?? ""}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setField("upgrade_candidates", {
+                        solar_pv: draft.upgrade_candidates?.solar_pv ?? true,
+                        battery: draft.upgrade_candidates?.battery ?? false,
+                        heat_pump: draft.upgrade_candidates?.heat_pump ?? false,
+                        ev_charger: draft.upgrade_candidates?.ev_charger ?? false,
+                        solar_pv_kwp: draft.upgrade_candidates?.solar_pv_kwp ?? null,
+                        battery_kwh: Number.isFinite(n) ? n : null,
+                        heat_pump_kw: draft.upgrade_candidates?.heat_pump_kw ?? null,
+                      });
+                    }}
+                    placeholder="Auto"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Heat pump (kW)</Label>
+                  <Input
+                    inputMode="decimal"
+                    className="h-10"
+                    type="number"
+                    step="0.1"
+                    value={draft.upgrade_candidates?.heat_pump_kw ?? ""}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setField("upgrade_candidates", {
+                        solar_pv: draft.upgrade_candidates?.solar_pv ?? true,
+                        battery: draft.upgrade_candidates?.battery ?? false,
+                        heat_pump: draft.upgrade_candidates?.heat_pump ?? false,
+                        ev_charger: draft.upgrade_candidates?.ev_charger ?? false,
+                        solar_pv_kwp: draft.upgrade_candidates?.solar_pv_kwp ?? null,
+                        battery_kwh: draft.upgrade_candidates?.battery_kwh ?? null,
+                        heat_pump_kw: Number.isFinite(n) ? n : null,
+                      });
+                    }}
+                    placeholder="Auto"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </Field>
       );
     case "financing":
       return <FinancingTermStep />;
+    case "horizon":
+      return <ForecastHorizonStep />;
   }
 }
 
@@ -662,28 +1045,121 @@ function FinancingTermStep() {
             <span>30 years</span>
           </div>
         </div>
-        <div className="space-y-2">
-          <Label className="text-sm text-muted-foreground">Loan rate (%)</Label>
-          <div className="relative">
-            <Input
-              inputMode="decimal"
-              className="h-12 pr-8"
-              type="number"
-              step="0.1"
-              value={draft.financing?.loan_rate_pct ?? ""}
-              onChange={(e) => {
-                const n = Number(e.target.value);
-                setField("financing", {
-                  loan_term_years: draft.financing?.loan_term_years ?? 7,
-                  loan_rate_pct: Number.isFinite(n) ? n : 5.5,
-                  known_subsidy_eur: draft.financing?.known_subsidy_eur ?? 0,
-                });
-              }}
-              placeholder="5.5"
-            />
-            <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
-              %
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="text-sm text-muted-foreground">Loan rate (%)</Label>
+            <div className="relative">
+              <Input
+                inputMode="decimal"
+                className="h-12 pr-8"
+                type="number"
+                step="0.1"
+                value={draft.financing?.loan_rate_pct ?? ""}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  setField("financing", {
+                    loan_term_years: draft.financing?.loan_term_years ?? 7,
+                    loan_rate_pct: Number.isFinite(n) ? n : 5.5,
+                    known_subsidy_eur: draft.financing?.known_subsidy_eur ?? 0,
+                  });
+                }}
+                placeholder="5.5"
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
+                %
+              </span>
+            </div>
+            <p className="text-[10px] text-muted-foreground">Annual interest rate for financing</p>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm text-muted-foreground">Known subsidy (€)</Label>
+            <div className="relative">
+              <Input
+                inputMode="decimal"
+                className="h-12 pr-8"
+                type="number"
+                step="0.01"
+                value={draft.financing?.known_subsidy_eur ?? ""}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  setField("financing", {
+                    loan_term_years: draft.financing?.loan_term_years ?? 7,
+                    loan_rate_pct: draft.financing?.loan_rate_pct ?? 5.5,
+                    known_subsidy_eur: Number.isFinite(n) ? n : 0,
+                  });
+                }}
+                placeholder="0"
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
+                €
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Field>
+  );
+}
+
+function ForecastHorizonStep() {
+  const { draft, setField } = useAssessmentStore();
+  const shortTerm = draft.forecast_horizon?.short_term_months ?? 12;
+  const longTerm = draft.forecast_horizon?.long_term_years ?? 20;
+
+  return (
+    <Field
+      title="Forecast horizon"
+      subtitle="Choose the time periods for your savings forecast."
+    >
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm text-muted-foreground">Short-term (months)</span>
+            <span className="text-lg font-semibold text-primary">
+              {shortTerm} mo
             </span>
+          </div>
+          <Slider
+            className="mt-4"
+            min={1}
+            max={60}
+            step={1}
+            value={[shortTerm]}
+            onValueChange={(v) =>
+              setField("forecast_horizon", {
+                short_term_months: v[0] ?? 12,
+                long_term_years: longTerm,
+              })
+            }
+          />
+          <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+            <span>1 mo</span>
+            <span>60 mo</span>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm text-muted-foreground">Long-term (years)</span>
+            <span className="text-lg font-semibold text-primary">
+              {longTerm} yr
+            </span>
+          </div>
+          <Slider
+            className="mt-4"
+            min={1}
+            max={30}
+            step={1}
+            value={[longTerm]}
+            onValueChange={(v) =>
+              setField("forecast_horizon", {
+                short_term_months: shortTerm,
+                long_term_years: v[0] ?? 20,
+              })
+            }
+          />
+          <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+            <span>1 yr</span>
+            <span>30 yr</span>
           </div>
         </div>
       </div>

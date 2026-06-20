@@ -13,7 +13,7 @@ import {
 } from "@/services/endpoints";
 
 export const Route = createFileRoute("/loading")({
-  head: () => ({ meta: [{ title: "Calculating — Cloover" }] }),
+  head: () => ({ meta: [{ title: "Calculating — MAXergy" }] }),
   component: LoadingScreen,
 });
 
