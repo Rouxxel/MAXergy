@@ -26,7 +26,7 @@ import { postAssessment } from "@/services/endpoints";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Get started — MAXergy" },
+      { title: "MAXergy" },
       { name: "description", content: "Tell us about your home in a minute and see your potential monthly savings." },
     ],
   }),
