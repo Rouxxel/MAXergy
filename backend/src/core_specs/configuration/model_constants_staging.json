@@ -1,0 +1,142 @@
+{
+  "model_version": "1.0.0-staging",
+  "model_type": "naive_baseline",
+  "description": "Staging environment model constants - use for pre-production testing",
+  
+  "solar_generation": {
+    "specific_yield_kwh_per_kwp": 1000.0,
+    "placeholder_note": "Germany average; replace with postcode-based yield API (e.g., PVGIS)",
+    "solar_m2_per_kwp": 7.0,
+    "placeholder_note_2": "~7 m² per kWp for standard panels",
+    "solar_max_kwp": 10.0,
+    "placeholder_note_3": "Soft cap (grid/regulatory)"
+  },
+  
+  "self_consumption_ratios": {
+    "solar_pv": 0.30,
+    "solar_pv_battery": 0.65,
+    "solar_pv_heat_pump": 0.45,
+    "solar_pv_ev_charger": 0.40,
+    "solar_pv_battery_heat_pump": 0.75,
+    "solar_pv_battery_heat_pump_ev_charger": 0.80,
+    "placeholder_note": "Core simplification; replace with hourly dispatch simulation"
+  },
+  
+  "feed_in_tariff": {
+    "eur_per_kwh": 0.082,
+    "placeholder_note": "EEG §21 simplified; replace with real tariff by registration date"
+  },
+  
+  "heat_pump": {
+    "cop": 3.3,
+    "placeholder_note": "Seasonal average COP; replace with building-specific model",
+    "oil_kwh_per_litre": 10.0,
+    "placeholder_note_2": "Standard heating oil energy content"
+  },
+  
+  "electric_vehicle": {
+    "efficiency_kwh_per_100km": 18.0,
+    "placeholder_note": "Average BEV consumption",
+    "off_peak_discount_factor": 0.7,
+    "placeholder_note_2": "Fraction of EV charging at cheap hours"
+  },
+  
+  "fallback_fuel_prices": {
+    "gas_price_eur_per_kwh": 0.10,
+    "oil_price_eur_per_litre": 1.05,
+    "petrol_price_eur_per_litre": 1.75,
+    "placeholder_note": "Used only when annual_spend absent from input"
+  },
+  
+  "equipment_costs": {
+    "solar_pv_eur_per_kwp": 1400.0,
+    "placeholder_note": "Per kWp installed",
+    "battery_eur_per_kwh": 700.0,
+    "placeholder_note_2": "Per usable kWh",
+    "heat_pump_eur_flat": 12000.0,
+    "placeholder_note_3": "Installed, all-in flat rate",
+    "ev_charger_eur_flat": 1200.0,
+    "placeholder_note_4": "Wallbox installed"
+  },
+  
+  "default_component_sizing": {
+    "battery_kwh": 7.5,
+    "heat_pump_kw": 9.0,
+    "placeholder_note": "Used when not specified in input"
+  },
+  
+  "subsidy": {
+    "default_subsidy_fraction": 0.30,
+    "placeholder_note": "30% of system cost if no known subsidy"
+  },
+  
+  "escalation_rates": {
+    "electricity": 0.03,
+    "gas_oil": 0.04,
+    "fuel": 0.03,
+    "placeholder_note": "Annual escalation rates for long-term forecasts"
+  },
+  
+  "seasonal_heating_weights": {
+    "raw": [1.4, 1.3, 1.1, 0.9, 0.7, 0.6, 0.6, 0.6, 0.8, 1.0, 1.2, 1.4],
+    "placeholder_note": "Jan-Dec weights, normalized so 12-month average = 1.0"
+  },
+  
+  "scenario_definitions": [
+    {
+      "id": "solar_only",
+      "requires": ["solar_pv"],
+      "components": {"solar_pv": true, "battery": false, "heat_pump": false, "ev_charger": false}
+    },
+    {
+      "id": "pv_battery",
+      "requires": ["solar_pv", "battery"],
+      "components": {"solar_pv": true, "battery": true, "heat_pump": false, "ev_charger": false}
+    },
+    {
+      "id": "pv_heatpump",
+      "requires": ["solar_pv", "heat_pump"],
+      "components": {"solar_pv": true, "battery": false, "heat_pump": true, "ev_charger": false}
+    },
+    {
+      "id": "pv_ev",
+      "requires": ["solar_pv", "ev_charger"],
+      "components": {"solar_pv": true, "battery": false, "heat_pump": false, "ev_charger": true}
+    },
+    {
+      "id": "pv_battery_heatpump",
+      "requires": ["solar_pv", "battery", "heat_pump"],
+      "components": {"solar_pv": true, "battery": true, "heat_pump": true, "ev_charger": false}
+    },
+    {
+      "id": "full_upgrade",
+      "requires": ["solar_pv", "battery", "heat_pump", "ev_charger"],
+      "components": {"solar_pv": true, "battery": true, "heat_pump": true, "ev_charger": true}
+    }
+  ],
+  
+  "upgrade_path": {
+    "priority_replacements": [
+      {
+        "constant": "SPECIFIC_YIELD_KWH_PER_KWP",
+        "replace_with": "Postcode-based yield API (e.g., PVGIS)"
+      },
+      {
+        "constant": "SELF_CONSUMPTION_RATIOS",
+        "replace_with": "Hourly dispatch simulation"
+      },
+      {
+        "constant": "COP",
+        "replace_with": "Building-specific heat load model"
+      },
+      {
+        "constant": "FEED_IN_TARIFF_EUR_PER_KWH",
+        "replace_with": "Real EEG tariff by registration date"
+      },
+      {
+        "constant": "Escalation rates",
+        "replace_with": "Macro energy price model"
+      }
+    ]
+  }
+}
