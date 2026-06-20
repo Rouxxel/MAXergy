@@ -1,0 +1,194 @@
+{
+  "baseline": {
+    "monthly_cost_eur": {
+      "electricity": 112.00,
+      "heating": 120.80,
+      "mobility": 91.70,
+      "total": 324.50
+    },
+    "short_term_forecast": [
+      { "month": "2026-07", "total_eur": 318.20 },
+      { "month": "2026-08", "total_eur": 305.10 },
+      { "month": "2026-09", "total_eur": 312.40 },
+      { "month": "2026-10", "total_eur": 330.90 },
+      { "month": "2026-11", "total_eur": 355.60 },
+      { "month": "2026-12", "total_eur": 372.30 },
+      { "month": "2027-01", "total_eur": 378.50 },
+      { "month": "2027-02", "total_eur": 360.20 },
+      { "month": "2027-03", "total_eur": 335.70 },
+      { "month": "2027-04", "total_eur": 308.40 },
+      { "month": "2027-05", "total_eur": 296.80 },
+      { "month": "2027-06", "total_eur": 299.10 }
+    ],
+    "long_term_forecast": [
+      { "year": 2026, "annual_total_eur": 3894.0 },
+      { "year": 2027, "annual_total_eur": 4012.0 },
+      { "year": 2028, "annual_total_eur": 4137.0 },
+      { "year": 2029, "annual_total_eur": 4268.0 },
+      { "year": 2030, "annual_total_eur": 4404.0 },
+      { "year": 2031, "annual_total_eur": 4546.0 },
+      { "year": 2032, "annual_total_eur": 4693.0 },
+      { "year": 2033, "annual_total_eur": 4847.0 },
+      { "year": 2034, "annual_total_eur": 5007.0 },
+      { "year": 2035, "annual_total_eur": 5172.0 },
+      { "year": 2036, "annual_total_eur": 5344.0 },
+      { "year": 2037, "annual_total_eur": 5523.0 },
+      { "year": 2038, "annual_total_eur": 5708.0 },
+      { "year": 2039, "annual_total_eur": 5899.0 },
+      { "year": 2040, "annual_total_eur": 6098.0 },
+      { "year": 2041, "annual_total_eur": 6303.0 },
+      { "year": 2042, "annual_total_eur": 6516.0 },
+      { "year": 2043, "annual_total_eur": 6736.0 },
+      { "year": 2044, "annual_total_eur": 6964.0 },
+      { "year": 2045, "annual_total_eur": 7200.0 }
+    ]
+  },
+
+  "scenarios": [
+    {
+      "id": "solar_only",
+      "components": { "solar_pv": true, "battery": false, "heat_pump": false, "ev_charger": false },
+      "sizing": { "solar_pv_kwp": 6.5 },
+      "monthly_cost_eur": {
+        "electricity": 78.40,
+        "heating": 120.80,
+        "mobility": 91.70,
+        "financing_installment": 42.00,
+        "total": 332.90
+      },
+      "monthly_saving_eur": -8.40,
+      "self_consumption_ratio": 0.42,
+      "short_term_forecast": [
+        { "month": "2026-07", "total_eur": 325.10, "saving_eur": -6.90 },
+        { "month": "2026-08", "total_eur": 312.80, "saving_eur": -7.70 },
+        { "month": "2026-09", "total_eur": 321.30, "saving_eur": -8.90 },
+        { "month": "2026-10", "total_eur": 339.60, "saving_eur": -8.70 },
+        { "month": "2026-11", "total_eur": 365.20, "saving_eur": -9.60 },
+        { "month": "2026-12", "total_eur": 382.70, "saving_eur": -10.40 },
+        { "month": "2027-01", "total_eur": 388.10, "saving_eur": -9.60 },
+        { "month": "2027-02", "total_eur": 369.40, "saving_eur": -9.20 },
+        { "month": "2027-03", "total_eur": 343.50, "saving_eur": -7.80 },
+        { "month": "2027-04", "total_eur": 314.20, "saving_eur": -5.80 },
+        { "month": "2027-05", "total_eur": 301.40, "saving_eur": -4.60 },
+        { "month": "2027-06", "total_eur": 303.80, "saving_eur": -4.70 }
+      ],
+      "long_term_forecast": [
+        { "year": 2026, "annual_total_eur": 3995.0, "annual_saving_eur": -101.0 },
+        { "year": 2031, "annual_total_eur": 4480.0, "annual_saving_eur": 22.0 },
+        { "year": 2036, "annual_total_eur": 5160.0, "annual_saving_eur": 156.0 },
+        { "year": 2041, "annual_total_eur": 5890.0, "annual_saving_eur": 312.0 },
+        { "year": 2045, "annual_total_eur": 6480.0, "annual_saving_eur": 480.0 }
+      ],
+      "payback_month": 19
+    },
+    {
+      "id": "pv_battery",
+      "components": { "solar_pv": true, "battery": true, "heat_pump": false, "ev_charger": false },
+      "sizing": { "solar_pv_kwp": 6.5, "battery_kwh": 7.5 },
+      "monthly_cost_eur": {
+        "electricity": 58.10,
+        "heating": 120.80,
+        "mobility": 91.70,
+        "financing_installment": 66.50,
+        "total": 337.10
+      },
+      "monthly_saving_eur": -12.60,
+      "self_consumption_ratio": 0.68,
+      "short_term_forecast": [
+        { "month": "2026-07", "total_eur": 329.40, "saving_eur": -10.20 },
+        { "month": "2026-08", "total_eur": 317.60, "saving_eur": -10.80 },
+        { "month": "2026-09", "total_eur": 325.10, "saving_eur": -11.70 },
+        { "month": "2026-10", "total_eur": 343.80, "saving_eur": -12.10 },
+        { "month": "2026-11", "total_eur": 369.50, "saving_eur": -13.10 },
+        { "month": "2026-12", "total_eur": 387.20, "saving_eur": -14.20 },
+        { "month": "2027-01", "total_eur": 392.60, "saving_eur": -13.40 },
+        { "month": "2027-02", "total_eur": 373.10, "saving_eur": -12.90 },
+        { "month": "2027-03", "total_eur": 347.30, "saving_eur": -11.60 },
+        { "month": "2027-04", "total_eur": 318.70, "saving_eur": -9.70 },
+        { "month": "2027-05", "total_eur": 305.40, "saving_eur": -8.00 },
+        { "month": "2027-06", "total_eur": 307.10, "saving_eur": -7.20 }
+      ],
+      "long_term_forecast": [
+        { "year": 2026, "annual_total_eur": 4047.0, "annual_saving_eur": -153.0 },
+        { "year": 2031, "annual_total_eur": 4502.0, "annual_saving_eur": 0.0 },
+        { "year": 2036, "annual_total_eur": 5118.0, "annual_saving_eur": 198.0 },
+        { "year": 2041, "annual_total_eur": 5772.0, "annual_saving_eur": 430.0 },
+        { "year": 2045, "annual_total_eur": 6280.0, "annual_saving_eur": 680.0 }
+      ],
+      "payback_month": 27
+    },
+    {
+      "id": "pv_battery_heatpump",
+      "components": { "solar_pv": true, "battery": true, "heat_pump": true, "ev_charger": false },
+      "sizing": { "solar_pv_kwp": 7.0, "battery_kwh": 7.5, "heat_pump_kw": 9.0 },
+      "monthly_cost_eur": {
+        "electricity": 95.30,
+        "heating": 0.0,
+        "mobility": 91.70,
+        "financing_installment": 124.40,
+        "total": 311.40
+      },
+      "monthly_saving_eur": 13.10,
+      "self_consumption_ratio": 0.71,
+      "short_term_forecast": [
+        { "month": "2026-07", "total_eur": 295.60, "saving_eur": 22.60 },
+        { "month": "2026-08", "total_eur": 288.40, "saving_eur": 16.70 },
+        { "month": "2026-09", "total_eur": 296.10, "saving_eur": 16.30 },
+        { "month": "2026-10", "total_eur": 316.80, "saving_eur": 14.10 },
+        { "month": "2026-11", "total_eur": 348.20, "saving_eur": 7.40 },
+        { "month": "2026-12", "total_eur": 369.50, "saving_eur": 2.80 },
+        { "month": "2027-01", "total_eur": 376.90, "saving_eur": 1.60 },
+        { "month": "2027-02", "total_eur": 355.30, "saving_eur": 4.90 },
+        { "month": "2027-03", "total_eur": 325.70, "saving_eur": 10.00 },
+        { "month": "2027-04", "total_eur": 291.40, "saving_eur": 17.00 },
+        { "month": "2027-05", "total_eur": 276.80, "saving_eur": 20.00 },
+        { "month": "2027-06", "total_eur": 278.30, "saving_eur": 20.80 }
+      ],
+      "long_term_forecast": [
+        { "year": 2026, "annual_total_eur": 3819.0, "annual_saving_eur": 75.0 },
+        { "year": 2031, "annual_total_eur": 4180.0, "annual_saving_eur": 324.0 },
+        { "year": 2036, "annual_total_eur": 4661.0, "annual_saving_eur": 655.0 },
+        { "year": 2041, "annual_total_eur": 5174.0, "annual_saving_eur": 1028.0 },
+        { "year": 2045, "annual_total_eur": 5602.0, "annual_saving_eur": 1358.0 }
+      ],
+      "payback_month": 0
+    },
+    {
+      "id": "full_upgrade",
+      "components": { "solar_pv": true, "battery": true, "heat_pump": true, "ev_charger": true },
+      "sizing": { "solar_pv_kwp": 8.0, "battery_kwh": 10.0, "heat_pump_kw": 9.0 },
+      "monthly_cost_eur": {
+        "electricity": 145.60,
+        "heating": 0.0,
+        "mobility": 18.40,
+        "financing_installment": 187.00,
+        "total": 351.00
+      },
+      "monthly_saving_eur": -26.50,
+      "monthly_saving_post_payoff_eur": 160.50,
+      "self_consumption_ratio": 0.74,
+      "short_term_forecast": [
+        { "month": "2026-07", "total_eur": 333.80, "saving_eur": -15.60 },
+        { "month": "2026-08", "total_eur": 325.40, "saving_eur": -20.30 },
+        { "month": "2026-09", "total_eur": 332.90, "saving_eur": -20.50 },
+        { "month": "2026-10", "total_eur": 355.10, "saving_eur": -24.20 },
+        { "month": "2026-11", "total_eur": 389.60, "saving_eur": -34.00 },
+        { "month": "2026-12", "total_eur": 412.80, "saving_eur": -40.50 },
+        { "month": "2027-01", "total_eur": 420.30, "saving_eur": -41.80 },
+        { "month": "2027-02", "total_eur": 396.70, "saving_eur": -36.50 },
+        { "month": "2027-03", "total_eur": 363.40, "saving_eur": -27.70 },
+        { "month": "2027-04", "total_eur": 324.60, "saving_eur": -16.20 },
+        { "month": "2027-05", "total_eur": 307.90, "saving_eur": -11.10 },
+        { "month": "2027-06", "total_eur": 309.50, "saving_eur": -10.40 }
+      ],
+      "long_term_forecast": [
+        { "year": 2026, "annual_total_eur": 4172.0, "annual_saving_eur": -278.0 },
+        { "year": 2031, "annual_total_eur": 4495.0, "annual_saving_eur": 9.0 },
+        { "year": 2036, "annual_total_eur": 4870.0, "annual_saving_eur": 446.0 },
+        { "year": 2041, "annual_total_eur": 5224.0, "annual_saving_eur": 978.0 },
+        { "year": 2045, "annual_total_eur": 5520.0, "annual_saving_eur": 1440.0 }
+      ],
+      "payback_month": 142
+    }
+  ]
+}

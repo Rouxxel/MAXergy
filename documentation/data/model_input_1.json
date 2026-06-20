@@ -1,0 +1,62 @@
+{
+  "location": {
+    "postcode": "10115",
+    "country": "DE"
+  },
+
+  "household": {
+    "occupants": 3,
+    "electricity": {
+      "annual_kwh": 4200,
+      "current_tariff_type": "fixed",
+      "arbeitspreis_eur_per_kwh": 0.32,
+      "grundpreis_eur_per_month": 12.5,
+      "contract_end_date": "2026-12-31"
+    },
+    "roof": {
+      "available": true,
+      "usable_area_m2": 40,
+      "orientation": "south",
+      "tilt_deg": 30,
+      "shading_factor": 0.1
+    }
+  },
+
+  "heating": {
+    "fuel_type": "gas",
+    "annual_consumption": 14000,
+    "annual_spend_eur": 1450,
+    "building": {
+      "floor_area_m2": 120,
+      "insulation_class": "average"
+    }
+  },
+
+  "mobility": {
+    "vehicle_type": "petrol",
+    "annual_mileage_km": 12000,
+    "fuel_consumption_l_per_100km": 6.5,
+    "annual_fuel_spend_eur": 1100
+  },
+
+  "upgrade_candidates": {
+    "solar_pv": true,
+    "battery": true,
+    "heat_pump": true,
+    "ev_charger": true,
+    "solar_pv_kwp": null,
+    "battery_kwh": null,
+    "heat_pump_kw": null
+  },
+
+  "financing": {
+    "loan_term_years": 15,
+    "loan_rate_pct": 4.5,
+    "known_subsidy_eur": null
+  },
+
+  "forecast_horizon": {
+    "short_term_months": 12,
+    "long_term_years": 20
+  }
+}
