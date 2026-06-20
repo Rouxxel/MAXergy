@@ -43,11 +43,16 @@ export interface Heating {
   building: HeatingBuilding;
 }
 
-export interface Mobility {
+export interface Vehicle {
   vehicle_type: string;
   annual_mileage_km: number | null;
   fuel_consumption_l_per_100km: number | null;
   annual_fuel_spend_eur: number | null;
+}
+
+export interface Mobility {
+  vehicle_count: number;
+  vehicles: Vehicle[];
 }
 
 export interface UpgradeCandidates {

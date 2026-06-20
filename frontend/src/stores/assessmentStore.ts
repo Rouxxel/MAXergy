@@ -52,10 +52,8 @@ const initial: AssessmentDraft = {
     },
   },
   mobility: {
-    vehicle_type: "gas",
-    annual_mileage_km: 15000,
-    fuel_consumption_l_per_100km: 7,
-    annual_fuel_spend_eur: 1500,
+    vehicle_count: 0,
+    vehicles: [],
   },
   upgrade_candidates: {
     solar_pv: true,
@@ -98,7 +96,7 @@ export const useAssessmentStore = create<AssessmentState>()(
           !d.household?.electricity?.annual_kwh ||
           !d.heating?.fuel_type ||
           !d.heating?.building?.floor_area_m2 ||
-          !d.mobility?.vehicle_type ||
+          d.mobility?.vehicle_count === undefined ||
           !d.upgrade_candidates ||
           !d.financing?.loan_term_years ||
           !d.forecast_horizon?.short_term_months

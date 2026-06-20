@@ -7,6 +7,102 @@ const LocationSchema = z.object({
   country: z.string().min(1),
 });
 
+// Step-specific schemas for progressive validation
+export const StepCountrySchema = z.object({
+  location: z.object({
+    country: z.string().min(1),
+  }),
+});
+
+export const StepPostcodeSchema = z.object({
+  location: z.object({
+    postcode: z.string().min(1),
+  }),
+});
+
+export const StepOccupantsSchema = z.object({
+  household: z.object({
+    occupants: z.object({
+      count: z.number().min(1).max(20),
+    }),
+  }),
+});
+
+export const StepElectricitySchema = z.object({
+  household: z.object({
+    electricity: z.object({
+      annual_kwh: z.number().min(0),
+      current_tariff_type: z.string(),
+      arbeitspreis_eur_per_kwh: z.number().min(0),
+      grundpreis_eur_per_month: z.number().min(0),
+      contract_end_date: z.string().nullable(),
+    }),
+  }),
+});
+
+export const StepRoofSchema = z.object({
+  household: z.object({
+    roof: z.object({
+      available: z.boolean(),
+      usable_area_m2: z.number().nullable(),
+      orientation: z.string().nullable(),
+      tilt_deg: z.number().nullable(),
+      shading_factor: z.number().nullable(),
+    }),
+  }),
+});
+
+export const StepHeatingSchema = z.object({
+  heating: z.object({
+    fuel_type: z.string(),
+    annual_consumption: z.number().nullable(),
+    annual_spend_eur: z.number().nullable(),
+    building: z.object({
+      floor_area_m2: z.number().min(0),
+      insulation_class: z.string(),
+    }),
+  }),
+});
+
+export const StepMobilitySchema = z.object({
+  mobility: z.object({
+    vehicle_count: z.number().min(0).max(5),
+    vehicles: z.array(z.object({
+      vehicle_type: z.string(),
+      annual_mileage_km: z.number().nullable(),
+      fuel_consumption_l_per_100km: z.number().nullable(),
+      annual_fuel_spend_eur: z.number().nullable(),
+    })),
+  }),
+});
+
+export const StepUpgradesSchema = z.object({
+  upgrade_candidates: z.object({
+    solar_pv: z.boolean(),
+    battery: z.boolean(),
+    heat_pump: z.boolean(),
+    ev_charger: z.boolean(),
+    solar_pv_kwp: z.number().nullable(),
+    battery_kwh: z.number().nullable(),
+    heat_pump_kw: z.number().nullable(),
+  }),
+});
+
+export const StepFinancingSchema = z.object({
+  financing: z.object({
+    loan_term_years: z.number().min(1).max(30),
+    loan_rate_pct: z.number().min(0).max(100),
+    known_subsidy_eur: z.number().min(0),
+  }),
+});
+
+export const StepHorizonSchema = z.object({
+  forecast_horizon: z.object({
+    short_term_months: z.number().min(1).max(60),
+    long_term_years: z.number().min(1).max(30),
+  }),
+});
+
 // Household schemas
 const HouseholdOccupantsSchema = z.object({
   count: z.number().min(1).max(20),
@@ -48,11 +144,16 @@ const HeatingSchema = z.object({
 });
 
 // Mobility schema
-const MobilitySchema = z.object({
+const VehicleSchema = z.object({
   vehicle_type: z.string(),
   annual_mileage_km: z.number().nullable(),
   fuel_consumption_l_per_100km: z.number().nullable(),
   annual_fuel_spend_eur: z.number().nullable(),
+});
+
+const MobilitySchema = z.object({
+  vehicle_count: z.number().min(0).max(5),
+  vehicles: z.array(VehicleSchema),
 });
 
 // Upgrade candidates schema
@@ -158,13 +259,15 @@ const AdvisorMessageSchema = z.object({
 });
 
 export const AdvisorChatRequestSchema = z.object({
-  message: z.string().min(1),
-  context: z.string().nullable(),
+  user_message: z.string().min(1),
+  forecast_result: z.null(),
   assessment_id: z.string().nullable(),
 }) satisfies z.ZodType<AdvisorChatRequest>;
 
 export const AdvisorChatResponseSchema = z.object({
-  reply: z.string(),
+  advisor_message: z.string(),
+  context_used: z.array(z.string()),
+  suggestions: z.array(z.string()),
 }) satisfies z.ZodType<AdvisorChatResponse>;
 
 // Assessment response schema

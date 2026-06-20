@@ -20,7 +20,19 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { useAssessmentStore } from "@/stores/assessmentStore";
 import { useUiStore } from "@/stores/uiStore";
-import { HouseholdAssessmentSchema } from "@/services/validation";
+import {
+  HouseholdAssessmentSchema,
+  StepCountrySchema,
+  StepPostcodeSchema,
+  StepOccupantsSchema,
+  StepElectricitySchema,
+  StepRoofSchema,
+  StepHeatingSchema,
+  StepMobilitySchema,
+  StepUpgradesSchema,
+  StepFinancingSchema,
+  StepHorizonSchema,
+} from "@/services/validation";
 import { postAssessment } from "@/services/endpoints";
 
 export const Route = createFileRoute("/")({
@@ -123,7 +135,22 @@ function Onboarding() {
 
   const validate = (): string | undefined => {
     try {
-      HouseholdAssessmentSchema.parse(draft);
+      // Use step-specific validation to only validate fields for current step
+      const stepSchemas: Record<StepId, z.ZodSchema> = {
+        country: StepCountrySchema,
+        postcode: StepPostcodeSchema,
+        occupants: StepOccupantsSchema,
+        electricity: StepElectricitySchema,
+        roof: StepRoofSchema,
+        heating: StepHeatingSchema,
+        mobility: StepMobilitySchema,
+        upgrades: StepUpgradesSchema,
+        financing: StepFinancingSchema,
+        horizon: StepHorizonSchema,
+      };
+
+      const schema = stepSchemas[current];
+      schema.parse(draft);
       return undefined;
     } catch (e) {
       if (e instanceof z.ZodError) {
@@ -540,9 +567,12 @@ function StepView({ step }: { step: StepId }) {
                     className="h-12 pr-8"
                     type="number"
                     step="0.1"
+                    min="0"
+                    max="1"
                     value={draft.household?.roof?.shading_factor ?? ""}
                     onChange={(e) => {
                       const n = Number(e.target.value);
+                      const clamped = Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0.1));
                       setField("household", {
                         occupants: draft.household?.occupants ?? { count: 2 },
                         electricity: draft.household?.electricity ?? {
@@ -557,7 +587,7 @@ function StepView({ step }: { step: StepId }) {
                           usable_area_m2: draft.household?.roof?.usable_area_m2 ?? 50,
                           orientation: draft.household?.roof?.orientation ?? "south",
                           tilt_deg: draft.household?.roof?.tilt_deg ?? 30,
-                          shading_factor: Number.isFinite(n) ? n : 0.1,
+                          shading_factor: clamped,
                         },
                       });
                     }}
@@ -726,106 +756,158 @@ function StepView({ step }: { step: StepId }) {
         <Field title="Do you own a vehicle?" subtitle="We'll factor in fuel savings from charging at home.">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Vehicle type</Label>
+              <Label className="text-sm text-muted-foreground">How many vehicles do you have?</Label>
               <Select
-                value={draft.mobility?.vehicle_type}
-                onValueChange={(v) =>
-              setField("mobility", {
-                vehicle_type: v,
-                annual_mileage_km: draft.mobility?.annual_mileage_km ?? null,
-                fuel_consumption_l_per_100km: draft.mobility?.fuel_consumption_l_per_100km ?? null,
-                annual_fuel_spend_eur: draft.mobility?.annual_fuel_spend_eur ?? null,
-              })
-            }
+                value={draft.mobility?.vehicle_count?.toString() ?? "0"}
+                onValueChange={(v) => {
+                  const count = Number(v);
+                  const vehicles = Array.from({ length: count }, () => ({
+                    vehicle_type: "gas",
+                    annual_mileage_km: null,
+                    fuel_consumption_l_per_100km: null,
+                    annual_fuel_spend_eur: null,
+                  }));
+                  setField("mobility", {
+                    vehicle_count: count,
+                    vehicles,
+                  });
+                }}
               >
                 <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Select vehicle type" />
+                  <SelectValue placeholder="Select number of vehicles" />
                 </SelectTrigger>
                 <SelectContent>
-                  {VEHICLE_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="0">None</SelectItem>
+                  <SelectItem value="1">1 vehicle</SelectItem>
+                  <SelectItem value="2">2 vehicles</SelectItem>
+                  <SelectItem value="3">3 vehicles</SelectItem>
+                  <SelectItem value="4">4 vehicles</SelectItem>
+                  <SelectItem value="5">5+ vehicles</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Annual mileage</Label>
-              <div className="relative">
-                <Input
-                  inputMode="numeric"
-                  className="h-12 pr-12"
-                  type="number"
-                  value={draft.mobility?.annual_mileage_km ?? ""}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
-                    setField("mobility", {
-                      vehicle_type: draft.mobility?.vehicle_type ?? "gas",
-                      annual_mileage_km: Number.isFinite(n) ? n : 0,
-                      fuel_consumption_l_per_100km: draft.mobility?.fuel_consumption_l_per_100km ?? null,
-                      annual_fuel_spend_eur: draft.mobility?.annual_fuel_spend_eur ?? null,
-                    });
-                  }}
-                  placeholder="15000"
-                />
-                <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
-                  km
-                </span>
+            {draft.mobility?.vehicle_count && draft.mobility.vehicle_count > 0 && (
+              <div className="space-y-6">
+                {Array.from({ length: draft.mobility.vehicle_count }).map((_, index) => (
+                  <div key={index} className="space-y-4 rounded-lg border p-4">
+                    <h3 className="text-sm font-medium">Vehicle {index + 1}</h3>
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">Vehicle type</Label>
+                      <Select
+                        value={draft.mobility?.vehicles?.[index]?.vehicle_type ?? "gas"}
+                        onValueChange={(v) => {
+                          const newVehicles = [...(draft.mobility?.vehicles ?? [])];
+                          newVehicles[index] = {
+                            ...newVehicles[index],
+                            vehicle_type: v,
+                          };
+                          setField("mobility", {
+                            vehicle_count: draft.mobility?.vehicle_count ?? 0,
+                            vehicles: newVehicles,
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Select vehicle type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {VEHICLE_TYPES.map((t) => (
+                            <SelectItem key={t.value} value={t.value}>
+                              {t.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">Approximate annual mileage</Label>
+                      <div className="relative">
+                        <Input
+                          inputMode="numeric"
+                          className="h-12 pr-12"
+                          type="number"
+                          value={draft.mobility?.vehicles?.[index]?.annual_mileage_km ?? ""}
+                          onChange={(e) => {
+                            const n = Number(e.target.value);
+                            const newVehicles = [...(draft.mobility?.vehicles ?? [])];
+                            newVehicles[index] = {
+                              ...newVehicles[index],
+                              annual_mileage_km: Number.isFinite(n) ? n : 0,
+                            };
+                            setField("mobility", {
+                              vehicle_count: draft.mobility?.vehicle_count ?? 0,
+                              vehicles: newVehicles,
+                            });
+                          }}
+                          placeholder="15000"
+                        />
+                        <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
+                          km
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Fuel consumption</Label>
+                        <div className="relative">
+                          <Input
+                            inputMode="decimal"
+                            className="h-12 pr-12"
+                            type="number"
+                            step="0.1"
+                            value={draft.mobility?.vehicles?.[index]?.fuel_consumption_l_per_100km ?? ""}
+                            onChange={(e) => {
+                              const n = Number(e.target.value);
+                              const newVehicles = [...(draft.mobility?.vehicles ?? [])];
+                              newVehicles[index] = {
+                                ...newVehicles[index],
+                                fuel_consumption_l_per_100km: Number.isFinite(n) ? n : null,
+                              };
+                              setField("mobility", {
+                                vehicle_count: draft.mobility?.vehicle_count ?? 0,
+                                vehicles: newVehicles,
+                              });
+                            }}
+                            placeholder="7"
+                          />
+                          <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-xs text-muted-foreground">
+                            L/100km
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Annual fuel spend</Label>
+                        <div className="relative">
+                          <Input
+                            inputMode="decimal"
+                            className="h-12 pr-8"
+                            type="number"
+                            step="0.01"
+                            value={draft.mobility?.vehicles?.[index]?.annual_fuel_spend_eur ?? ""}
+                            onChange={(e) => {
+                              const n = Number(e.target.value);
+                              const newVehicles = [...(draft.mobility?.vehicles ?? [])];
+                              newVehicles[index] = {
+                                ...newVehicles[index],
+                                annual_fuel_spend_eur: Number.isFinite(n) ? n : null,
+                              };
+                              setField("mobility", {
+                                vehicle_count: draft.mobility?.vehicle_count ?? 0,
+                                vehicles: newVehicles,
+                              });
+                            }}
+                            placeholder="1500"
+                          />
+                          <span className="pointer-events-none absolute inset-y-0 right-3 grid place-items-center text-xs text-muted-foreground">
+                            €
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Fuel consumption</Label>
-                <div className="relative">
-                  <Input
-                    inputMode="decimal"
-                    className="h-12 pr-12"
-                    type="number"
-                    step="0.1"
-                    value={draft.mobility?.fuel_consumption_l_per_100km ?? ""}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      setField("mobility", {
-                        vehicle_type: draft.mobility?.vehicle_type ?? "gas",
-                        annual_mileage_km: draft.mobility?.annual_mileage_km ?? null,
-                        fuel_consumption_l_per_100km: Number.isFinite(n) ? n : null,
-                        annual_fuel_spend_eur: draft.mobility?.annual_fuel_spend_eur ?? null,
-                      });
-                    }}
-                    placeholder="7"
-                  />
-                  <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-xs text-muted-foreground">
-                    L/100km
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Annual fuel spend</Label>
-                <div className="relative">
-                  <Input
-                    inputMode="decimal"
-                    className="h-12 pr-8"
-                    type="number"
-                    step="0.01"
-                    value={draft.mobility?.annual_fuel_spend_eur ?? ""}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      setField("mobility", {
-                        vehicle_type: draft.mobility?.vehicle_type ?? "gas",
-                        annual_mileage_km: draft.mobility?.annual_mileage_km ?? null,
-                        fuel_consumption_l_per_100km: draft.mobility?.fuel_consumption_l_per_100km ?? null,
-                        annual_fuel_spend_eur: Number.isFinite(n) ? n : null,
-                      });
-                    }}
-                    placeholder="1500"
-                  />
-                  <span className="pointer-events-none absolute inset-y-0 right-3 grid place-items-center text-xs text-muted-foreground">
-                    €
-                  </span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </Field>
       );
