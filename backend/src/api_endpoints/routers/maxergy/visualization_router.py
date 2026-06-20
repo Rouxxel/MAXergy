@@ -14,17 +14,21 @@ from fastapi.responses import Response
 
 from src.utils.custom_logger import log_handler
 from src.utils.limiter import limiter as SlowLimiter
+from src.core_specs.configuration.config_loader import config_loader
 from src.models.forecast_schemas import ForecastResult
 from src.services.visualization.visualization_service import get_visualization_service
 
 router = APIRouter(
-    prefix="/visualization",
-    tags=["visualization"],
+    prefix=config_loader["endpoints"]["maxergy_visualization"]["endpoint_prefix"],
+    tags=[config_loader["endpoints"]["maxergy_visualization"]["endpoint_tag"]],
 )
 
 
-@router.post("/forecast-chart")
-@SlowLimiter.limit("10/m")
+@router.post(config_loader["endpoints"]["maxergy_visualization"]["endpoint_route"])
+@SlowLimiter.limit(
+    f"{config_loader['endpoints']['maxergy_visualization']['request_limit']}/"
+    f"{config_loader['endpoints']['maxergy_visualization']['unit_of_time_for_limit']}"
+)
 async def generate_forecast_chart(
     request: Request,
     forecast: ForecastResult,

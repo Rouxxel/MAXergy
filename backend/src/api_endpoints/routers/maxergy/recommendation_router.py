@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 from src.utils.custom_logger import log_handler
 from src.utils.limiter import limiter as SlowLimiter
+from src.core_specs.configuration.config_loader import config_loader
 from src.models.forecast_schemas import (
     HouseholdAssessment,
     ForecastResult,
@@ -20,13 +21,16 @@ from src.models.forecast_schemas import (
 )
 
 router = APIRouter(
-    prefix="/recommendation",
-    tags=["recommendation"],
+    prefix=config_loader["endpoints"]["maxergy_recommendation"]["endpoint_prefix"],
+    tags=[config_loader["endpoints"]["maxergy_recommendation"]["endpoint_tag"]],
 )
 
 
-@router.post("")
-@SlowLimiter.limit("5/m")
+@router.post(config_loader["endpoints"]["maxergy_recommendation"]["endpoint_route"])
+@SlowLimiter.limit(
+    f"{config_loader['endpoints']['maxergy_recommendation']['request_limit']}/"
+    f"{config_loader['endpoints']['maxergy_recommendation']['unit_of_time_for_limit']}"
+)
 async def generate_recommendation(
     request: Request, 
     assessment: HouseholdAssessment

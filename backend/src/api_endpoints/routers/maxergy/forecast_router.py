@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 from src.utils.custom_logger import log_handler
 from src.utils.limiter import limiter as SlowLimiter
+from src.core_specs.configuration.config_loader import config_loader
 from src.models.forecast_schemas import (
     HouseholdAssessment,
     ForecastResult,
@@ -20,13 +21,16 @@ from src.models.forecast_schemas import (
 from src.services.forecasting.baseline_service import get_forecasting_service
 
 router = APIRouter(
-    prefix="/forecast",
-    tags=["forecast"],
+    prefix=config_loader["endpoints"]["maxergy_forecast"]["endpoint_prefix"],
+    tags=[config_loader["endpoints"]["maxergy_forecast"]["endpoint_tag"]],
 )
 
 
-@router.post("")
-@SlowLimiter.limit("5/m")
+@router.post(config_loader["endpoints"]["maxergy_forecast"]["endpoint_route"])
+@SlowLimiter.limit(
+    f"{config_loader['endpoints']['maxergy_forecast']['request_limit']}/"
+    f"{config_loader['endpoints']['maxergy_forecast']['unit_of_time_for_limit']}"
+)
 async def generate_forecast(request: Request, assessment: HouseholdAssessment) -> ForecastResult:
     """
     Generate energy forecast for a household assessment.

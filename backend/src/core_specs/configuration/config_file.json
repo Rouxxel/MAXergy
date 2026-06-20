@@ -31,19 +31,40 @@
             "endpoint_route": "/"
         },
         
-        "example_endpoint_1": {
-            "request_limit": 3,
+        "maxergy_assessment": {
+            "request_limit": 10,
             "unit_of_time_for_limit": "m",
-            "endpoint_prefix": "/subsection",
-            "endpoint_tag": "tag_name",
-            "endpoint_route": "/endpoint_name"
+            "endpoint_prefix": "/assessment",
+            "endpoint_tag": "assessment",
+            "endpoint_route": ""
         },
-        "example_endpoint_2": {
+        "maxergy_forecast": {
             "request_limit": 5,
             "unit_of_time_for_limit": "m",
-            "endpoint_prefix": "/subsection",
-            "endpoint_tag": "tag_name",
-            "endpoint_route": "/endpoint_name"
+            "endpoint_prefix": "/forecast",
+            "endpoint_tag": "forecast",
+            "endpoint_route": ""
+        },
+        "maxergy_recommendation": {
+            "request_limit": 5,
+            "unit_of_time_for_limit": "m",
+            "endpoint_prefix": "/recommendation",
+            "endpoint_tag": "recommendation",
+            "endpoint_route": ""
+        },
+        "maxergy_advisor_chat": {
+            "request_limit": 10,
+            "unit_of_time_for_limit": "m",
+            "endpoint_prefix": "/advisor",
+            "endpoint_tag": "advisor",
+            "endpoint_route": "/chat"
+        },
+        "maxergy_visualization": {
+            "request_limit": 10,
+            "unit_of_time_for_limit": "m",
+            "endpoint_prefix": "/visualization",
+            "endpoint_tag": "visualization",
+            "endpoint_route": "/forecast-chart"
         }
     }
 }

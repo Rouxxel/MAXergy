@@ -26,13 +26,16 @@ from src.models.forecast_schemas import (
 _assessments_store: Dict[str, HouseholdAssessment] = {}
 
 router = APIRouter(
-    prefix="/assessment",
-    tags=["assessment"],
+    prefix=config_loader["endpoints"]["maxergy_assessment"]["endpoint_prefix"],
+    tags=[config_loader["endpoints"]["maxergy_assessment"]["endpoint_tag"]],
 )
 
 
-@router.post("")
-@SlowLimiter.limit("10/m")
+@router.post(config_loader["endpoints"]["maxergy_assessment"]["endpoint_route"])
+@SlowLimiter.limit(
+    f"{config_loader['endpoints']['maxergy_assessment']['request_limit']}/"
+    f"{config_loader['endpoints']['maxergy_assessment']['unit_of_time_for_limit']}"
+)
 async def submit_assessment(request: Request, assessment: HouseholdAssessment) -> AssessmentResponse:
     """
     Submit a household assessment for energy forecasting.

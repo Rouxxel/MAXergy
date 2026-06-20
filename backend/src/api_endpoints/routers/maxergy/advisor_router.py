@@ -14,19 +14,23 @@ from fastapi import APIRouter, HTTPException, Request
 
 from src.utils.custom_logger import log_handler
 from src.utils.limiter import limiter as SlowLimiter
+from src.core_specs.configuration.config_loader import config_loader
 from src.models.forecast_schemas import (
     AdvisorChatRequest,
     AdvisorChatResponse,
 )
 
 router = APIRouter(
-    prefix="/advisor",
-    tags=["advisor"],
+    prefix=config_loader["endpoints"]["maxergy_advisor_chat"]["endpoint_prefix"],
+    tags=[config_loader["endpoints"]["maxergy_advisor_chat"]["endpoint_tag"]],
 )
 
 
-@router.post("/chat")
-@SlowLimiter.limit("10/m")
+@router.post(config_loader["endpoints"]["maxergy_advisor_chat"]["endpoint_route"])
+@SlowLimiter.limit(
+    f"{config_loader['endpoints']['maxergy_advisor_chat']['request_limit']}/"
+    f"{config_loader['endpoints']['maxergy_advisor_chat']['unit_of_time_for_limit']}"
+)
 async def advisor_chat(request: Request, chat_request: AdvisorChatRequest) -> AdvisorChatResponse:
     """
     Chat with the AI advisor about energy upgrades.
