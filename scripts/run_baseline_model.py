@@ -306,11 +306,20 @@ def run_model(input_path: Path, output_path: Path) -> None:
             payback_month = None
 
         # Short-term scenario forecast
+        # For HP scenarios, the heating cost is 0 but the HP drives seasonal electricity
+        # demand. Split sc_elec_m into a flat non-HP portion and a seasonal HP portion
+        # (hp_load × arb / 12), then apply the heating seasonal weight to the HP slice.
+        # Weights average to 1.0, so the 12-month sum equals the annual total unchanged.
+        hp_elec_m = (hp_load_kwh * arb / 12) if has_hp else 0.0
+        sc_elec_flat_m = sc_elec_m - hp_elec_m  # non-seasonal remainder
+
         scen_stf = []
         for y, m in _iter_months(first_st_year, first_st_month, st_months):
             w = HEATING_SEASONAL_WEIGHTS[m - 1]
-            heat_m_scen = sc_heat_m * w  # 0 if HP scenario
-            total_m = sc_elec_m + heat_m_scen + sc_mob_m + monthly_installment
+            if has_hp:
+                total_m = sc_elec_flat_m + hp_elec_m * w + sc_mob_m + monthly_installment
+            else:
+                total_m = sc_elec_m + sc_heat_m * w + sc_mob_m + monthly_installment
             base_total_m = base_elec_monthly + base_heat_monthly * w + base_mob_monthly
             scen_stf.append({
                 "month": f"{y:04d}-{m:02d}",
