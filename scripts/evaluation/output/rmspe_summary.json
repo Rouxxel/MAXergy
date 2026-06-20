@@ -1,0 +1,452 @@
+{
+  "electricity": {
+    "constant": {
+      "1": {
+        "rmspe_percent": 0.4219,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 0.8305,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 1.2292,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 2.3782,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 1.249,
+        "n": 78
+      }
+    },
+    "deterministic_trend": {
+      "1": {
+        "rmspe_percent": 0.5821,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 1.4325,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 2.6022,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 5.3971,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 2.6809,
+        "n": 78
+      }
+    },
+    "ets": {
+      "1": {
+        "rmspe_percent": 1.2265,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 2.1801,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 3.4712,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 2.2981,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 2.3704,
+        "n": 78
+      }
+    },
+    "sarima": {
+      "1": {
+        "rmspe_percent": 1.7781,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 3.6326,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 5.3947,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 12.5602,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 6.1706,
+        "n": 78
+      }
+    }
+  },
+  "gas": {
+    "constant": {
+      "1": {
+        "rmspe_percent": 0.6837,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 0.7783,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 1.4688,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 2.4406,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 1.3538,
+        "n": 78
+      }
+    },
+    "deterministic_trend": {
+      "1": {
+        "rmspe_percent": 0.7958,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 1.5555,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 3.1778,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 6.3115,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 3.1586,
+        "n": 78
+      }
+    },
+    "ets": {
+      "1": {
+        "rmspe_percent": 0.6489,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 1.0325,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 1.5559,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 2.1697,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 1.3433,
+        "n": 78
+      }
+    },
+    "sarima": {
+      "1": {
+        "rmspe_percent": 2.6226,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 4.7499,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 8.9256,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 16.4816,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 8.5533,
+        "n": 78
+      }
+    }
+  },
+  "heating_oil": {
+    "constant": {
+      "1": {
+        "rmspe_percent": 2.2526,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 3.2436,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 4.8917,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 8.5446,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 4.7462,
+        "n": 78
+      }
+    },
+    "deterministic_trend": {
+      "1": {
+        "rmspe_percent": 2.3777,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 3.9401,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 6.7481,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 12.7692,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 6.6623,
+        "n": 78
+      }
+    },
+    "ets": {
+      "1": {
+        "rmspe_percent": 2.2297,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 3.2404,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 4.9219,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 8.601,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 4.7667,
+        "n": 78
+      }
+    },
+    "sarima": {
+      "1": {
+        "rmspe_percent": 3.7408,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 9.8898,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 12.8136,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 18.6802,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 11.4037,
+        "n": 78
+      }
+    }
+  },
+  "petrol": {
+    "constant": {
+      "1": {
+        "rmspe_percent": 2.0178,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 3.5967,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 4.4264,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 4.3321,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 3.578,
+        "n": 78
+      }
+    },
+    "deterministic_trend": {
+      "1": {
+        "rmspe_percent": 2.0586,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 3.8112,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 5.3227,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 6.8128,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 4.4763,
+        "n": 78
+      }
+    },
+    "ets": {
+      "1": {
+        "rmspe_percent": 2.018,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 3.597,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 4.4267,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 4.3325,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 3.5783,
+        "n": 78
+      }
+    },
+    "sarima": {
+      "1": {
+        "rmspe_percent": 2.8968,
+        "n": 24
+      },
+      "3": {
+        "rmspe_percent": 5.7107,
+        "n": 22
+      },
+      "6": {
+        "rmspe_percent": 5.9092,
+        "n": 19
+      },
+      "12": {
+        "rmspe_percent": 8.2538,
+        "n": 13
+      },
+      "overall": {
+        "rmspe_percent": 5.625,
+        "n": 78
+      }
+    }
+  },
+  "_best_by_horizon": {
+    "electricity": {
+      "1": [
+        0.4219,
+        "constant"
+      ],
+      "3": [
+        0.8305,
+        "constant"
+      ],
+      "6": [
+        1.2292,
+        "constant"
+      ],
+      "12": [
+        2.2981,
+        "ets"
+      ],
+      "overall": [
+        1.249,
+        "constant"
+      ]
+    },
+    "gas": {
+      "1": [
+        0.6489,
+        "ets"
+      ],
+      "3": [
+        0.7783,
+        "constant"
+      ],
+      "6": [
+        1.4688,
+        "constant"
+      ],
+      "12": [
+        2.1697,
+        "ets"
+      ],
+      "overall": [
+        1.3433,
+        "ets"
+      ]
+    },
+    "heating_oil": {
+      "1": [
+        2.2297,
+        "ets"
+      ],
+      "3": [
+        3.2404,
+        "ets"
+      ],
+      "6": [
+        4.8917,
+        "constant"
+      ],
+      "12": [
+        8.5446,
+        "constant"
+      ],
+      "overall": [
+        4.7462,
+        "constant"
+      ]
+    },
+    "petrol": {
+      "1": [
+        2.0178,
+        "constant"
+      ],
+      "3": [
+        3.5967,
+        "constant"
+      ],
+      "6": [
+        4.4264,
+        "constant"
+      ],
+      "12": [
+        4.3321,
+        "constant"
+      ],
+      "overall": [
+        3.578,
+        "constant"
+      ]
+    }
+  }
+}

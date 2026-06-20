@@ -1,0 +1,54 @@
+{
+  "metadata": {
+    "source": "BDEW — Bundesverband der Energie- und Wasserwirtschaft e.V.",
+    "profile_id": "H0",
+    "description": "Residential standard load profile for household electricity demand (Repräsentative VDEW-Lastprofile H0).",
+    "version": "VDEW 2000 / BDEW 2015 representative values",
+    "reference": "BDEW Standardlastprofile Strom — https://www.bdew.de/energie/standardlastprofile-strom/",
+    "unit": "normalised daily energy consumption (dimensionless; ratios used for monthly aggregation)",
+    "placeholder_note": "PLACEHOLDER — daily energy averages are derived from the published BDEW H0 seasonal day-type structure. The full official profile provides 96 quarter-hourly power values for each of 9 combinations (3 seasons × 3 day types). Replace the daily_energy_by_season_daytype values with integrals of the official quarter-hourly H0 curves once licensed data is available."
+  },
+  "seasons": {
+    "winter":     [11, 12, 1, 2],
+    "summer":     [5, 6, 7, 8],
+    "transition": [3, 4, 9, 10]
+  },
+  "daily_energy_by_season_daytype": {
+    "_note": "Values represent relative daily household electricity demand by season and day type. Source: derived from BDEW H0 annual energy distribution. PLACEHOLDER — replace with official BDEW quarter-hourly integrals.",
+    "winter": {
+      "weekday":        3.92,
+      "saturday":       3.63,
+      "sunday_holiday": 3.37
+    },
+    "transition": {
+      "weekday":        2.87,
+      "saturday":       2.72,
+      "sunday_holiday": 2.49
+    },
+    "summer": {
+      "weekday":        2.37,
+      "saturday":       2.23,
+      "sunday_holiday": 2.07
+    }
+  },
+  "national_holidays_fixed": [
+    {"month": 1,  "day": 1,  "name": "Neujahrstag"},
+    {"month": 5,  "day": 1,  "name": "Tag der Arbeit"},
+    {"month": 10, "day": 3,  "name": "Tag der Deutschen Einheit"},
+    {"month": 12, "day": 25, "name": "1. Weihnachtstag"},
+    {"month": 12, "day": 26, "name": "2. Weihnachtstag"}
+  ],
+  "national_holidays_easter_offset": [
+    {"offset": -2, "name": "Karfreitag"},
+    {"offset":  1, "name": "Ostermontag"},
+    {"offset": 39, "name": "Christi Himmelfahrt"},
+    {"offset": 50, "name": "Pfingstmontag"}
+  ],
+  "fallback_monthly_fractions": {
+    "_note": "Pre-computed annual fractions (summing to 1.0) used when the day-type calculation cannot run. Derived from the BDEW H0 energy distribution for a representative German year. PLACEHOLDER.",
+    "jan": 0.0960, "feb": 0.0889, "mar": 0.0857,
+    "apr": 0.0793, "may": 0.0773, "jun": 0.0748,
+    "jul": 0.0741, "aug": 0.0753, "sep": 0.0783,
+    "oct": 0.0831, "nov": 0.0878, "dec": 0.0994
+  }
+}
