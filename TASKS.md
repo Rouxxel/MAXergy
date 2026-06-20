@@ -1,5 +1,20 @@
 # Implementation Tasks - Cloover Energy Transition Planner
 
+## Data Contract (source of truth)
+
+The forecast/recommendation API contract is pinned by the example payloads:
+
+- **Input:** `documentation/data/model_input_1.json`
+- **Output:** `documentation/data/model_output_1.json`
+
+Schemas, scenario IDs, and calculations below are derived from these files. Keep
+them in sync — if the contract changes, update the example JSONs first, then the tasks.
+
+Input is **consumption-based** (annual kWh, tariff Arbeitspreis/Grundpreis, roof
+orientation/tilt/shading, heating fuel/consumption, mobility mileage/efficiency),
+not simple monthly-spend inputs. Output contains a `baseline` block plus a
+`scenarios[]` array, each with monthly + yearly forecast series.
+
 ## Phase 1: Backend API Foundation
 
 ### 1.1 Project Setup
@@ -11,11 +26,19 @@
 - [ ] Test basic API health endpoint
 
 ### 1.2 Core Schemas and Models
-- [ ] Create Pydantic schemas for household assessment (country, postal_code, monthly_electricity_spend, heating_type, heating_spend, vehicle_ownership, fuel_spend, roof_size, financing_term)
-- [ ] Create Pydantic schemas for scenario definitions (solar_only, solar_battery, solar_battery_heatpump, solar_battery_ev, full_upgrade)
-- [ ] Create Pydantic schemas for forecast results (monthly_savings, current_spend, future_spend, financing_cost, roi, payback_timeline, carbon_reduction)
-- [ ] Create Pydantic schemas for recommendation response
+Mirror `documentation/data/model_input_1.json` and `model_output_1.json` exactly.
+- [ ] Input — `location` (postcode, country)
+- [ ] Input — `household.occupants` and `household.electricity` (annual_kwh, current_tariff_type, arbeitspreis_eur_per_kwh, grundpreis_eur_per_month, contract_end_date)
+- [ ] Input — `household.roof` (available, usable_area_m2, orientation, tilt_deg, shading_factor)
+- [ ] Input — `heating` (fuel_type, annual_consumption, annual_spend_eur, building.floor_area_m2, building.insulation_class)
+- [ ] Input — `mobility` (vehicle_type, annual_mileage_km, fuel_consumption_l_per_100km, annual_fuel_spend_eur)
+- [ ] Input — `upgrade_candidates` (booleans + nullable solar_pv_kwp / battery_kwh / heat_pump_kw overrides)
+- [ ] Input — `financing` (loan_term_years, loan_rate_pct, known_subsidy_eur) and `forecast_horizon` (short_term_months, long_term_years)
+- [ ] Output — `baseline` (monthly_cost_eur breakdown, short_term_forecast[], long_term_forecast[])
+- [ ] Output — `scenarios[]` item (id, components, sizing, monthly_cost_eur incl. financing_installment, monthly_saving_eur, monthly_saving_post_payoff_eur, self_consumption_ratio, payback_month, short_term_forecast[], long_term_forecast[])
+- [ ] Create Pydantic schemas for recommendation response (selected scenario + ranked list)
 - [ ] Create Pydantic schemas for AI advisor requests/responses
+- [ ] Add a contract test that validates both example JSONs against the schemas
 
 ### 1.3 API Endpoints Structure
 - [ ] Create router for /assessment endpoint
@@ -78,25 +101,30 @@
 ## Phase 4: Recommendation Engine (Without Forecasting Model)
 
 ### 4.1 Scenario Generation Logic
+Scenario IDs are fixed by the data contract: `solar_only`, `pv_battery`,
+`pv_battery_heatpump`, `full_upgrade` (EV charging is folded into `full_upgrade`,
+not a standalone scenario).
 - [ ] Implement scenario generation based on household data
-- [ ] Create Solar Only scenario configuration
-- [ ] Create Solar + Battery scenario configuration
-- [ ] Create Solar + Battery + Heat Pump scenario configuration
-- [ ] Create Solar + Battery + EV Charger scenario configuration
-- [ ] Create Full Upgrade scenario configuration
-- [ ] Add scenario filtering based on household suitability (roof size, heating type, vehicle ownership)
+- [ ] Create `solar_only` scenario configuration
+- [ ] Create `pv_battery` scenario configuration
+- [ ] Create `pv_battery_heatpump` scenario configuration
+- [ ] Create `full_upgrade` scenario configuration (solar + battery + heat pump + EV charger)
+- [ ] Auto-size components when input overrides are null (solar_pv_kwp, battery_kwh, heat_pump_kw)
+- [ ] Add scenario filtering based on household suitability (roof availability/area, heating fuel_type, vehicle_type)
 
 ### 4.2 Cost Calculation Logic (Manual Calculations)
-- [ ] Implement current monthly spend calculation
-- [ ] Implement solar production estimation (simplified formula)
-- [ ] Implement battery savings calculation (simplified formula)
-- [ ] Implement heat pump savings calculation (simplified formula)
-- [ ] Implement EV charging savings calculation (simplified formula)
-- [ ] Implement financing cost calculation based on term
-- [ ] Implement monthly savings calculation formula
-- [ ] Implement ROI calculation
-- [ ] Implement payback timeline calculation
-- [ ] Implement carbon reduction estimation
+- [ ] Implement baseline monthly cost split (electricity / heating / mobility / total)
+- [ ] Implement baseline short-term (monthly) and long-term (yearly, with price escalation) forecast series
+- [ ] Implement solar production estimation from roof orientation/tilt/shading + kWp (simplified formula)
+- [ ] Implement battery savings and `self_consumption_ratio` calculation (simplified formula)
+- [ ] Implement heat pump savings — replaces heating spend, adds electricity load (simplified formula)
+- [ ] Implement EV charging savings — shifts mobility from fuel to electricity (simplified formula)
+- [ ] Implement financing installment from loan_term_years, loan_rate_pct, known_subsidy_eur
+- [ ] Implement monthly savings = baseline_total − (future_total + financing_installment)
+- [ ] Implement `monthly_saving_post_payoff_eur` (savings after loan is paid off)
+- [ ] Implement `payback_month` calculation (0 when immediately cash-flow positive)
+- [ ] Implement per-scenario short-term and long-term forecast series (with saving_eur deltas)
+- [ ] Implement ROI and carbon reduction estimation
 
 ### 4.3 Recommendation Selection
 - [ ] Implement scenario ranking by monthly savings
@@ -123,7 +151,10 @@
 - [ ] Display financing cost breakdown
 - [ ] Display ROI and payback timeline
 - [ ] Display carbon reduction metrics
-- [ ] Display recommended upgrade bundle
+- [ ] Display recommended upgrade bundle and self-consumption ratio
+- [ ] Plot short-term (monthly) baseline-vs-scenario cost chart from `short_term_forecast`
+- [ ] Plot long-term (yearly) savings chart from `long_term_forecast`
+- [ ] Surface payback month and post-payoff monthly savings
 - [ ] Add visual charts/graphs for data visualization
 
 ### 5.2 Scenario Comparison UI
