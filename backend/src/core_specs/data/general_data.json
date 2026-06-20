@@ -1,6 +1,6 @@
 {
     "metadata": {
-        "maintainer": "Sebastian Russo"
+        "maintainer": ["Sebastian Russo", "Jonas Brilz", "Valeria Hurtado"]
     },
 
     "languages": ["en", "es", "fr", "de", "ko", "it", "ru"]
