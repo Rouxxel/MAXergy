@@ -1,14 +1,8 @@
-# Cloover — Energy Transition Planner (Frontend Shell)
+# MAXergy — Energy Transition Planner (Frontend)
 
-Cloover is an AI-powered home-energy upgrade planner. This repository is the
-**mobile-first web shell** of the product: a fully navigable UI built with
-mocked data, ready to be wired to a real backend and later ported to React
-Native.
+MAXergy is an AI-powered home-energy upgrade planner for German households. This repository is the **mobile-first web shell** of the product: a fully navigable UI built with mocked data, ready to be wired to a real backend and later ported to React Native.
 
-The shell intentionally keeps all business logic out of components. Data
-fetching goes through a thin service layer, state lives in Zustand stores,
-and types are centralized — so swapping mocks for a real API (or porting to
-Expo) is a localized change.
+The shell intentionally keeps all business logic out of components. Data fetching goes through a thin service layer, state lives in Zustand stores, and types are centralized — so swapping mocks for a real API (or porting to Expo) is a localized change.
 
 ---
 
@@ -80,19 +74,18 @@ src/
 │   ├── resultsStore.ts      # Forecast result + selected scenario
 │   └── uiStore.ts           # Global error/toast state
 ├── types/index.ts           # All cross-cutting TS types
-├── styles.css               # Tailwind v4 theme tokens (Cloover palette)
+├── styles.css               # Tailwind v4 theme tokens (MAXergy palette)
 ├── router.tsx               # Router bootstrap
 └── routeTree.gen.ts         # AUTO-GENERATED — do not edit
 ```
 
 ### Design tokens
 
-The Cloover palette is defined as CSS variables in `src/styles.css`:
+The MAXergy palette is defined as CSS variables in `src/styles.css`:
 
 - Background `#111827`, Primary (lime) `#B8FF5A`, Secondary (violet) `#6C63FF`.
 - Font: Inter, loaded via `<link>` in `src/routes/__root.tsx`.
-- Never hardcode colors in components — use semantic Tailwind classes
-  (`bg-background`, `text-primary`, etc.).
+- Never hardcode colors in components — use semantic Tailwind classes (`bg-background`, `text-primary`, etc.).
 
 ---
 

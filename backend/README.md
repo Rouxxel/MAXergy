@@ -1,49 +1,53 @@
-# REST API Template
+# MAXergy Backend
 
-A production-ready FastAPI template for building scalable REST APIs with Docker support, rate limiting, logging, and security features.
+FastAPI backend for the MAXergy energy forecasting and recommendation system.
 
 ## Features
 
 - **FastAPI Framework**: Modern, fast web framework for building APIs
+- **Baseline Forecasting Model**: Calculates energy costs for 6 upgrade scenarios
+- **Recommendation Engine**: Selects optimal scenario based on monthly savings
+- **AI Advisor Integration**: Gemini LLM for personalized energy advice
 - **Docker Support**: Multi-stage Dockerfile and docker-compose for easy deployment
 - **Rate Limiting**: Built-in request rate limiting with SlowAPI
 - **Logging**: Comprehensive logging system with file and console output
-- **Security**: Non-root user in Docker, input validation, encryption utilities
 - **Configuration**: JSON-based configuration management via `config_loader`
 - **Health Checks**: Built-in health check endpoints
-- **Development Ready**: Hot reload support for development
 
 ## Project Structure
 
 ```
-python_rest_api_template/
+backend/
 ├── src/
 │   ├── api_endpoints/              # API route definitions
 │   │   ├── routers/
-│   │   │   └── specific_router_group/
-│   │   │       └── example_router.py   # Reference router — copy this pattern
-│   │   └── root_endpoint.py            # Root / health-check endpoint
+│   │   │   └── maxergy/            # MAXergy-specific routers
+│   │   │       ├── assessment_router.py
+│   │   │       ├── forecast_router.py
+│   │   │       ├── recommendation_router.py
+│   │   │       └── advisor_router.py
+│   │   └── root_endpoint.py        # Root / health-check endpoint
 │   ├── core_specs/                 # Core configuration and static data
 │   │   ├── configuration/
-│   │   │   ├── config_file.json        # Endpoint, network, logging settings
-│   │   │   └── config_loader.py        # Loads config_file.json → config_loader
+│   │   │   ├── config_file.json    # Endpoint, network, logging settings
+│   │   │   └── config_loader.py    # Loads config_file.json → config_loader
 │   │   └── data/
-│   │       ├── general_data.json         # Static reference data
-│   │       └── data_loader.py            # Loads general_data.json → data_loader
-│   ├── models/
-│   │   └── models_example.py           # Pydantic model pattern (Base/Create/Update/Response)
-│   ├── resources/                  # Database-related assets (placeholder)
-│   │   ├── db/                         # Migration files (add when needed)
-│   │   └── mock_db_jsons/              # Mock JSON tables (add when needed)
+│   │       ├── general_data.json   # Static reference data
+│   │       └── data_loader.py      # Loads general_data.json → data_loader
+│   ├── models/                     # Pydantic models
+│   │   ├── forecast_schemas.py     # Forecast and assessment schemas
+│   │   └── models_example.py       # Example model patterns
+│   ├── services/                   # Business logic
+│   │   ├── forecasting/
+│   │   │   └── baseline_service.py # Baseline forecasting service
+│   │   └── llm/
+│   │       ├── gemini_service.py    # Gemini AI advisor service
+│   │       └── __init__.py
 │   └── utils/
 │       ├── custom_logger.py        # Logging configuration (log_handler)
 │       ├── limiter.py              # Shared SlowAPI limiter instance
 │       ├── request_limiter.py      # 429 handler for rate-limit exceeded
-│       ├── validators.py           # Email, password, phone, token, UUID validators
-│       ├── en_de_crypt.py          # RSA encrypt/decrypt (requires .env keys)
-│       ├── keys_generator.py       # One-off script to generate RSA key pairs
-│       ├── secure_file_io.py       # Hardened atomic file read/write helpers
-│       └── pycache_n_logs_deleter.py  # Dev utility to purge __pycache__ / logs
+│       └── validators.py           # Email, password, phone, token, UUID validators
 ├── logs/                           # Log files (created automatically)
 ├── main.py                         # Application entry point
 ├── requirements.txt                # Python dependencies
@@ -54,6 +58,7 @@ python_rest_api_template/
 ├── .dockerignore
 ├── .gitignore
 ├── .pylintrc
+├── API_DOCUMENTATION.md            # API endpoint documentation
 └── README.md
 ```
 
@@ -63,7 +68,7 @@ python_rest_api_template/
 
 1. **Clone and setup**:
    ```bash
-   cd templates/python_rest_api_template
+   cd backend
    python -m venv venv
    source venv/bin/activate          # Windows: venv\Scripts\activate
    pip install -r requirements.txt
@@ -71,9 +76,8 @@ python_rest_api_template/
 
 2. **Configure environment**:
    ```bash
-   cp .env.example .env.local        # or copy .env on Windows
-   # Edit .env.local — set E_PRIVATE_KEY, E_PRIVATE_PASSWORD, E_PUBLIC_KEY
-   # (run src/utils/keys_generator.py once to generate them)
+   cp .env.example .env
+   # Edit .env — set GEMINI_API_KEY if using AI advisor
    ```
 
 3. **Run the application**:
@@ -90,15 +94,15 @@ python_rest_api_template/
 ### Option 2: Run with Docker (Production)
 
 ```bash
-cd templates/python_rest_api_template
+cd backend
 docker-compose up --build
 ```
 
 Or manually:
 
 ```bash
-docker build -t rest-api-template .
-docker run -p 8000:8000 --env-file .env rest-api-template
+docker build -t maxergy-backend .
+docker run -p 8000:8000 --env-file .env maxergy-backend
 ```
 
 ## Configuration
@@ -106,24 +110,22 @@ docker run -p 8000:8000 --env-file .env rest-api-template
 ### Environment Variables (.env)
 
 ```bash
-# Server (overridden by config_file.json when using python main.py)
+# Server
 SERVER_PORT=8000
 HOST=0.0.0.0
 RELOAD=false
 WORKERS=1
 
-# RSA encryption keys (required by en_de_crypt.py)
-E_PRIVATE_KEY=your_private_key_here
-E_PRIVATE_PASSWORD=your_private_password_here
-E_PUBLIC_KEY=your_public_key_here
+# AI Advisor
+GEMINI_API_KEY=your_gemini_api_key_here
 
 # Logging
 LOG_LEVEL=info
 
-# API metadata (read by main.py)
-API_TITLE=REST API Template
+# API metadata
+API_TITLE=MAXergy API
 API_VERSION=1.0.0
-API_DESCRIPTION=A template for building REST APIs with FastAPI
+API_DESCRIPTION=Energy forecasting and recommendation API
 ```
 
 ### JSON Configuration (`config_file.json` + `config_loader`)
@@ -180,50 +182,45 @@ from src.core_specs.data.data_loader import data_loader
 languages = data_loader["languages"]
 ```
 
-## Adding New Endpoints
+## API Endpoints
 
-Use `src/api_endpoints/routers/specific_router_group/example_router.py` as the canonical reference. It demonstrates every pattern the template expects:
-
-1. **Config-driven router** — prefix, tag, routes, and rate limits from `config_loader`
-2. **Pydantic models** — `ExampleItemCreate` / `ExampleItemResponse` from `src/models/models_example.py`
-3. **Validators** — optional `contact_email` validated via `validate_email_format`
-4. **Static data** — reads `languages` from `data_loader` in the list endpoint
-5. **Logging** — `log_handler` for debug/info messages
-6. **Rate limiting** — `@SlowLimiter.limit(...)` on every route
-
-**Steps to add a new endpoint group:**
-
-1. Add entries under `endpoints` in `config_file.json`.
-2. Copy `example_router.py` into a new file under `src/api_endpoints/routers/<your_group>/`.
-3. Create matching Pydantic models in `src/models/` (follow the Base / Create / Update / Response split in `models_example.py`).
-4. Register the router in `main.py`:
-   ```python
-   from src.api_endpoints.routers.your_group.your_router import router as your_router
-   app.include_router(your_router)
-   ```
-
-**Example endpoints shipped with the template:**
+The MAXergy backend provides the following endpoints:
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/` | Health check |
-| `GET` | `/subsection/items` | List example items |
-| `POST` | `/subsection/items` | Create an example item |
-| `GET` | `/subsection/items/{item_id}` | Get a single item by ID |
+| `POST` | `/api/v1/maxergy/assessment` | Submit household assessment |
+| `POST` | `/api/v1/maxergy/forecast` | Generate energy forecast |
+| `POST` | `/api/v1/maxergy/recommendation` | Get upgrade recommendations |
+| `POST` | `/api/v1/maxergy/advisor/chat` | Chat with AI advisor |
+
+See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for detailed request/response examples.
+
+## Services
+
+### Baseline Forecasting Service
+
+Located in `src/services/forecasting/baseline_service.py`, this service:
+- Wraps the baseline forecasting model
+- Generates forecasts for 6 upgrade scenarios
+- Caches results to avoid redundant computations
+- Handles temporary file cleanup
+
+### Gemini AI Advisor Service
+
+Located in `src/services/llm/gemini_service.py`, this service:
+- Integrates with Google Gemini API
+- Generates personalized energy advice
+- Provides recommendation summaries
+- Explains savings calculations
+- Detects upsell opportunities
+- Falls back to mock responses when API key is not configured
 
 ## Models (`src/models/`)
 
-`models_example.py` shows the recommended Pydantic split for any entity:
+The MAXergy backend uses Pydantic models for request/response validation:
 
-| Class | Role |
-|---|---|
-| `*Base` | Domain fields shared by every variant |
-| `*Create` | POST body (no server-managed fields like `id`) |
-| `*Update` | PATCH body (all fields optional) |
-| `*<Entity>` | Full persisted record including `id` |
-| `*Response` | API response shape (decoupled from storage) |
-
-Rename or replace this file per project; keep the split.
+- `forecast_schemas.py`: Contains `HouseholdAssessment`, `ForecastResult`, `Recommendation`, and related schemas
+- `models_example.py`: Example model patterns for reference
 
 ## Utilities (`src/utils/`)
 
@@ -232,17 +229,13 @@ Rename or replace this file per project; keep the split.
 | `custom_logger.py` | `log_handler` — use everywhere instead of `print` |
 | `limiter.py` | Shared `limiter` instance; decorate routes with `@limiter.limit(...)` |
 | `request_limiter.py` | Registered in `main.py` as the global 429 handler |
-| `validators.py` | `validate_email_format`, `validate_password_format`, `validate_phone_format`, token/UUID checks |
-| `en_de_crypt.py` | `encrypt_in` / `decrypt_out` for RSA-encrypted request fields |
-| `keys_generator.py` | Run once to generate `E_PRIVATE_KEY` / `E_PUBLIC_KEY` for `.env` |
-| `secure_file_io.py` | Safe atomic file reads/writes with path confinement |
-| `pycache_n_logs_deleter.py` | Dev cleanup script — set `ROOT_FOLDER` before running |
+| `validators.py` | Email, password, phone, token, UUID validators |
 
 ## Security Features
 
 - **Rate Limiting**: Configurable per-endpoint rate limiting via `config_file.json`
-- **Input Validation**: Pydantic models + `validators.py` helpers
-- **Encryption**: RSA utilities in `en_de_crypt.py` (keys from environment)
+- **Input Validation**: Pydantic models with strict type checking
+- **API Key Security**: Gemini API key stored in environment variables, never logged
 - **Non-root Docker**: Container runs as non-root user
 - **Environment Variables**: Sensitive data via `.env`, never committed
 
@@ -263,7 +256,6 @@ Rename or replace this file per project; keep the split.
 
 ### Docker Compose
 - **Production**: Optimized for deployment
-- **Services**: Ready for Redis, PostgreSQL integration (commented in compose file)
 - **Volumes**: Persistent log storage
 
 ## Development
@@ -287,13 +279,13 @@ pip freeze > requirements.txt
 
 ```bash
 pip install pytest
-pytest tests/    # add a tests/ directory as needed
+pytest src/tests/
 ```
 
 ## Deployment
 
 1. Update environment variables for production.
-2. Build: `docker build -t your-api:latest .`
+2. Build: `docker build -t maxergy-backend:latest .`
 3. Deploy: `docker-compose up -d`
 
 Compatible with AWS ECS/Fargate, Google Cloud Run, Azure Container Instances, Heroku, DigitalOcean App Platform, and similar.
@@ -305,41 +297,12 @@ Once running:
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 
-## Customization
-
-### Changing the API Title / Description
-
-Set `API_TITLE`, `API_VERSION`, and `API_DESCRIPTION` in `.env`, or edit the defaults in `main.py`.
-
-### Adding Database Support
-
-1. Uncomment the database service in `docker-compose.yml`.
-2. Add database dependencies to `requirements.txt`.
-3. Place migration files in `src/resources/db/` and mock fixtures in `src/resources/mock_db_jsons/`.
-4. Create connection utilities in `src/utils/` or a dedicated `src/resources/` module.
-
-### Adding Authentication
-
-1. Install auth dependencies (e.g. `python-jose`, `passlib`).
-2. Create auth utilities in `src/utils/`.
-3. Add authentication middleware or dependencies in `main.py`.
-
 ## Requirements
 
 - Python 3.12+
 - Docker (optional)
 - Docker Compose (optional)
 
-## Contributing
-
-This is a template — customize it for your specific needs:
-
-1. Update `config_file.json` and `.env`
-2. Copy `example_router.py` and `models_example.py` as starting points
-3. Implement your business logic
-4. Add tests
-5. Update this README
-
 ## License
 
-This template is provided as-is for educational and development purposes.
+Proprietary - All rights reserved
