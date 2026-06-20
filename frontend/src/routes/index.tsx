@@ -18,12 +18,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { useAssessmentStore } from "@/stores/assessmentStore";
-import type { HeatingType, SpendSeason, VehicleType } from "@/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Get started — Cloover" },
+      { title: "Get started — MAXergy" },
       { name: "description", content: "Tell us about your home in a minute and see your potential monthly savings." },
     ],
   }),
@@ -39,7 +38,7 @@ const COUNTRIES = [
   { code: "IT", name: "Italy" },
 ];
 
-const HEATING: { value: HeatingType; label: string }[] = [
+const HEATING_TYPES = [
   { value: "electric", label: "Electric" },
   { value: "gas", label: "Gas" },
   { value: "oil", label: "Oil" },
@@ -49,33 +48,38 @@ const HEATING: { value: HeatingType; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
-const SEASONS: { value: SpendSeason; label: string }[] = [
-  { value: "annual", label: "Annual average" },
-  { value: "spring", label: "Spring" },
-  { value: "summer", label: "Summer" },
-  { value: "autumn", label: "Autumn" },
-  { value: "winter", label: "Winter" },
-];
-
-const VEHICLE_TYPES: { value: VehicleType; label: string }[] = [
+const VEHICLE_TYPES = [
   { value: "ev", label: "Electric (EV)" },
   { value: "gas", label: "Gas / petrol / diesel" },
   { value: "hydrogen", label: "Hydrogen" },
 ];
 
-const MAX_TERM_MONTHS = 360; // 30 years
-const MIN_TERM_MONTHS = 1;
+const INSULATION_CLASSES = [
+  { value: "poor", label: "Poor" },
+  { value: "medium", label: "Medium" },
+  { value: "good", label: "Good" },
+  { value: "excellent", label: "Excellent" },
+];
+
+const ROOF_ORIENTATIONS = [
+  { value: "south", label: "South" },
+  { value: "south_east", label: "South-East" },
+  { value: "south_west", label: "South-West" },
+  { value: "east", label: "East" },
+  { value: "west", label: "West" },
+  { value: "north", label: "North" },
+];
 
 type StepId =
   | "country"
-  | "postal"
+  | "postcode"
+  | "occupants"
   | "electricity"
-  | "heatingType"
-  | "heatingSpend"
-  | "vehicle"
-  | "fuel"
   | "roof"
-  | "term";
+  | "heating"
+  | "mobility"
+  | "upgrades"
+  | "financing";
 
 function Onboarding() {
   const navigate = useNavigate();
@@ -83,16 +87,14 @@ function Onboarding() {
 
   const steps: StepId[] = [
     "country",
-    "postal",
+    "postcode",
+    "occupants",
     "electricity",
-    "heatingType",
-    ...(draft.heatingType && draft.heatingType !== "other"
-      ? (["heatingSpend"] as StepId[])
-      : []),
-    "vehicle",
-    ...(draft.vehicleOwnership ? (["fuel"] as StepId[]) : []),
     "roof",
-    "term",
+    "heating",
+    "mobility",
+    "upgrades",
+    "financing",
   ];
 
   const safeStep = Math.min(step, steps.length - 1);
@@ -102,50 +104,33 @@ function Onboarding() {
   const validate = (): string | undefined => {
     switch (current) {
       case "country":
-        return draft.country ? undefined : "Pick a country";
-      case "postal":
-        return z
-          .string()
-          .min(3, "Postal code looks too short")
-          .max(10)
-          .safeParse(draft.postalCode ?? "").success
+        return draft.location?.country ? undefined : "Pick a country";
+      case "postcode":
+        return draft.location?.postcode && draft.location.postcode.length >= 3
           ? undefined
           : "Enter a valid postal code";
+      case "occupants":
+        return draft.household?.occupants?.count && draft.household.occupants.count > 0
+          ? undefined
+          : "Enter number of occupants";
       case "electricity":
-        return typeof draft.monthlyElectricitySpend === "number" &&
-          draft.monthlyElectricitySpend > 0
+        return draft.household?.electricity?.annual_kwh && draft.household.electricity.annual_kwh > 0
           ? undefined
-          : "Enter your monthly electricity spend";
-      case "heatingType":
-        return draft.heatingType ? undefined : "Pick a heating type";
-      case "heatingSpend":
-        return typeof draft.heatingSpend === "number" && draft.heatingSpend >= 0
-          ? undefined
-          : "Enter your monthly heating spend";
-      case "vehicle":
-        if (!draft.vehicleOwnership) return undefined;
-        if (!draft.vehicleType) return "Pick the vehicle type";
-        if (!draft.vehicleCount || draft.vehicleCount < 1)
-          return "How many vehicles do you own?";
-        if (
-          typeof draft.vehicleMonthlyKm !== "number" ||
-          draft.vehicleMonthlyKm < 0
-        )
-          return "Enter your average monthly distance in km";
-        return undefined;
-      case "fuel":
-        return typeof draft.fuelSpend === "number" && draft.fuelSpend >= 0
-          ? undefined
-          : "Enter your monthly fuel spend";
+          : "Enter your annual electricity consumption";
       case "roof":
-        return typeof draft.roofSize === "number" && draft.roofSize > 0
+        return draft.household?.roof?.usable_area_m2 && draft.household.roof.usable_area_m2 > 0
           ? undefined
-          : "Enter your roof size in m²";
-      case "term":
-        return draft.financingTermMonths && draft.financingTermMonths >= MIN_TERM_MONTHS
+          : "Enter your roof size";
+      case "heating":
+        return draft.heating?.fuel_type ? undefined : "Pick a heating type";
+      case "mobility":
+        return draft.mobility?.vehicle_type ? undefined : "Pick a vehicle type";
+      case "financing":
+        return draft.financing?.loan_term_years && draft.financing.loan_term_years > 0
           ? undefined
           : "Pick a financing term";
     }
+    return undefined;
   };
 
   const onNext = () => {
@@ -156,10 +141,6 @@ function Onboarding() {
     }
     setError(undefined);
     if (safeStep === steps.length - 1) {
-      // Default heatingSpend to 0 when skipped
-      if (draft.heatingSpend === undefined) setField("heatingSpend", 0);
-      if (!draft.vehicleOwnership && draft.fuelSpend === undefined)
-        setField("fuelSpend", 0);
       navigate({ to: "/loading" });
       return;
     }
@@ -219,8 +200,10 @@ function StepView({ step }: { step: StepId }) {
           subtitle="We use this to estimate local energy prices and incentives."
         >
           <Select
-            value={draft.country}
-            onValueChange={(v) => setField("country", v)}
+            value={draft.location?.country}
+            onValueChange={(v) =>
+              setField("location", { postcode: draft.location?.postcode ?? "", country: v })
+            }
           >
             <SelectTrigger className="h-12">
               <SelectValue placeholder="Select country" />
@@ -235,89 +218,189 @@ function StepView({ step }: { step: StepId }) {
           </Select>
         </Field>
       );
-    case "postal":
+    case "postcode":
       return (
         <Field title="What's your postal code?" subtitle="Used to refine solar yield and tariffs.">
           <Input
             inputMode="numeric"
             className="h-12"
-            value={draft.postalCode ?? ""}
+            value={draft.location?.postcode ?? ""}
             onChange={(e) =>
-              setField("postalCode", e.target.value.replace(/[^0-9A-Za-z\s-]/g, ""))
+              setField("location", { country: draft.location?.country ?? "DE", postcode: e.target.value.replace(/[^0-9A-Za-z\s-]/g, "") })
             }
             placeholder="e.g. 10115"
           />
         </Field>
       );
+    case "occupants":
+      return (
+        <Field title="How many people live in your home?" subtitle="This helps estimate energy usage patterns.">
+          <Input
+            inputMode="numeric"
+            className="h-12"
+            type="number"
+            value={draft.household?.occupants?.count ?? ""}
+            onChange={(e) => {
+              const n = parseInt(e.target.value, 10);
+              setField("household", {
+                occupants: { count: Number.isFinite(n) && n > 0 ? n : 1 },
+                electricity: draft.household?.electricity ?? {
+                  annual_kwh: 3000,
+                  current_tariff_type: "standard",
+                  arbeitspreis_eur_per_kwh: 0.35,
+                  grundpreis_eur_per_month: 10,
+                  contract_end_date: null,
+                },
+                roof: draft.household?.roof ?? {
+                  available: true,
+                  usable_area_m2: 50,
+                  orientation: "south",
+                  tilt_deg: 30,
+                  shading_factor: 0.1,
+                },
+              });
+            }}
+            placeholder="2"
+          />
+        </Field>
+      );
     case "electricity":
       return (
-        <Field title="Monthly electricity spend" subtitle="Roughly, in euros per month.">
-          <div className="space-y-4">
-            <CurrencyInput
-              value={draft.monthlyElectricitySpend}
-              onChange={(v) => setField("monthlyElectricitySpend", v)}
+        <Field title="Annual electricity consumption" subtitle="In kWh per year. Check your bill.">
+          <div className="relative">
+            <Input
+              inputMode="numeric"
+              className="h-12 pr-12"
+              type="number"
+              value={draft.household?.electricity?.annual_kwh ?? ""}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                setField("household", {
+                  occupants: draft.household?.occupants ?? { count: 2 },
+                  electricity: {
+                    annual_kwh: Number.isFinite(n) ? n : 0,
+                    current_tariff_type: draft.household?.electricity?.current_tariff_type ?? "standard",
+                    arbeitspreis_eur_per_kwh: draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
+                    grundpreis_eur_per_month: draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
+                    contract_end_date: draft.household?.electricity?.contract_end_date ?? null,
+                  },
+                  roof: draft.household?.roof ?? {
+                    available: true,
+                    usable_area_m2: 50,
+                    orientation: "south",
+                    tilt_deg: 30,
+                    shading_factor: 0.1,
+                  },
+                });
+              }}
+              placeholder="3000"
             />
-            <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
-              <div className="pr-3">
-                <p className="text-base font-medium">Feed-in tariff</p>
-                <p className="text-xs text-muted-foreground">
-                  Einspeisevergütung — you get paid for solar you export.
-                </p>
-              </div>
-              <Switch
-                checked={!!draft.hasFeedInTariff}
-                onCheckedChange={(v) => setField("hasFeedInTariff", v)}
+            <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
+              kWh
+            </span>
+          </div>
+        </Field>
+      );
+    case "roof":
+      return (
+        <Field title="Roughly, how big is your roof?" subtitle="A rough estimate in square meters is fine.">
+          <div className="space-y-4">
+            <div className="relative">
+              <Input
+                inputMode="decimal"
+                className="h-12 pr-12"
+                type="number"
+                value={draft.household?.roof?.usable_area_m2 ?? ""}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  setField("household", {
+                    occupants: draft.household?.occupants ?? { count: 2 },
+                    electricity: draft.household?.electricity ?? {
+                      annual_kwh: 3000,
+                      current_tariff_type: "standard",
+                      arbeitspreis_eur_per_kwh: 0.35,
+                      grundpreis_eur_per_month: 10,
+                      contract_end_date: null,
+                    },
+                    roof: {
+                      available: true,
+                      usable_area_m2: Number.isFinite(n) ? n : 0,
+                      orientation: draft.household?.roof?.orientation ?? "south",
+                      tilt_deg: draft.household?.roof?.tilt_deg ?? 30,
+                      shading_factor: draft.household?.roof?.shading_factor ?? 0.1,
+                    },
+                  });
+                }}
+                placeholder="60"
               />
+              <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
+                m²
+              </span>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Roof orientation</Label>
+              <Select
+                value={draft.household?.roof?.orientation ?? "south"}
+                onValueChange={(v) =>
+                setField("household", {
+                  occupants: draft.household?.occupants ?? { count: 2 },
+                  electricity: draft.household?.electricity ?? {
+                    annual_kwh: 3000,
+                    current_tariff_type: "standard",
+                    arbeitspreis_eur_per_kwh: 0.35,
+                    grundpreis_eur_per_month: 10,
+                    contract_end_date: null,
+                  },
+                  roof: {
+                    available: true,
+                    usable_area_m2: draft.household?.roof?.usable_area_m2 ?? 50,
+                    orientation: v,
+                    tilt_deg: draft.household?.roof?.tilt_deg ?? 30,
+                    shading_factor: draft.household?.roof?.shading_factor ?? 0.1,
+                  },
+                })
+              }
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select orientation" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROOF_ORIENTATIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </Field>
       );
-    case "heatingType":
+    case "heating":
       return (
         <Field title="How do you heat your home?">
-          <Select
-            value={draft.heatingType}
-            onValueChange={(v) => setField("heatingType", v as HeatingType)}
-          >
-            <SelectTrigger className="h-12">
-              <SelectValue placeholder="Select heating type" />
-            </SelectTrigger>
-            <SelectContent>
-              {HEATING.map((h) => (
-                <SelectItem key={h.value} value={h.value}>
-                  {h.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-      );
-    case "heatingSpend":
-      return (
-        <Field
-          title="Monthly heating spend"
-          subtitle="Pick a season or stick with the annual average."
-        >
           <div className="space-y-4">
-            <CurrencyInput
-              value={draft.heatingSpend}
-              onChange={(v) => setField("heatingSpend", v)}
-            />
             <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">
-                Heating type this spend covers
-              </Label>
+              <Label className="text-sm text-muted-foreground">Heating type</Label>
               <Select
-                value={draft.heatingSpendType ?? draft.heatingType}
+                value={draft.heating?.fuel_type}
                 onValueChange={(v) =>
-                  setField("heatingSpendType", v as HeatingType)
-                }
+                setField("heating", {
+                  fuel_type: v,
+                  annual_consumption: draft.heating?.annual_consumption ?? null,
+                  annual_spend_eur: draft.heating?.annual_spend_eur ?? null,
+                  building: draft.heating?.building ?? {
+                    floor_area_m2: 120,
+                    insulation_class: "medium",
+                  },
+                })
+              }
               >
                 <SelectTrigger className="h-12">
                   <SelectValue placeholder="Select heating type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {HEATING.map((h) => (
+                  {HEATING_TYPES.map((h) => (
                     <SelectItem key={h.value} value={h.value}>
                       {h.label}
                     </SelectItem>
@@ -326,20 +409,55 @@ function StepView({ step }: { step: StepId }) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Time of year</Label>
+              <Label className="text-sm text-muted-foreground">Building floor area</Label>
+              <div className="relative">
+                <Input
+                  inputMode="numeric"
+                  className="h-12 pr-12"
+                  type="number"
+                  value={draft.heating?.building?.floor_area_m2 ?? ""}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    setField("heating", {
+                      fuel_type: draft.heating?.fuel_type ?? "gas",
+                      annual_consumption: draft.heating?.annual_consumption ?? null,
+                      annual_spend_eur: draft.heating?.annual_spend_eur ?? null,
+                      building: {
+                        floor_area_m2: Number.isFinite(n) ? n : 0,
+                        insulation_class: draft.heating?.building?.insulation_class ?? "medium",
+                      },
+                    });
+                  }}
+                  placeholder="120"
+                />
+                <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
+                  m²
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Insulation class</Label>
               <Select
-                value={draft.heatingSpendSeason ?? "annual"}
+                value={draft.heating?.building?.insulation_class ?? "medium"}
                 onValueChange={(v) =>
-                  setField("heatingSpendSeason", v as SpendSeason)
+                  setField("heating", {
+                    fuel_type: draft.heating?.fuel_type ?? "gas",
+                    annual_consumption: draft.heating?.annual_consumption ?? null,
+                    annual_spend_eur: draft.heating?.annual_spend_eur ?? null,
+                    building: {
+                      floor_area_m2: draft.heating?.building?.floor_area_m2 ?? 120,
+                      insulation_class: v,
+                    },
+                  })
                 }
               >
                 <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Select season" />
+                  <SelectValue placeholder="Select insulation class" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SEASONS.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
+                  {INSULATION_CLASSES.map((i) => (
+                    <SelectItem key={i.value} value={i.value}>
+                      {i.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -348,125 +466,138 @@ function StepView({ step }: { step: StepId }) {
           </div>
         </Field>
       );
-    case "vehicle":
+    case "mobility":
       return (
-        <Field
-          title="Do you own a vehicle?"
-          subtitle="We'll factor in fuel savings from charging at home."
-        >
+        <Field title="Do you own a vehicle?" subtitle="We'll factor in fuel savings from charging at home.">
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Vehicle type</Label>
+              <Select
+                value={draft.mobility?.vehicle_type}
+                onValueChange={(v) =>
+              setField("mobility", {
+                vehicle_type: v,
+                annual_mileage_km: draft.mobility?.annual_mileage_km ?? null,
+                fuel_consumption_l_per_100km: draft.mobility?.fuel_consumption_l_per_100km ?? null,
+                annual_fuel_spend_eur: draft.mobility?.annual_fuel_spend_eur ?? null,
+              })
+            }
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select vehicle type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {VEHICLE_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Annual mileage</Label>
+              <div className="relative">
+                <Input
+                  inputMode="numeric"
+                  className="h-12 pr-12"
+                  type="number"
+                  value={draft.mobility?.annual_mileage_km ?? ""}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    setField("mobility", {
+                      vehicle_type: draft.mobility?.vehicle_type ?? "gas",
+                      annual_mileage_km: Number.isFinite(n) ? n : 0,
+                      fuel_consumption_l_per_100km: draft.mobility?.fuel_consumption_l_per_100km ?? null,
+                      annual_fuel_spend_eur: draft.mobility?.annual_fuel_spend_eur ?? null,
+                    });
+                  }}
+                  placeholder="15000"
+                />
+                <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
+                  km
+                </span>
+              </div>
+            </div>
+          </div>
+        </Field>
+      );
+    case "upgrades":
+      return (
+        <Field title="Which upgrades are you considering?" subtitle="Select all that apply.">
+          <div className="space-y-3">
             <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
-              <span className="text-base font-medium">I own a vehicle</span>
+              <span className="text-base font-medium">Solar panels (PV)</span>
               <Switch
-                checked={!!draft.vehicleOwnership}
-                onCheckedChange={(v) => setField("vehicleOwnership", v)}
+                checked={!!draft.upgrade_candidates?.solar_pv}
+                onCheckedChange={(v) =>
+                  setField("upgrade_candidates", {
+                    solar_pv: v,
+                    battery: draft.upgrade_candidates?.battery ?? false,
+                    heat_pump: draft.upgrade_candidates?.heat_pump ?? false,
+                    ev_charger: draft.upgrade_candidates?.ev_charger ?? false,
+                    solar_pv_kwp: draft.upgrade_candidates?.solar_pv_kwp ?? null,
+                    battery_kwh: draft.upgrade_candidates?.battery_kwh ?? null,
+                    heat_pump_kw: draft.upgrade_candidates?.heat_pump_kw ?? null,
+                  })
+                }
               />
             </div>
-            {draft.vehicleOwnership ? (
-              <div className="space-y-4 rounded-2xl border border-border bg-card p-4">
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">
-                    Vehicle type
-                  </Label>
-                  <Select
-                    value={draft.vehicleType}
-                    onValueChange={(v) =>
-                      setField("vehicleType", v as VehicleType)
-                    }
-                  >
-                    <SelectTrigger className="h-12">
-                      <SelectValue placeholder="EV, gas or hydrogen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {VEHICLE_TYPES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">
-                      How many?
-                    </Label>
-                    <Input
-                      inputMode="numeric"
-                      className="h-12"
-                      value={draft.vehicleCount ?? ""}
-                      onChange={(e) => {
-                        const n = parseInt(e.target.value, 10);
-                        setField(
-                          "vehicleCount",
-                          Number.isFinite(n) && n > 0 ? n : 0,
-                        );
-                      }}
-                      placeholder="1"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">
-                      Avg km / month
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        inputMode="numeric"
-                        className="h-12 pr-12"
-                        value={draft.vehicleMonthlyKm ?? ""}
-                        onChange={(e) => {
-                          const n = Number(e.target.value);
-                          setField(
-                            "vehicleMonthlyKm",
-                            Number.isFinite(n) ? n : 0,
-                          );
-                        }}
-                        placeholder="1000"
-                      />
-                      <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
-                        km
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : null}
+            <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
+              <span className="text-base font-medium">Battery storage</span>
+              <Switch
+                checked={!!draft.upgrade_candidates?.battery}
+                onCheckedChange={(v) =>
+                  setField("upgrade_candidates", {
+                    solar_pv: draft.upgrade_candidates?.solar_pv ?? true,
+                    battery: v,
+                    heat_pump: draft.upgrade_candidates?.heat_pump ?? false,
+                    ev_charger: draft.upgrade_candidates?.ev_charger ?? false,
+                    solar_pv_kwp: draft.upgrade_candidates?.solar_pv_kwp ?? null,
+                    battery_kwh: draft.upgrade_candidates?.battery_kwh ?? null,
+                    heat_pump_kw: draft.upgrade_candidates?.heat_pump_kw ?? null,
+                  })
+                }
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
+              <span className="text-base font-medium">Heat pump</span>
+              <Switch
+                checked={!!draft.upgrade_candidates?.heat_pump}
+                onCheckedChange={(v) =>
+                  setField("upgrade_candidates", {
+                    solar_pv: draft.upgrade_candidates?.solar_pv ?? true,
+                    battery: draft.upgrade_candidates?.battery ?? false,
+                    heat_pump: v,
+                    ev_charger: draft.upgrade_candidates?.ev_charger ?? false,
+                    solar_pv_kwp: draft.upgrade_candidates?.solar_pv_kwp ?? null,
+                    battery_kwh: draft.upgrade_candidates?.battery_kwh ?? null,
+                    heat_pump_kw: draft.upgrade_candidates?.heat_pump_kw ?? null,
+                  })
+                }
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
+              <span className="text-base font-medium">EV charger</span>
+              <Switch
+                checked={!!draft.upgrade_candidates?.ev_charger}
+                onCheckedChange={(v) =>
+                  setField("upgrade_candidates", {
+                    solar_pv: draft.upgrade_candidates?.solar_pv ?? true,
+                    battery: draft.upgrade_candidates?.battery ?? false,
+                    heat_pump: draft.upgrade_candidates?.heat_pump ?? false,
+                    ev_charger: v,
+                    solar_pv_kwp: draft.upgrade_candidates?.solar_pv_kwp ?? null,
+                    battery_kwh: draft.upgrade_candidates?.battery_kwh ?? null,
+                    heat_pump_kw: draft.upgrade_candidates?.heat_pump_kw ?? null,
+                  })
+                }
+              />
+            </div>
           </div>
         </Field>
       );
-    case "fuel":
-      return (
-        <Field
-          title="Monthly fuel or charging spend"
-          subtitle="For your current vehicle(s)."
-        >
-          <CurrencyInput
-            value={draft.fuelSpend}
-            onChange={(v) => setField("fuelSpend", v)}
-          />
-        </Field>
-      );
-    case "roof":
-      return (
-        <Field title="Roughly, how big is your roof?" subtitle="A rough estimate in square meters is fine.">
-          <div className="relative">
-            <Input
-              inputMode="decimal"
-              className="h-12 pr-12"
-              value={draft.roofSize ?? ""}
-              onChange={(e) => {
-                const n = Number(e.target.value);
-                setField("roofSize", Number.isFinite(n) ? n : 0);
-              }}
-              placeholder="60"
-            />
-            <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
-              m²
-            </span>
-          </div>
-        </Field>
-      );
-    case "term":
+    case "financing":
       return <FinancingTermStep />;
   }
 }
@@ -494,97 +625,65 @@ function Field({
   );
 }
 
-function CurrencyInput({
-  value,
-  onChange,
-}: {
-  value: number | undefined;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="relative">
-      <span className="pointer-events-none absolute inset-y-0 left-4 grid place-items-center text-sm text-muted-foreground">
-        €
-      </span>
-      <Input
-        inputMode="decimal"
-        className="h-12 pl-9"
-        value={value ?? ""}
-        onChange={(e) => {
-          const n = Number(e.target.value);
-          onChange(Number.isFinite(n) ? n : 0);
-        }}
-        placeholder="0"
-      />
-    </div>
-  );
-}
-
 function FinancingTermStep() {
   const { draft, setField } = useAssessmentStore();
-  const months = draft.financingTermMonths ?? MIN_TERM_MONTHS;
-  const years = Math.floor(months / 12);
-  const remMonths = months % 12;
+  const years = draft.financing?.loan_term_years ?? 7;
 
-  const clamp = (n: number) =>
-    Math.min(MAX_TERM_MONTHS, Math.max(MIN_TERM_MONTHS, Math.round(n)));
-
-  const setMonths = (m: number) => setField("financingTermMonths", clamp(m));
+  const setYears = (y: number) =>
+    setField("financing", {
+      loan_term_years: Math.max(1, Math.min(30, y)),
+      loan_rate_pct: draft.financing?.loan_rate_pct ?? 5.5,
+      known_subsidy_eur: draft.financing?.known_subsidy_eur ?? 0,
+    });
 
   return (
     <Field
       title="Preferred financing term"
-      subtitle="Drag the slider, or type an exact duration. Longer terms mean lower monthly payments."
+      subtitle="Longer terms mean lower monthly payments. Shorter terms mean less total interest."
     >
       <div className="space-y-6">
         <div className="rounded-2xl border border-border bg-card p-4">
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-muted-foreground">Term</span>
             <span className="text-lg font-semibold text-primary">
-              {years > 0 ? `${years} yr${years === 1 ? "" : "s"}` : ""}
-              {years > 0 && remMonths > 0 ? " " : ""}
-              {remMonths > 0 || years === 0
-                ? `${remMonths || months} mo${(remMonths || months) === 1 ? "" : "s"}`
-                : ""}
+              {years} year{years === 1 ? "" : "s"}
             </span>
           </div>
           <Slider
             className="mt-4"
-            min={MIN_TERM_MONTHS}
-            max={MAX_TERM_MONTHS}
+            min={1}
+            max={30}
             step={1}
-            value={[months]}
-            onValueChange={(v) => setMonths(v[0] ?? MIN_TERM_MONTHS)}
+            value={[years]}
+            onValueChange={(v) => setYears(v[0] ?? 7)}
           />
           <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-            <span>1 mo</span>
-            <span>30 yrs</span>
+            <span>1 year</span>
+            <span>30 years</span>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Years</Label>
+        <div className="space-y-2">
+          <Label className="text-sm text-muted-foreground">Loan rate (%)</Label>
+          <div className="relative">
             <Input
-              inputMode="numeric"
-              className="h-12"
-              value={years}
+              inputMode="decimal"
+              className="h-12 pr-8"
+              type="number"
+              step="0.1"
+              value={draft.financing?.loan_rate_pct ?? ""}
               onChange={(e) => {
-                const y = Math.max(0, parseInt(e.target.value, 10) || 0);
-                setMonths(y * 12 + remMonths);
+                const n = Number(e.target.value);
+                setField("financing", {
+                  loan_term_years: draft.financing?.loan_term_years ?? 7,
+                  loan_rate_pct: Number.isFinite(n) ? n : 5.5,
+                  known_subsidy_eur: draft.financing?.known_subsidy_eur ?? 0,
+                });
               }}
+              placeholder="5.5"
             />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Months</Label>
-            <Input
-              inputMode="numeric"
-              className="h-12"
-              value={remMonths}
-              onChange={(e) => {
-                const m = Math.max(0, parseInt(e.target.value, 10) || 0);
-                setMonths(years * 12 + m);
-              }}
-            />
+            <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
+              %
+            </span>
           </div>
         </div>
       </div>

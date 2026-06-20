@@ -8,7 +8,7 @@ import { useResultsStore } from "@/stores/resultsStore";
 import type { Scenario } from "@/types";
 
 export const Route = createFileRoute("/compare")({
-  head: () => ({ meta: [{ title: "Compare scenarios — Cloover" }] }),
+  head: () => ({ meta: [{ title: "Compare scenarios — MAXergy" }] }),
   component: Compare,
 });
 
@@ -23,8 +23,8 @@ function Compare() {
     if (!forecast) return [] as Scenario[];
     return [...forecast.scenarios].sort((a, b) =>
       sortDesc
-        ? b.monthlySavings - a.monthlySavings
-        : a.monthlySavings - b.monthlySavings,
+        ? b.monthly_saving_eur - a.monthly_saving_eur
+        : a.monthly_saving_eur - b.monthly_saving_eur,
     );
   }, [forecast, sortDesc]);
 
@@ -80,6 +80,12 @@ function Compare() {
         {sorted.map((s) => {
           const selected = selectedScenarioId === s.id;
           const open = openId === s.id;
+          const components = [
+            s.components.solar_pv && "Solar PV",
+            s.components.battery && "Battery",
+            s.components.heat_pump && "Heat Pump",
+            s.components.ev_charger && "EV Charger",
+          ].filter(Boolean);
           return (
             <li
               key={s.id}
@@ -94,20 +100,20 @@ function Compare() {
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold">{s.name}</span>
-                    {s.recommended ? (
+                    <span className="truncate font-semibold">Scenario {s.id}</span>
+                    {selected ? (
                       <span className="rounded-full bg-secondary/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
-                        Recommended
+                        Selected
                       </span>
                     ) : null}
                   </div>
                   <div className="mt-1 truncate text-xs text-muted-foreground">
-                    {s.components.join(" · ")}
+                    {components.join(" · ")}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-bold text-primary tabular-nums">
-                    {euro(s.monthlySavings)}
+                    {euro(s.monthly_saving_eur)}
                   </div>
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                     /month
@@ -118,12 +124,9 @@ function Compare() {
               {open ? (
                 <div className="border-t border-border p-4">
                   <div className="grid grid-cols-3 gap-3 text-center">
-                    <Stat label="Upfront" value={euro(s.upfrontCost)} />
-                    <Stat label="Financing" value={`${euro(s.financingCost)}/mo`} />
-                    <Stat label="Payback" value={`${s.paybackYears.toFixed(1)} yr`} />
-                  </div>
-                  <div className="mt-3 text-center text-xs text-muted-foreground">
-                    Cuts {Math.round(s.carbonReductionKg).toLocaleString()} kg CO₂e / year
+                    <Stat label="Monthly payment" value={euro(s.financing_installment_eur)} />
+                    <Stat label="Self-consumption" value={`${(s.self_consumption_ratio * 100).toFixed(0)}%`} />
+                    <Stat label="Payback" value={s.payback_month ? `${(s.payback_month / 12).toFixed(1)} yr` : "N/A"} />
                   </div>
                   <Button
                     onClick={() => selectScenario(s.id)}

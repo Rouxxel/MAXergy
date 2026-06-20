@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useResultsStore } from "@/stores/resultsStore";
 
 export const Route = createFileRoute("/results")({
-  head: () => ({ meta: [{ title: "Your savings — Cloover" }] }),
+  head: () => ({ meta: [{ title: "Your savings — MAXergy" }] }),
   component: Results,
 });
 
@@ -38,10 +38,11 @@ function Results() {
     );
   }
 
-  const futurePct = Math.max(
-    8,
-    Math.round((forecast.futureSpend / forecast.currentSpend) * 100),
-  );
+  const baselineTotal = forecast.baseline.monthly_cost_eur.total;
+  const selectedScenario = recommendation.selected_scenario;
+  const scenarioTotal = selectedScenario.monthly_cost_eur.total;
+  const monthlySavings = baselineTotal - scenarioTotal;
+  const futurePct = Math.max(8, Math.round((scenarioTotal / baselineTotal) * 100));
 
   return (
     <AppShell>
@@ -60,7 +61,7 @@ function Results() {
           You could save
         </div>
         <div className="mt-2 text-6xl font-extrabold tracking-tight text-primary tabular-nums">
-          {euro(forecast.monthlySavings)}
+          {euro(monthlySavings)}
         </div>
         <div className="mt-1 text-sm text-muted-foreground">every month</div>
       </section>
@@ -71,10 +72,10 @@ function Results() {
             Today vs after upgrade
           </div>
           <div className="mt-3 space-y-3">
-            <Bar label="Now" amount={forecast.currentSpend} pct={100} tone="muted" />
+            <Bar label="Now" amount={baselineTotal} pct={100} tone="muted" />
             <Bar
               label="After"
-              amount={forecast.futureSpend}
+              amount={scenarioTotal}
               pct={futurePct}
               tone="primary"
             />
@@ -83,23 +84,23 @@ function Results() {
 
         <div className="grid grid-cols-2 gap-3">
           <MetricCard
-            label="ROI"
-            value={`${forecast.roi.toFixed(1)}%`}
-            accent="secondary"
-            hint="Annualized"
+            label="Monthly payment"
+            value={euro(selectedScenario.financing_installment_eur)}
+            hint="Financing"
+          />
+          <MetricCard
+            label="Self-consumption"
+            value={`${(selectedScenario.self_consumption_ratio * 100).toFixed(0)}%`}
+            hint="Solar used directly"
           />
           <MetricCard
             label="Payback"
-            value={`${forecast.paybackTimeline.toFixed(1)} yrs`}
+            value={selectedScenario.payback_month ? `${(selectedScenario.payback_month / 12).toFixed(1)} yrs` : "N/A"}
           />
           <MetricCard
-            label="Financing"
-            value={`${euro(forecast.financingCost)}/mo`}
-          />
-          <MetricCard
-            label="CO₂ saved"
-            value={`${(forecast.carbonReduction / 1000).toFixed(1)} t`}
-            hint="per year"
+            label="Monthly saving"
+            value={euro(selectedScenario.monthly_saving_eur)}
+            accent="primary"
           />
         </div>
 
@@ -108,17 +109,29 @@ function Results() {
             <TrendingUp className="h-3.5 w-3.5" /> Recommended bundle
           </div>
           <div className="mt-2 text-lg font-semibold">
-            {recommendation.scenario.name}
+            Scenario {selectedScenario.id}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            {recommendation.scenario.components.map((c) => (
-              <span
-                key={c}
-                className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-              >
-                {c}
+            {selectedScenario.components.solar_pv && (
+              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                Solar PV ({selectedScenario.sizing.solar_pv_kwp} kWp)
               </span>
-            ))}
+            )}
+            {selectedScenario.components.battery && (
+              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                Battery ({selectedScenario.sizing.battery_kwh} kWh)
+              </span>
+            )}
+            {selectedScenario.components.heat_pump && (
+              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                Heat Pump ({selectedScenario.sizing.heat_pump_kw} kW)
+              </span>
+            )}
+            {selectedScenario.components.ev_charger && (
+              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                EV Charger
+              </span>
+            )}
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
             {recommendation.reasoning}

@@ -7,10 +7,10 @@ import { AppShell, BrandMark } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { postAdvisorChat } from "@/services/endpoints";
-import type { AdvisorMessage } from "@/types";
+import { useResultsStore } from "@/stores/resultsStore";
 
 export const Route = createFileRoute("/advisor")({
-  head: () => ({ meta: [{ title: "AI advisor — Cloover" }] }),
+  head: () => ({ meta: [{ title: "AI advisor — MAXergy" }] }),
   component: Advisor,
 });
 
@@ -20,13 +20,21 @@ const QUICK = [
   "What if I change financing term?",
 ];
 
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: number;
+}
+
 function Advisor() {
-  const [messages, setMessages] = useState<AdvisorMessage[]>([
+  const { forecast } = useResultsStore();
+  const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
       content:
-        "Hi! I'm your Cloover advisor. Ask me anything about your recommendation, savings, or financing options.",
+        "Hi! I'm your MAXergy advisor. Ask me anything about your recommendation, savings, or financing options.",
       createdAt: Date.now(),
     },
   ]);
@@ -35,7 +43,11 @@ function Advisor() {
 
   const send = useMutation({
     mutationFn: (text: string) =>
-      postAdvisorChat({ message: text, history: messages }),
+      postAdvisorChat({
+        message: text,
+        context: forecast ? JSON.stringify(forecast) : null,
+        assessment_id: null,
+      }),
     onSuccess: (res) => {
       setMessages((m) => [
         ...m,
@@ -73,65 +85,63 @@ function Advisor() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background font-sans text-foreground">
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 pt-6">
-        <header className="mb-4 flex items-center justify-between">
-          <Link
-            to="/results"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back
-          </Link>
-          <BrandMark />
-        </header>
-
-        <div
-          ref={scrollRef}
-          className="flex-1 space-y-3 overflow-y-auto pb-4"
+    <AppShell>
+      <header className="mb-4 flex items-center justify-between">
+        <Link
+          to="/results"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
-          {messages.map((m) => (
-            <Bubble key={m.id} role={m.role} content={m.content} />
-          ))}
-          {send.isPending ? <Bubble role="assistant" content="…" pulse /> : null}
-        </div>
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Link>
+        <BrandMark />
+      </header>
 
-        <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto pb-1">
-          {QUICK.map((q) => (
-            <button
-              key={q}
-              onClick={() => submit(q)}
-              disabled={send.isPending}
-              className="shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground disabled:opacity-50"
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit(input);
-          }}
-          className="sticky bottom-0 mb-4 flex items-center gap-2 rounded-2xl border border-border bg-card p-2"
-        >
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about your savings…"
-            className="h-10 border-0 bg-transparent focus-visible:ring-0"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!input.trim() || send.isPending}
-            className="h-10 w-10 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            <SendHorizonal className="h-4 w-4" />
-          </Button>
-        </form>
+      <div
+        ref={scrollRef}
+        className="flex-1 space-y-3 overflow-y-auto pb-4"
+      >
+        {messages.map((m) => (
+          <Bubble key={m.id} role={m.role} content={m.content} />
+        ))}
+        {send.isPending ? <Bubble role="assistant" content="…" pulse /> : null}
       </div>
-    </div>
+
+      <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto pb-1">
+        {QUICK.map((q) => (
+          <button
+            key={q}
+            onClick={() => submit(q)}
+            disabled={send.isPending}
+            className="shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground disabled:opacity-50"
+          >
+            {q}
+          </button>
+        ))}
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit(input);
+        }}
+        className="sticky bottom-0 mb-4 flex items-center gap-2 rounded-2xl border border-border bg-card p-2"
+      >
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask about your savings…"
+          className="h-10 border-0 bg-transparent focus-visible:ring-0"
+        />
+        <Button
+          type="submit"
+          size="icon"
+          disabled={!input.trim() || send.isPending}
+          className="h-10 w-10 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          <SendHorizonal className="h-4 w-4" />
+        </Button>
+      </form>
+    </AppShell>
   );
 }
 
