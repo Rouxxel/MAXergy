@@ -24,6 +24,7 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  suggestions?: string[];
   createdAt: number;
 }
 
@@ -44,8 +45,8 @@ function Advisor() {
   const send = useMutation({
     mutationFn: (text: string) =>
       postAdvisorChat({
-        message: text,
-        context: forecast ? JSON.stringify(forecast) : null,
+        user_message: text,
+        forecast_result: forecast || null,
         assessment_id: null,
       }),
     onSuccess: (res) => {
@@ -54,7 +55,19 @@ function Advisor() {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: res.reply,
+          content: res.advisor_message,
+          suggestions: res.suggestions,
+          createdAt: Date.now(),
+        },
+      ]);
+    },
+    onError: (error) => {
+      setMessages((m) => [
+        ...m,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Sorry, I couldn't process your request. Please try again.",
           createdAt: Date.now(),
         },
       ]);
@@ -148,10 +161,12 @@ function Advisor() {
 function Bubble({
   role,
   content,
+  suggestions,
   pulse,
 }: {
   role: "user" | "assistant";
   content: string;
+  suggestions?: string[];
   pulse?: boolean;
 }) {
   if (role === "user") {
@@ -165,13 +180,25 @@ function Bubble({
   }
   return (
     <div className="flex justify-start">
-      <div
-        className={
-          "max-w-[90%] text-sm leading-relaxed text-foreground " +
-          (pulse ? "animate-pulse text-muted-foreground" : "")
-        }
-      >
-        {content}
+      <div className="max-w-[90%] space-y-2">
+        <div
+          className={
+            "text-sm leading-relaxed text-foreground " +
+            (pulse ? "animate-pulse text-muted-foreground" : "")
+          }
+        >
+          {content}
+        </div>
+        {suggestions && suggestions.length > 0 && (
+          <div className="space-y-1">
+            {suggestions.map((s, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary" />
+                <span>{s}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

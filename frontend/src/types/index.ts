@@ -139,13 +139,15 @@ export interface Recommendation {
 }
 
 export interface AdvisorChatRequest {
-  message: string;
-  context: string | null;
+  user_message: string;
+  forecast_result: ForecastResult | null;
   assessment_id: string | null;
 }
 
 export interface AdvisorChatResponse {
-  reply: string;
+  advisor_message: string;
+  context_used: string[];
+  suggestions: string[];
 }
 
 export interface AssessmentResponse {
