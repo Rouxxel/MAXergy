@@ -3,5 +3,31 @@
         "maintainer": ["Sebastian Russo", "Jonas Brilz", "Valeria Hurtado"]
     },
 
+    "default_values": {
+        "default_units": {
+            "default_power_unit": "W",
+            "default_energy_unit": "kWh",
+            "default_amperage_unit": "A",
+            "default_voltage_unit": "V",
+            "default_irradiance_unit": "kWh/m²/year",
+            "default_currency": "EUR",
+            "default_area_unit": "m²",
+            "default_temperature_unit": "°C",
+            "default_emissions_unit": "kgCO2e",
+            "default_distance_unit": "km",
+            "default_fuel_volume_unit": "L",
+            "default_financing_unit": "EUR/month",
+            "default_pv_capacity_unit": "kWp",
+            "default_battery_capacity_unit": "kWh",
+            "default_charge_power_unit": "kW",
+            "default_heating_energy_unit": "kWh",
+            "default_heat_pump_cop_unit": "COP",
+            "default_efficiency_unit": "%",
+            "default_feed_in_tariff_unit": "EUR/kWh",
+            "default_grid_import_unit": "kWh",
+            "default_grid_export_unit": "kWh"
+        }
+    },
+
     "languages": ["en", "es", "fr", "de", "ko", "it", "ru"]
 }
