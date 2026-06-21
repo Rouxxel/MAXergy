@@ -17,6 +17,15 @@ const euro = (n: number | undefined | null) =>
     ? `€${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
     : "€0";
 
+const scenarioNames: Record<string, string> = {
+  solar_only: "Solar Only",
+  pv_battery: "Solar + Battery",
+  pv_heatpump: "Solar + Heat Pump",
+  pv_ev: "Solar + EV Charger",
+  pv_battery_heatpump: "Solar + Battery + Heat Pump",
+  full_upgrade: "Full Upgrade (All Components)",
+};
+
 function Compare() {
   const { forecast, selectedScenarioId, selectScenario } = useResultsStore();
   const [sortDesc, setSortDesc] = useState(true);
@@ -111,7 +120,7 @@ function Compare() {
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold">Scenario {s.id}</span>
+                    <span className="truncate font-semibold">{scenarioNames[s.id] || s.id}</span>
                     {recommended && (
                       <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
                         Recommended

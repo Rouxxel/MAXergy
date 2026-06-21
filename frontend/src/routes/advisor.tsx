@@ -14,12 +14,6 @@ export const Route = createFileRoute("/advisor")({
   component: Advisor,
 });
 
-const QUICK = [
-  "Explain my recommendation",
-  "Why this configuration?",
-  "What if I change financing term?",
-];
-
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -117,19 +111,6 @@ function Advisor() {
           <Bubble key={m.id} role={m.role} content={m.content} />
         ))}
         {send.isPending ? <Bubble role="assistant" content="…" pulse /> : null}
-      </div>
-
-      <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto pb-1">
-        {QUICK.map((q) => (
-          <button
-            key={q}
-            onClick={() => submit(q)}
-            disabled={send.isPending}
-            className="shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground disabled:opacity-50"
-          >
-            {q}
-          </button>
-        ))}
       </div>
 
       <form

@@ -1,12 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { MessageSquare, LineChart, Leaf, Clock, TrendingUp, Zap, Flame, Car, DollarSign } from "lucide-react";
-import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 import { AppShell, BrandMark } from "@/components/app-shell";
 import { MetricCard } from "@/components/metric-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useResultsStore } from "@/stores/resultsStore";
+import { useAssessmentStore } from "@/stores/assessmentStore";
 
 export const Route = createFileRoute("/results")({
   head: () => ({ meta: [{ title: "Your savings — MAXergy" }] }),
@@ -29,6 +30,14 @@ const scenarioNames: Record<string, string> = {
 
 function Results() {
   const { forecast, recommendation } = useResultsStore();
+  const reset = useAssessmentStore((state) => state.reset);
+  const router = useRouter();
+
+  const handleCreateNewScenario = () => {
+    reset();
+    router.navigate({ to: "/" });
+  };
+
   if (!forecast || !recommendation) {
     return (
       <AppShell>
@@ -61,12 +70,22 @@ function Results() {
     <AppShell>
       <header className="mb-6 flex items-center justify-between">
         <BrandMark />
-        <Link
-          to="/advisor"
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-        >
-          <MessageSquare className="h-3.5 w-3.5" /> Advisor
-        </Link>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handleCreateNewScenario}
+            variant="outline"
+            size="sm"
+            className="text-xs"
+          >
+            Create new scenario
+          </Button>
+          <Link
+            to="/advisor"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            <MessageSquare className="h-3.5 w-3.5" /> Advisor
+          </Link>
+        </div>
       </header>
 
       <section className="rounded-3xl border border-primary/30 bg-gradient-to-b from-primary/15 to-transparent p-6 text-center">
@@ -186,13 +205,28 @@ function Results() {
           </div>
           <div className="mt-3 h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <RechartsLineChart data={selectedScenario.short_term_forecast}>
+              <RechartsLineChart
+                data={selectedScenario.short_term_forecast.map((pt, i) => ({
+                  month: pt.month,
+                  scenario: pt.total_eur,
+                  baseline: forecast.baseline.short_term_forecast[i]?.total_eur,
+                }))}
+              >
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="total_eur" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Scenario" />
-                <Line type="monotone" dataKey="total_eur" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Baseline" data={forecast.baseline.short_term_forecast} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#111827',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                  }}
+                  labelStyle={{ color: '#ffffff' }}
+                  itemStyle={{ color: '#ffffff' }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="scenario" stroke="#ffffff" strokeWidth={2} dot={false} name="Scenario" />
+                <Line type="monotone" dataKey="baseline" stroke="#94a3b8" strokeWidth={2} dot={false} name="Baseline" />
               </RechartsLineChart>
             </ResponsiveContainer>
           </div>
@@ -204,13 +238,28 @@ function Results() {
           </div>
           <div className="mt-3 h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <RechartsLineChart data={selectedScenario.long_term_forecast}>
+              <RechartsLineChart
+                data={selectedScenario.long_term_forecast.map((pt, i) => ({
+                  year: pt.year,
+                  scenario: pt.annual_total_eur,
+                  baseline: forecast.baseline.long_term_forecast[i]?.annual_total_eur,
+                }))}
+              >
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="year" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="annual_total_eur" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Scenario" />
-                <Line type="monotone" dataKey="annual_total_eur" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Baseline" data={forecast.baseline.long_term_forecast} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#111827',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                  }}
+                  labelStyle={{ color: '#ffffff' }}
+                  itemStyle={{ color: '#ffffff' }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="scenario" stroke="#ffffff" strokeWidth={2} dot={false} name="Scenario" />
+                <Line type="monotone" dataKey="baseline" stroke="#94a3b8" strokeWidth={2} dot={false} name="Baseline" />
               </RechartsLineChart>
             </ResponsiveContainer>
           </div>
