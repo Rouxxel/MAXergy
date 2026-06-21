@@ -1,0 +1,48 @@
+{
+  "_profile_notes": {
+    "description": "Average German 3-person household in a 120 m² semi-detached house (Cologne). Electricity, gas, mileage and roof size all near national median. Standard 15-year loan at the current market rate.",
+    "electricity_kwh": "3,500 kWh/yr ≈ national average for 3 persons (BDEW 2023)",
+    "heating_kwh": "14,000 kWh gas ≈ 120 m² house, average insulation class C",
+    "mileage_km": "12,000 km/yr ≈ national average (KBA 2023)",
+    "roof": "35 m² usable, south-facing, 32° tilt, light shading (0.1) — typical semi-detached",
+    "financing": "15 yr @ 4.5% — average German consumer loan rate 2024"
+  },
+  "location": {
+    "postcode": "50667",
+    "country": "DE"
+  },
+  "household": {
+    "occupants": 3,
+    "electricity": {
+      "annual_kwh": 3500,
+      "arbeitspreis_eur_per_kwh": 0.31,
+      "grundpreis_eur_per_month": 12.0,
+      "contract_end_date": "2027-03-31"
+    },
+    "roof": {
+      "usable_area_m2": 35,
+      "orientation": "south",
+      "tilt_deg": 32,
+      "shading_factor": 0.1
+    }
+  },
+  "heating": {
+    "fuel_type": "gas",
+    "annual_consumption": 14000,
+    "annual_spend_eur": 1540
+  },
+  "mobility": {
+    "vehicle_type": "petrol",
+    "annual_mileage_km": 12000,
+    "fuel_consumption_l_per_100km": 7.0,
+    "annual_fuel_spend_eur": 1100
+  },
+  "financing": {
+    "loan_term_years": 15,
+    "loan_rate_pct": 4.5
+  },
+  "forecast_horizon": {
+    "short_term_months": 12,
+    "long_term_years": 20
+  }
+}

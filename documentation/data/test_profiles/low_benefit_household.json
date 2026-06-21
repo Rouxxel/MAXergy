@@ -1,0 +1,47 @@
+{
+  "_profile_notes": {
+    "description": "Single-person flat in Hamburg. Low electricity use, minimal heating demand (well-insulated modern flat), rarely drives. Small north-east facing balcony roof (converted top-floor flat) with heavy shading. Higher loan rate reflects shorter credit history. Unlikely to see strong savings from any upgrade.",
+    "electricity_kwh": "1,500 kWh/yr — single person, energy-efficient appliances, no AC",
+    "heating_kwh": "4,500 kWh gas — small 55 m² well-insulated flat, district-heat-like demand",
+    "mileage_km": "4,000 km/yr — mostly cycles or uses public transport",
+    "roof": "12 m² usable, north-east orientation, 20° tilt, 40% shading from adjacent buildings — severely limited PV potential",
+    "financing": "10 yr @ 6.5% — shorter term, higher rate, reflects smaller loan appetite"
+  },
+  "location": {
+    "postcode": "20095",
+    "country": "DE"
+  },
+  "household": {
+    "occupants": 1,
+    "electricity": {
+      "annual_kwh": 1500,
+      "arbeitspreis_eur_per_kwh": 0.33,
+      "grundpreis_eur_per_month": 10.0,
+      "contract_end_date": "2026-06-30"
+    },
+    "roof": {
+      "usable_area_m2": 12,
+      "orientation": "north",
+      "tilt_deg": 20,
+      "shading_factor": 0.4
+    }
+  },
+  "heating": {
+    "fuel_type": "gas",
+    "annual_consumption": 4500,
+    "annual_spend_eur": 495
+  },
+  "mobility": {
+    "vehicle_type": "petrol",
+    "annual_mileage_km": 4000,
+    "fuel_consumption_l_per_100km": 6.0
+  },
+  "financing": {
+    "loan_term_years": 10,
+    "loan_rate_pct": 6.5
+  },
+  "forecast_horizon": {
+    "short_term_months": 12,
+    "long_term_years": 20
+  }
+}
