@@ -1,7 +1,7 @@
 @echo off
-REM MAXnergy Template - Development Startup Script (Windows)
+REM MAXnergy - Development Startup Script (Windows)
 
-echo MAXnergy Template - Development Setup
+echo MAXnergy - Development Setup
 echo ========================================
 
 REM Check if Python is installed
@@ -32,7 +32,7 @@ pip install -r requirements.txt
 
 REM Check if .env.local exists, if not copy from .env
 if not exist ".env.local" (
-    echo ⚙️  Creating .env.local from template...
+    echo ⚙️  Creating .env.local from...
     copy .env .env.local
     echo ✅ .env.local created - please update with your configuration
 )

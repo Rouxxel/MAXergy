@@ -48,16 +48,16 @@ from src.api_endpoints.routers.maxergy.benchmark_router import router as benchma
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     port = config_loader["network"]["server_port"]
-    log_handler.info(f"MAXnergy Template server starting on port {port}")
+    log_handler.info(f"MAXnergy server starting on port {port}")
     yield
-    log_handler.info("MAXnergy Template server shutting down")
+    log_handler.info("MAXnergy server shutting down")
 
 #Create FastAPI app
 app = FastAPI(
     lifespan=lifespan, 
-    title=os.getenv("API_TITLE", "MAXnergy Template"),
+    title=os.getenv("API_TITLE", "MAXnergy"),
     version=os.getenv("API_VERSION", "1.0.0"),
-    description=os.getenv("API_DESCRIPTION", "A template for building MAXnergys with FastAPI")
+    description=os.getenv("API_DESCRIPTION", "A for building MAXnergys with FastAPI")
 )
 
 """VARIOUS-----------------------------------------------------------"""

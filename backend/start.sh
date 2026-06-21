@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# MAXnergy Template - Development Startup Script
+# MAXnergy - Development Startup Script
 
-echo "MAXnergy Template - Development Setup"
+echo "MAXnergy - Development Setup"
 echo "========================================"
 
 # Check if Python is installed
@@ -30,7 +30,7 @@ pip install -r requirements.txt
 
 # Check if .env.local exists, if not copy from .env
 if [ ! -f ".env.local" ]; then
-    echo "⚙️  Creating .env.local from template..."
+    echo "⚙️  Creating .env.local from..."
     cp .env .env.local
     echo "✅ .env.local created - please update with your configuration"
 fi

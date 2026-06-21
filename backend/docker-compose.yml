@@ -5,7 +5,7 @@ services:
     build: 
       context: .
       dockerfile: DOCKERFILE
-    container_name: rest_api_template
+    container_name: maxergy_backend
     env_file: .env
     ports:
       - "${SERVER_PORT:-8000}:8000"

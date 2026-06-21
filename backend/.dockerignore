@@ -11,7 +11,7 @@ env/
 .env/
 .venv/
 
-# Environment files (keep .env for template)
+# Environment files (keep .env)
 .env.local
 .env.production
 .env.development

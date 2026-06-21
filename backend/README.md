@@ -54,7 +54,7 @@ backend/
 ├── start.sh / start.bat            # Dev setup and launch scripts
 ├── DOCKERFILE                      # Docker build configuration
 ├── docker-compose.yml              # Docker compose configuration
-├── .env / .env.example             # Environment variables template
+├── .env / .env.example             # Environment variables
 ├── .dockerignore
 ├── .gitignore
 ├── .pylintrc

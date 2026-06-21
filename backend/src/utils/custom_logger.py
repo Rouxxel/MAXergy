@@ -82,7 +82,7 @@ if not log_handler.hasHandlers():
         log_handler.addHandler(file_handler)
     log_handler.addHandler(console_handler)
 
-log_handler.info("MAXnergy Template server starting")
+log_handler.info("MAXnergy server starting")
 if log_file:
     log_handler.warning(f"Current working directory: {os.getcwd()}, Logs are written to "
                         f"'{log_file}'")
