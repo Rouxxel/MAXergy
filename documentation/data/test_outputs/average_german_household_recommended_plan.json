@@ -1,0 +1,24 @@
+{
+  "profile_name": "average_german_household",
+  "recommended_scenario": "full_upgrade",
+  "recommended_scenario_label": "Full Upgrade",
+  "recommendation_reason": "Highest projected 20-year cumulative net savings. Year 1 net savings are negative — loan repayments exceed energy savings in early years. Break-even projected in Year 8 (central price scenario).",
+  "yr1_baseline_energy_cost_eur": 3916.13,
+  "yr1_upgraded_energy_cost_eur": 1700.98,
+  "yr1_financing_payments_eur": 2512.24,
+  "yr1_upgraded_total_cost_eur": 4213.22,
+  "yr1_net_savings_eur": -297.09,
+  "monthly_net_savings_yr1_eur": -24.76,
+  "cum20_net_savings_central_eur": 24827.86,
+  "cum20_net_savings_low_eur": 24827.86,
+  "break_even_year": 8.2,
+  "break_even_month_approx": 98,
+  "financing_monthly_instalment_eur": 209.35,
+  "financing_loan_term_months": 180,
+  "financing_end_year": 15,
+  "validation_warnings": [
+    "solar_kwp not provided; estimated 5.83 kWp from 35.0 m² roof",
+    "battery_kwh not specified; using default 10.0 kWh"
+  ],
+  "note_st_vs_lt": "Year 1 values use the central long-term scenario price model. The short-term estimate (constant prices) may differ slightly."
+}

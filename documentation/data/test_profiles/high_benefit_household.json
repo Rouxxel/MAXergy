@@ -1,0 +1,46 @@
+{
+  "_profile_notes": {
+    "description": "Large family home in Munich (5 persons, 180 m²). Very high electricity use (home office, EV already contemplated, pool pump), oil heating (expensive fuel, strong HP benefit), long commute with a large petrol SUV. Optimal south-facing large roof, minimal shading. Favourable loan terms. Maximum benefit from all upgrade technologies.",
+    "electricity_kwh": "7,200 kWh/yr — 5 persons, home office, heat pump ready wiring, no current PV",
+    "heating_kwh": "3,200 litres oil — 180 m² older detached house, cavity wall insulation only",
+    "mileage_km": "28,000 km/yr — long daily commute + weekend trips in a large SUV",
+    "roof": "60 m² usable, south-facing, 35° tilt, minimal shading (0.05) — detached house, unobstructed",
+    "financing": "20 yr @ 3.5% — excellent credit, green mortgage product, longer term lowers monthly burden"
+  },
+  "location": {
+    "postcode": "80331",
+    "country": "DE"
+  },
+  "household": {
+    "occupants": 5,
+    "electricity": {
+      "annual_kwh": 7200,
+      "arbeitspreis_eur_per_kwh": 0.30,
+      "grundpreis_eur_per_month": 14.0,
+      "contract_end_date": "2026-09-30"
+    },
+    "roof": {
+      "usable_area_m2": 60,
+      "orientation": "south",
+      "tilt_deg": 35,
+      "shading_factor": 0.05
+    }
+  },
+  "heating": {
+    "fuel_type": "oil",
+    "annual_consumption": 3200
+  },
+  "mobility": {
+    "vehicle_type": "petrol",
+    "annual_mileage_km": 28000,
+    "fuel_consumption_l_per_100km": 9.0
+  },
+  "financing": {
+    "loan_term_years": 20,
+    "loan_rate_pct": 3.5
+  },
+  "forecast_horizon": {
+    "short_term_months": 12,
+    "long_term_years": 20
+  }
+}
