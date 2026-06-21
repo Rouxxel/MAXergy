@@ -43,7 +43,7 @@ function Advisor() {
       postAdvisorChat({
         user_message: text,
         forecast_result: forecast || null,
-        assessment_id: submittedId || null,
+        assessment_id: submittedId || "",
       }),
     onSuccess: (res) => {
       setMessages((m) => [
