@@ -32,7 +32,7 @@ function Advisor() {
       id: "welcome",
       role: "assistant",
       content:
-        "Hi! I'm your MAXergy advisor. Ask me anything about your recommendation, savings, or financing options.",
+        "Greetings, I'm your MAXergy advisor. Ask me anything about your recommendation, savings or financing options. \n\n I can also perform the onboarding process seamlessly on this chat thanks to my patented MCP",
       createdAt: Date.now(),
     },
   ]);
@@ -185,6 +185,11 @@ function Bubble({
               h1: ({ children }) => <h1 className="mb-1 text-base font-bold">{children}</h1>,
               h2: ({ children }) => <h2 className="mb-1 text-sm font-bold">{children}</h2>,
               h3: ({ children }) => <h3 className="mb-1 text-sm font-semibold">{children}</h3>,
+              blockquote: ({ children }) => (
+                <blockquote className="my-2 border-l-2 border-white/30 pl-3 text-xs italic text-white/90">
+                  {children}
+                </blockquote>
+              ),
               code: ({ children }) => (
                 <code className="rounded bg-white/20 px-1 py-0.5 font-mono text-xs">{children}</code>
               ),
