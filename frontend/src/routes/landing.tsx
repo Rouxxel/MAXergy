@@ -7,6 +7,10 @@ import { BrandMark } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { getBenchmark } from "@/services/endpoints";
 import { FeatureCard, StepCard, SummaryCard, FAQItem } from "@/components/landing";
+import cumulativeNetSavings from "@/assets/cumulative_net_savings.png";
+import averageGermanHousehold from "@/assets/average_german_household_comparison.png";
+import highBenefitHousehold from "@/assets/high_benefit_household_comparison.png";
+import lowBenefitHousehold from "@/assets/low_benefit_household_comparison.png";
 
 export const Route = createFileRoute("/landing")({
   head: () => ({
@@ -351,8 +355,8 @@ function LandingPage() {
           <div className="rounded-lg border border-border bg-card p-6 space-y-4">
             <h3 className="text-lg font-semibold">Cumulative Net Savings Over 20 Years</h3>
             <div className="flex justify-center">
-              <img 
-                src="/assets/cumulative_net_savings.png" 
+              <img
+                src={cumulativeNetSavings}
                 alt="Cumulative net savings chart showing baseline vs recommended scenario over 20 years"
                 className="max-w-full h-auto rounded-lg"
               />
@@ -363,24 +367,24 @@ function LandingPage() {
           <div className="grid gap-6 md:grid-cols-3">
             <div className="rounded-lg border border-border bg-card p-4 space-y-3">
               <h4 className="text-sm font-semibold text-center">Average German Household</h4>
-              <img 
-                src="/assets/average_german_household_comparison.png" 
+              <img
+                src={averageGermanHousehold}
                 alt="Average German household energy cost comparison"
                 className="w-full h-auto rounded-lg"
               />
             </div>
             <div className="rounded-lg border border-border bg-card p-4 space-y-3">
               <h4 className="text-sm font-semibold text-center">High Benefit Household</h4>
-              <img 
-                src="/assets/high_benefit_household_comparison.png" 
+              <img
+                src={highBenefitHousehold}
                 alt="High benefit household energy cost comparison"
                 className="w-full h-auto rounded-lg"
               />
             </div>
             <div className="rounded-lg border border-border bg-card p-4 space-y-3">
               <h4 className="text-sm font-semibold text-center">Low Benefit Household</h4>
-              <img 
-                src="/assets/low_benefit_household_comparison.png" 
+              <img
+                src={lowBenefitHousehold}
                 alt="Low benefit household energy cost comparison"
                 className="w-full h-auto rounded-lg"
               />
