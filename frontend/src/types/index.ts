@@ -159,3 +159,32 @@ export interface AssessmentResponse {
   id: string;
   status: string;
 }
+
+export interface BenchmarkHousehold {
+  location: string;
+  occupants: number;
+  annual_electricity_kwh: number;
+  heating_type: string;
+  heating_annual_kwh: number;
+  vehicle_type: string;
+  annual_mileage_km: number;
+  roof_area_m2: number;
+  roof_orientation: string;
+  roof_tilt_deg: number;
+}
+
+export interface BenchmarkRecommendation {
+  scenario: string;
+  break_even_year: number;
+  monthly_instalment_eur: number;
+  cumulative_savings_eur: number;
+  description: string;
+}
+
+export interface BenchmarkData {
+  household: BenchmarkHousehold;
+  recommendation: BenchmarkRecommendation;
+  scenarios_count: number;
+  projection_years: number;
+  model_version: string;
+}

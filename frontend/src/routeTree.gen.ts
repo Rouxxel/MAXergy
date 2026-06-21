@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as LoadingRouteImport } from './routes/loading'
+import { Route as LandingRouteImport } from './routes/landing'
 import { Route as CompareRouteImport } from './routes/compare'
+import { Route as AssessmentRouteImport } from './routes/assessment'
 import { Route as AdvisorRouteImport } from './routes/advisor'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -25,9 +27,19 @@ const LoadingRoute = LoadingRouteImport.update({
   path: '/loading',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LandingRoute = LandingRouteImport.update({
+  id: '/landing',
+  path: '/landing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CompareRoute = CompareRouteImport.update({
   id: '/compare',
   path: '/compare',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssessmentRoute = AssessmentRouteImport.update({
+  id: '/assessment',
+  path: '/assessment',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdvisorRoute = AdvisorRouteImport.update({
@@ -44,14 +56,18 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/advisor': typeof AdvisorRoute
+  '/assessment': typeof AssessmentRoute
   '/compare': typeof CompareRoute
+  '/landing': typeof LandingRoute
   '/loading': typeof LoadingRoute
   '/results': typeof ResultsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/advisor': typeof AdvisorRoute
+  '/assessment': typeof AssessmentRoute
   '/compare': typeof CompareRoute
+  '/landing': typeof LandingRoute
   '/loading': typeof LoadingRoute
   '/results': typeof ResultsRoute
 }
@@ -59,22 +75,48 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/advisor': typeof AdvisorRoute
+  '/assessment': typeof AssessmentRoute
   '/compare': typeof CompareRoute
+  '/landing': typeof LandingRoute
   '/loading': typeof LoadingRoute
   '/results': typeof ResultsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/advisor' | '/compare' | '/loading' | '/results'
+  fullPaths:
+    | '/'
+    | '/advisor'
+    | '/assessment'
+    | '/compare'
+    | '/landing'
+    | '/loading'
+    | '/results'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/advisor' | '/compare' | '/loading' | '/results'
-  id: '__root__' | '/' | '/advisor' | '/compare' | '/loading' | '/results'
+  to:
+    | '/'
+    | '/advisor'
+    | '/assessment'
+    | '/compare'
+    | '/landing'
+    | '/loading'
+    | '/results'
+  id:
+    | '__root__'
+    | '/'
+    | '/advisor'
+    | '/assessment'
+    | '/compare'
+    | '/landing'
+    | '/loading'
+    | '/results'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdvisorRoute: typeof AdvisorRoute
+  AssessmentRoute: typeof AssessmentRoute
   CompareRoute: typeof CompareRoute
+  LandingRoute: typeof LandingRoute
   LoadingRoute: typeof LoadingRoute
   ResultsRoute: typeof ResultsRoute
 }
@@ -95,11 +137,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoadingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/landing': {
+      id: '/landing'
+      path: '/landing'
+      fullPath: '/landing'
+      preLoaderRoute: typeof LandingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/compare': {
       id: '/compare'
       path: '/compare'
       fullPath: '/compare'
       preLoaderRoute: typeof CompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assessment': {
+      id: '/assessment'
+      path: '/assessment'
+      fullPath: '/assessment'
+      preLoaderRoute: typeof AssessmentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/advisor': {
@@ -122,7 +178,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdvisorRoute: AdvisorRoute,
+  AssessmentRoute: AssessmentRoute,
   CompareRoute: CompareRoute,
+  LandingRoute: LandingRoute,
   LoadingRoute: LoadingRoute,
   ResultsRoute: ResultsRoute,
 }

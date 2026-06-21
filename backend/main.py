@@ -41,6 +41,7 @@ from src.api_endpoints.routers.maxergy.forecast_router import router as forecast
 from src.api_endpoints.routers.maxergy.recommendation_router import router as recommendation_router
 from src.api_endpoints.routers.maxergy.advisor_router import router as advisor_router
 from src.api_endpoints.routers.maxergy.visualization_router import router as visualization_router
+from src.api_endpoints.routers.maxergy.benchmark_router import router as benchmark_router
 
 """API APP-----------------------------------------------------------"""
 #Lifespan event manager (startup and shutdown)
@@ -110,6 +111,7 @@ app.include_router(forecast_router)
 app.include_router(recommendation_router)
 app.include_router(advisor_router)
 app.include_router(visualization_router)
+app.include_router(benchmark_router)
 
 """Start server-----------------------------------------------------------"""
 if __name__ == "__main__":
