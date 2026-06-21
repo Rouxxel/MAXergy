@@ -31,24 +31,26 @@ router = APIRouter(
 def load_benchmark_data() -> Dict[str, Any]:
     """Load benchmark data from the pre-computed JSON file."""
     global _benchmark_cache
-    
+
     if _benchmark_cache is not None:
         return _benchmark_cache
-    
+
     try:
-        # Path to benchmark output file
-        benchmark_path = Path("documentation/data/test_outputs/average_german_household_output.json")
-        
+        # Path to benchmark output file (relative to repository root)
+        # Go up from backend/src/api_endpoints/routers/maxergy/ to repository root
+        repo_root = Path(__file__).parent.parent.parent.parent.parent
+        benchmark_path = repo_root / "documentation" / "data" / "test_outputs" / "average_german_household_output.json"
+
         if not benchmark_path.exists():
             log_handler.error("[benchmark_router] Benchmark file not found: %s", benchmark_path)
             raise HTTPException(status_code=404, detail="Benchmark data not found")
-        
+
         with open(benchmark_path, "r", encoding="utf-8") as f:
             _benchmark_cache = json.load(f)
-        
+
         log_handler.info("[benchmark_router] Benchmark data loaded successfully")
         return _benchmark_cache
-        
+
     except json.JSONDecodeError as e:
         log_handler.error("[benchmark_router] Failed to parse benchmark JSON: %s", e)
         raise HTTPException(status_code=500, detail="Failed to parse benchmark data")
