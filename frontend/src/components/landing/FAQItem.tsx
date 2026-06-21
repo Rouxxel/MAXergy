@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { trackFAQExpand } from "@/services/analytics";
 
 interface FAQItemProps {
   question: string;
@@ -9,10 +10,17 @@ interface FAQItemProps {
 export function FAQItem({ question, answer }: FAQItemProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  const handleToggle = () => {
+    setIsOpen(!isOpen);
+    if (!isOpen) {
+      trackFAQExpand(question);
+    }
+  };
+
   return (
     <div className="rounded-lg border border-border bg-card">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between p-4 text-left"
         aria-expanded={isOpen}
       >

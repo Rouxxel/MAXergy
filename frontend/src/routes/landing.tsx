@@ -57,12 +57,27 @@ function LandingPage() {
     }
   };
 
+  // Track page view on mount
+  useEffect(() => {
+    trackPageView("/landing");
+  }, []);
+
   // Fetch benchmark data
   const { data: benchmarkData, isLoading: benchmarkLoading, error: benchmarkError } = useQuery({
     queryKey: ["benchmark"],
     queryFn: getBenchmark,
     staleTime: 60 * 60 * 1000, // 1 hour
   });
+
+  // Track benchmark load status
+  useEffect(() => {
+    if (benchmarkLoading) return;
+    if (benchmarkError) {
+      trackBenchmarkLoad("error");
+    } else if (benchmarkData) {
+      trackBenchmarkLoad("success");
+    }
+  }, [benchmarkLoading, benchmarkError, benchmarkData]);
 
   // Scroll animation hook
   const useScrollAnimation = () => {
@@ -149,7 +164,11 @@ function LandingPage() {
             </Link>
           </nav>
           <Link to="/assessment">
-            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button
+              size="sm"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => trackCTAClick("primary", "header")}
+            >
               Start Assessment
             </Button>
           </Link>
@@ -169,7 +188,11 @@ function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/assessment">
-                <Button size="lg" className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => trackCTAClick("primary", "hero")}
+                >
                   Start Your Assessment
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -178,7 +201,10 @@ function LandingPage() {
                 size="lg"
                 variant="outline"
                 className="w-full sm:w-auto"
-                onClick={scrollToFeatures}
+                onClick={() => {
+                  trackCTAClick("secondary", "hero");
+                  scrollToFeatures();
+                }}
               >
                 Learn More
               </Button>
