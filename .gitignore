@@ -219,3 +219,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+
+scripts/evaluation/61111-0004_de.csv
+research/datasets

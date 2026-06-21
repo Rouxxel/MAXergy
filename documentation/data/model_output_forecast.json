@@ -1,0 +1,1786 @@
+{
+  "model": {
+    "name": "integrated_energy_cost_forecast",
+    "version": "1.1",
+    "forecast_type": "consumption_price_cost"
+  },
+  "input_summary": {
+    "postcode": "10115",
+    "country": "DE",
+    "occupants": 3,
+    "annual_electricity_kwh": 4200.0,
+    "arbeitspreis_eur_per_kwh": 0.32,
+    "grundpreis_eur_per_month": 12.5,
+    "contract_end_date": "2026-12-31",
+    "fuel_type": "gas",
+    "heating_annual_value": 14000.0,
+    "heating_unit": "kwh",
+    "effective_heating_eur_per_unit": 0.10357142857142858,
+    "vehicle_type": "petrol",
+    "annual_mileage_km": 12000.0,
+    "fuel_consumption_l_per_100km": 6.5,
+    "annual_fuel_litres": 780.0,
+    "effective_petrol_eur_per_litre": 1.4102564102564104,
+    "forecast_start": "2026-07-01",
+    "short_term_months": 12,
+    "long_term_years": 20
+  },
+  "defaults_used": [],
+  "price_model": {
+    "name": "deterministic_trend",
+    "version": "1.0",
+    "assumptions": {
+      "electricity_annual_trend": {
+        "low": 0.01,
+        "central": 0.03,
+        "high": 0.05
+      },
+      "gas_annual_trend": {
+        "low": 0.01,
+        "central": 0.04,
+        "high": 0.07
+      },
+      "oil_annual_trend": {
+        "low": 0.01,
+        "central": 0.04,
+        "high": 0.07
+      },
+      "petrol_annual_trend": {
+        "low": 0.01,
+        "central": 0.03,
+        "high": 0.05
+      },
+      "fixed_charge_annual_trend": {
+        "low": 0.005,
+        "central": 0.02,
+        "high": 0.03
+      }
+    }
+  },
+  "profile_sources": {
+    "electricity_profile_source": "BDEW H0 (bdew_h0_profile.json)",
+    "heating_profile_source": "DWD HDD from Berlin-Tempelhof (DWD 10384)",
+    "heating_profile_is_fallback": false,
+    "weather_data_source": "Berlin-Tempelhof (DWD 10384)",
+    "weather_data_cached": false
+  },
+  "current_estimated_annual_cost_eur": {
+    "electricity": 1494.0,
+    "heating": 1450.0,
+    "mobility": 1100.0,
+    "total": 4044.0
+  },
+  "validation_warnings": [],
+  "scenarios": {
+    "low": {
+      "short_term_forecast": [
+        {
+          "month": "2026-07",
+          "consumption": {
+            "electricity_kwh": 279.496,
+            "heating_value": 0.0,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10357,
+            "petrol_eur_per_litre": 1.4667
+          },
+          "cost_eur": {
+            "electricity": 101.94,
+            "heating": 0.0,
+            "mobility": 95.33,
+            "total": 197.27
+          }
+        },
+        {
+          "month": "2026-08",
+          "consumption": {
+            "electricity_kwh": 277.781,
+            "heating_value": 0.0,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10366,
+            "petrol_eur_per_litre": 1.4538
+          },
+          "cost_eur": {
+            "electricity": 101.39,
+            "heating": 0.0,
+            "mobility": 94.49,
+            "total": 195.88
+          }
+        },
+        {
+          "month": "2026-09",
+          "consumption": {
+            "electricity_kwh": 327.319,
+            "heating_value": 0.0,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10374,
+            "petrol_eur_per_litre": 1.4267
+          },
+          "cost_eur": {
+            "electricity": 117.24,
+            "heating": 0.0,
+            "mobility": 92.74,
+            "total": 209.98
+          }
+        },
+        {
+          "month": "2026-10",
+          "consumption": {
+            "electricity_kwh": 337.024,
+            "heating_value": 1009.302,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10383,
+            "petrol_eur_per_litre": 1.3996
+          },
+          "cost_eur": {
+            "electricity": 120.35,
+            "heating": 104.8,
+            "mobility": 90.98,
+            "total": 316.12
+          }
+        },
+        {
+          "month": "2026-11",
+          "consumption": {
+            "electricity_kwh": 443.117,
+            "heating_value": 1934.337,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10392,
+            "petrol_eur_per_litre": 1.3725
+          },
+          "cost_eur": {
+            "electricity": 154.3,
+            "heating": 201.01,
+            "mobility": 89.21,
+            "total": 444.52
+          }
+        },
+        {
+          "month": "2026-12",
+          "consumption": {
+            "electricity_kwh": 457.382,
+            "heating_value": 2731.053,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.104,
+            "petrol_eur_per_litre": 1.3736
+          },
+          "cost_eur": {
+            "electricity": 158.86,
+            "heating": 284.03,
+            "mobility": 89.29,
+            "total": 532.18
+          }
+        },
+        {
+          "month": "2027-01",
+          "consumption": {
+            "electricity_kwh": 454.733,
+            "heating_value": 2988.326,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10409,
+            "petrol_eur_per_litre": 1.3748
+          },
+          "cost_eur": {
+            "electricity": 158.01,
+            "heating": 311.05,
+            "mobility": 89.36,
+            "total": 558.42
+          }
+        },
+        {
+          "month": "2027-02",
+          "consumption": {
+            "electricity_kwh": 414.349,
+            "heating_value": 2517.829,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32027,
+            "electricity_fixed_eur": 12.5052,
+            "heating_eur_per_unit": 0.10417,
+            "petrol_eur_per_litre": 1.3759
+          },
+          "cost_eur": {
+            "electricity": 145.21,
+            "heating": 262.29,
+            "mobility": 89.43,
+            "total": 496.93
+          }
+        },
+        {
+          "month": "2027-03",
+          "consumption": {
+            "electricity_kwh": 335.257,
+            "heating_value": 1880.073,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32053,
+            "electricity_fixed_eur": 12.5104,
+            "heating_eur_per_unit": 0.10426,
+            "petrol_eur_per_litre": 1.4054
+          },
+          "cost_eur": {
+            "electricity": 119.97,
+            "heating": 196.02,
+            "mobility": 91.35,
+            "total": 407.34
+          }
+        },
+        {
+          "month": "2027-04",
+          "consumption": {
+            "electricity_kwh": 327.04,
+            "heating_value": 919.289,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.3208,
+            "electricity_fixed_eur": 12.5156,
+            "heating_eur_per_unit": 0.10435,
+            "petrol_eur_per_litre": 1.435
+          },
+          "cost_eur": {
+            "electricity": 117.43,
+            "heating": 95.93,
+            "mobility": 93.28,
+            "total": 306.63
+          }
+        },
+        {
+          "month": "2027-05",
+          "consumption": {
+            "electricity_kwh": 274.584,
+            "heating_value": 19.79,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32106,
+            "electricity_fixed_eur": 12.5208,
+            "heating_eur_per_unit": 0.10443,
+            "petrol_eur_per_litre": 1.4647
+          },
+          "cost_eur": {
+            "electricity": 100.68,
+            "heating": 2.07,
+            "mobility": 95.2,
+            "total": 197.95
+          }
+        },
+        {
+          "month": "2027-06",
+          "consumption": {
+            "electricity_kwh": 270.028,
+            "heating_value": 0.0,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32133,
+            "electricity_fixed_eur": 12.526,
+            "heating_eur_per_unit": 0.10452,
+            "petrol_eur_per_litre": 1.4801
+          },
+          "cost_eur": {
+            "electricity": 99.29,
+            "heating": 0.0,
+            "mobility": 96.21,
+            "total": 195.5
+          }
+        }
+      ],
+      "long_term_forecast": [
+        {
+          "year": 2026,
+          "consumption": {
+            "electricity_kwh": 4198.11,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1494.67,
+            "heating": 1457.19,
+            "mobility": 1106.87,
+            "total": 4058.74
+          }
+        },
+        {
+          "year": 2027,
+          "consumption": {
+            "electricity_kwh": 4211.78,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1511.38,
+            "heating": 1471.76,
+            "mobility": 1117.94,
+            "total": 4101.08
+          }
+        },
+        {
+          "year": 2028,
+          "consumption": {
+            "electricity_kwh": 4192.85,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1519.56,
+            "heating": 1486.48,
+            "mobility": 1129.12,
+            "total": 4135.17
+          }
+        },
+        {
+          "year": 2029,
+          "consumption": {
+            "electricity_kwh": 4198.81,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1535.96,
+            "heating": 1501.34,
+            "mobility": 1140.41,
+            "total": 4177.72
+          }
+        },
+        {
+          "year": 2030,
+          "consumption": {
+            "electricity_kwh": 4199.85,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1550.9,
+            "heating": 1516.36,
+            "mobility": 1151.82,
+            "total": 4219.08
+          }
+        },
+        {
+          "year": 2031,
+          "consumption": {
+            "electricity_kwh": 4204.41,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1567.18,
+            "heating": 1531.52,
+            "mobility": 1163.34,
+            "total": 4262.04
+          }
+        },
+        {
+          "year": 2032,
+          "consumption": {
+            "electricity_kwh": 4195.02,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1578.91,
+            "heating": 1546.84,
+            "mobility": 1174.97,
+            "total": 4300.71
+          }
+        },
+        {
+          "year": 2033,
+          "consumption": {
+            "electricity_kwh": 4202.46,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1596.47,
+            "heating": 1562.3,
+            "mobility": 1186.72,
+            "total": 4345.49
+          }
+        },
+        {
+          "year": 2034,
+          "consumption": {
+            "electricity_kwh": 4199.45,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1610.61,
+            "heating": 1577.93,
+            "mobility": 1198.59,
+            "total": 4387.13
+          }
+        },
+        {
+          "year": 2035,
+          "consumption": {
+            "electricity_kwh": 4206.35,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1628.35,
+            "heating": 1593.71,
+            "mobility": 1210.57,
+            "total": 4432.63
+          }
+        },
+        {
+          "year": 2036,
+          "consumption": {
+            "electricity_kwh": 4190.92,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1638.4,
+            "heating": 1609.64,
+            "mobility": 1222.68,
+            "total": 4470.72
+          }
+        },
+        {
+          "year": 2037,
+          "consumption": {
+            "electricity_kwh": 4198.11,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1656.56,
+            "heating": 1625.74,
+            "mobility": 1234.9,
+            "total": 4517.2
+          }
+        },
+        {
+          "year": 2038,
+          "consumption": {
+            "electricity_kwh": 4202.72,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1673.99,
+            "heating": 1642.0,
+            "mobility": 1247.25,
+            "total": 4563.25
+          }
+        },
+        {
+          "year": 2039,
+          "consumption": {
+            "electricity_kwh": 4209.6,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1692.45,
+            "heating": 1658.42,
+            "mobility": 1259.73,
+            "total": 4610.59
+          }
+        },
+        {
+          "year": 2040,
+          "consumption": {
+            "electricity_kwh": 4191.13,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1701.78,
+            "heating": 1675.0,
+            "mobility": 1272.32,
+            "total": 4649.11
+          }
+        },
+        {
+          "year": 2041,
+          "consumption": {
+            "electricity_kwh": 4199.85,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1721.22,
+            "heating": 1691.75,
+            "mobility": 1285.05,
+            "total": 4698.02
+          }
+        },
+        {
+          "year": 2042,
+          "consumption": {
+            "electricity_kwh": 4198.61,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1737.17,
+            "heating": 1708.67,
+            "mobility": 1297.9,
+            "total": 4743.73
+          }
+        },
+        {
+          "year": 2043,
+          "consumption": {
+            "electricity_kwh": 4207.95,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1757.27,
+            "heating": 1725.76,
+            "mobility": 1310.88,
+            "total": 4793.9
+          }
+        },
+        {
+          "year": 2044,
+          "consumption": {
+            "electricity_kwh": 4195.34,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1769.21,
+            "heating": 1743.01,
+            "mobility": 1323.99,
+            "total": 4836.2
+          }
+        },
+        {
+          "year": 2045,
+          "consumption": {
+            "electricity_kwh": 4199.45,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1787.66,
+            "heating": 1760.44,
+            "mobility": 1337.22,
+            "total": 4885.33
+          }
+        }
+      ]
+    },
+    "central": {
+      "short_term_forecast": [
+        {
+          "month": "2026-07",
+          "consumption": {
+            "electricity_kwh": 279.496,
+            "heating_value": 0.0,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10357,
+            "petrol_eur_per_litre": 1.4667
+          },
+          "cost_eur": {
+            "electricity": 101.94,
+            "heating": 0.0,
+            "mobility": 95.33,
+            "total": 197.27
+          }
+        },
+        {
+          "month": "2026-08",
+          "consumption": {
+            "electricity_kwh": 277.781,
+            "heating_value": 0.0,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10391,
+            "petrol_eur_per_litre": 1.4561
+          },
+          "cost_eur": {
+            "electricity": 101.39,
+            "heating": 0.0,
+            "mobility": 94.65,
+            "total": 196.04
+          }
+        },
+        {
+          "month": "2026-09",
+          "consumption": {
+            "electricity_kwh": 327.319,
+            "heating_value": 0.0,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10425,
+            "petrol_eur_per_litre": 1.4314
+          },
+          "cost_eur": {
+            "electricity": 117.24,
+            "heating": 0.0,
+            "mobility": 93.04,
+            "total": 210.28
+          }
+        },
+        {
+          "month": "2026-10",
+          "consumption": {
+            "electricity_kwh": 337.024,
+            "heating_value": 1009.302,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10459,
+            "petrol_eur_per_litre": 1.4065
+          },
+          "cost_eur": {
+            "electricity": 120.35,
+            "heating": 105.56,
+            "mobility": 91.42,
+            "total": 317.34
+          }
+        },
+        {
+          "month": "2026-11",
+          "consumption": {
+            "electricity_kwh": 443.117,
+            "heating_value": 1934.337,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10493,
+            "petrol_eur_per_litre": 1.3815
+          },
+          "cost_eur": {
+            "electricity": 154.3,
+            "heating": 202.98,
+            "mobility": 89.8,
+            "total": 447.07
+          }
+        },
+        {
+          "month": "2026-12",
+          "consumption": {
+            "electricity_kwh": 457.382,
+            "heating_value": 2731.053,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10528,
+            "petrol_eur_per_litre": 1.3849
+          },
+          "cost_eur": {
+            "electricity": 158.86,
+            "heating": 287.52,
+            "mobility": 90.02,
+            "total": 536.4
+          }
+        },
+        {
+          "month": "2027-01",
+          "consumption": {
+            "electricity_kwh": 454.733,
+            "heating_value": 2988.326,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10562,
+            "petrol_eur_per_litre": 1.3883
+          },
+          "cost_eur": {
+            "electricity": 158.01,
+            "heating": 315.63,
+            "mobility": 90.24,
+            "total": 563.89
+          }
+        },
+        {
+          "month": "2027-02",
+          "consumption": {
+            "electricity_kwh": 414.349,
+            "heating_value": 2517.829,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32079,
+            "electricity_fixed_eur": 12.5206,
+            "heating_eur_per_unit": 0.10597,
+            "petrol_eur_per_litre": 1.3917
+          },
+          "cost_eur": {
+            "electricity": 145.44,
+            "heating": 266.81,
+            "mobility": 90.46,
+            "total": 502.71
+          }
+        },
+        {
+          "month": "2027-03",
+          "consumption": {
+            "electricity_kwh": 335.257,
+            "heating_value": 1880.073,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32158,
+            "electricity_fixed_eur": 12.5413,
+            "heating_eur_per_unit": 0.10632,
+            "petrol_eur_per_litre": 1.4239
+          },
+          "cost_eur": {
+            "electricity": 120.35,
+            "heating": 199.88,
+            "mobility": 92.56,
+            "total": 412.79
+          }
+        },
+        {
+          "month": "2027-04",
+          "consumption": {
+            "electricity_kwh": 327.04,
+            "heating_value": 919.289,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32237,
+            "electricity_fixed_eur": 12.562,
+            "heating_eur_per_unit": 0.10666,
+            "petrol_eur_per_litre": 1.4563
+          },
+          "cost_eur": {
+            "electricity": 117.99,
+            "heating": 98.05,
+            "mobility": 94.66,
+            "total": 310.7
+          }
+        },
+        {
+          "month": "2027-05",
+          "consumption": {
+            "electricity_kwh": 274.584,
+            "heating_value": 19.79,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32317,
+            "electricity_fixed_eur": 12.5828,
+            "heating_eur_per_unit": 0.10701,
+            "petrol_eur_per_litre": 1.4888
+          },
+          "cost_eur": {
+            "electricity": 101.32,
+            "heating": 2.12,
+            "mobility": 96.77,
+            "total": 200.21
+          }
+        },
+        {
+          "month": "2027-06",
+          "consumption": {
+            "electricity_kwh": 270.028,
+            "heating_value": 0.0,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32397,
+            "electricity_fixed_eur": 12.6036,
+            "heating_eur_per_unit": 0.10736,
+            "petrol_eur_per_litre": 1.507
+          },
+          "cost_eur": {
+            "electricity": 100.08,
+            "heating": 0.0,
+            "mobility": 97.95,
+            "total": 198.04
+          }
+        }
+      ],
+      "long_term_forecast": [
+        {
+          "year": 2026,
+          "consumption": {
+            "electricity_kwh": 4198.11,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1497.28,
+            "heating": 1478.56,
+            "mobility": 1116.9,
+            "total": 4092.74
+          }
+        },
+        {
+          "year": 2027,
+          "consumption": {
+            "electricity_kwh": 4211.78,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1539.33,
+            "heating": 1537.7,
+            "mobility": 1150.41,
+            "total": 4227.44
+          }
+        },
+        {
+          "year": 2028,
+          "consumption": {
+            "electricity_kwh": 4192.85,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1577.57,
+            "heating": 1599.21,
+            "mobility": 1184.92,
+            "total": 4361.7
+          }
+        },
+        {
+          "year": 2029,
+          "consumption": {
+            "electricity_kwh": 4198.81,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1625.4,
+            "heating": 1663.18,
+            "mobility": 1220.47,
+            "total": 4509.05
+          }
+        },
+        {
+          "year": 2030,
+          "consumption": {
+            "electricity_kwh": 4199.85,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1672.94,
+            "heating": 1729.71,
+            "mobility": 1257.08,
+            "total": 4659.73
+          }
+        },
+        {
+          "year": 2031,
+          "consumption": {
+            "electricity_kwh": 4204.41,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1723.2,
+            "heating": 1798.89,
+            "mobility": 1294.8,
+            "total": 4816.89
+          }
+        },
+        {
+          "year": 2032,
+          "consumption": {
+            "electricity_kwh": 4195.02,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1769.68,
+            "heating": 1870.85,
+            "mobility": 1333.64,
+            "total": 4974.17
+          }
+        },
+        {
+          "year": 2033,
+          "consumption": {
+            "electricity_kwh": 4202.46,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1823.99,
+            "heating": 1945.68,
+            "mobility": 1373.65,
+            "total": 5143.33
+          }
+        },
+        {
+          "year": 2034,
+          "consumption": {
+            "electricity_kwh": 4199.45,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1875.77,
+            "heating": 2023.51,
+            "mobility": 1414.86,
+            "total": 5314.15
+          }
+        },
+        {
+          "year": 2035,
+          "consumption": {
+            "electricity_kwh": 4206.35,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1933.16,
+            "heating": 2104.45,
+            "mobility": 1457.31,
+            "total": 5494.91
+          }
+        },
+        {
+          "year": 2036,
+          "consumption": {
+            "electricity_kwh": 4190.92,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1982.75,
+            "heating": 2188.63,
+            "mobility": 1501.03,
+            "total": 5672.41
+          }
+        },
+        {
+          "year": 2037,
+          "consumption": {
+            "electricity_kwh": 4198.11,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2043.56,
+            "heating": 2276.18,
+            "mobility": 1546.06,
+            "total": 5865.8
+          }
+        },
+        {
+          "year": 2038,
+          "consumption": {
+            "electricity_kwh": 4202.72,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2105.12,
+            "heating": 2367.22,
+            "mobility": 1592.44,
+            "total": 6064.78
+          }
+        },
+        {
+          "year": 2039,
+          "consumption": {
+            "electricity_kwh": 4209.6,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2169.61,
+            "heating": 2461.91,
+            "mobility": 1640.21,
+            "total": 6271.73
+          }
+        },
+        {
+          "year": 2040,
+          "consumption": {
+            "electricity_kwh": 4191.13,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2223.83,
+            "heating": 2560.39,
+            "mobility": 1689.42,
+            "total": 6473.64
+          }
+        },
+        {
+          "year": 2041,
+          "consumption": {
+            "electricity_kwh": 4199.85,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2292.88,
+            "heating": 2662.8,
+            "mobility": 1740.1,
+            "total": 6695.79
+          }
+        },
+        {
+          "year": 2042,
+          "consumption": {
+            "electricity_kwh": 4198.61,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2359.03,
+            "heating": 2769.32,
+            "mobility": 1792.3,
+            "total": 6920.64
+          }
+        },
+        {
+          "year": 2043,
+          "consumption": {
+            "electricity_kwh": 4207.95,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2432.68,
+            "heating": 2880.09,
+            "mobility": 1846.07,
+            "total": 7158.84
+          }
+        },
+        {
+          "year": 2044,
+          "consumption": {
+            "electricity_kwh": 4195.34,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2496.73,
+            "heating": 2995.29,
+            "mobility": 1901.45,
+            "total": 7393.48
+          }
+        },
+        {
+          "year": 2045,
+          "consumption": {
+            "electricity_kwh": 4199.45,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2571.77,
+            "heating": 3115.1,
+            "mobility": 1958.5,
+            "total": 7645.37
+          }
+        }
+      ]
+    },
+    "high": {
+      "short_term_forecast": [
+        {
+          "month": "2026-07",
+          "consumption": {
+            "electricity_kwh": 279.496,
+            "heating_value": 0.0,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10357,
+            "petrol_eur_per_litre": 1.4667
+          },
+          "cost_eur": {
+            "electricity": 101.94,
+            "heating": 0.0,
+            "mobility": 95.33,
+            "total": 197.27
+          }
+        },
+        {
+          "month": "2026-08",
+          "consumption": {
+            "electricity_kwh": 277.781,
+            "heating_value": 0.0,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10416,
+            "petrol_eur_per_litre": 1.4585
+          },
+          "cost_eur": {
+            "electricity": 101.39,
+            "heating": 0.0,
+            "mobility": 94.8,
+            "total": 196.19
+          }
+        },
+        {
+          "month": "2026-09",
+          "consumption": {
+            "electricity_kwh": 327.319,
+            "heating_value": 0.0,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10475,
+            "petrol_eur_per_litre": 1.436
+          },
+          "cost_eur": {
+            "electricity": 117.24,
+            "heating": 0.0,
+            "mobility": 93.34,
+            "total": 210.58
+          }
+        },
+        {
+          "month": "2026-10",
+          "consumption": {
+            "electricity_kwh": 337.024,
+            "heating_value": 1009.302,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10534,
+            "petrol_eur_per_litre": 1.4133
+          },
+          "cost_eur": {
+            "electricity": 120.35,
+            "heating": 106.32,
+            "mobility": 91.86,
+            "total": 318.53
+          }
+        },
+        {
+          "month": "2026-11",
+          "consumption": {
+            "electricity_kwh": 443.117,
+            "heating_value": 1934.337,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10593,
+            "petrol_eur_per_litre": 1.3904
+          },
+          "cost_eur": {
+            "electricity": 154.3,
+            "heating": 204.91,
+            "mobility": 90.37,
+            "total": 449.58
+          }
+        },
+        {
+          "month": "2026-12",
+          "consumption": {
+            "electricity_kwh": 457.382,
+            "heating_value": 2731.053,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10653,
+            "petrol_eur_per_litre": 1.396
+          },
+          "cost_eur": {
+            "electricity": 158.86,
+            "heating": 290.95,
+            "mobility": 90.74,
+            "total": 540.55
+          }
+        },
+        {
+          "month": "2027-01",
+          "consumption": {
+            "electricity_kwh": 454.733,
+            "heating_value": 2988.326,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32,
+            "electricity_fixed_eur": 12.5,
+            "heating_eur_per_unit": 0.10714,
+            "petrol_eur_per_litre": 1.4017
+          },
+          "cost_eur": {
+            "electricity": 158.01,
+            "heating": 320.15,
+            "mobility": 91.11,
+            "total": 569.28
+          }
+        },
+        {
+          "month": "2027-02",
+          "consumption": {
+            "electricity_kwh": 414.349,
+            "heating_value": 2517.829,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.3213,
+            "electricity_fixed_eur": 12.5308,
+            "heating_eur_per_unit": 0.10774,
+            "petrol_eur_per_litre": 1.4074
+          },
+          "cost_eur": {
+            "electricity": 145.66,
+            "heating": 271.27,
+            "mobility": 91.48,
+            "total": 508.42
+          }
+        },
+        {
+          "month": "2027-03",
+          "consumption": {
+            "electricity_kwh": 335.257,
+            "heating_value": 1880.073,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32261,
+            "electricity_fixed_eur": 12.5617,
+            "heating_eur_per_unit": 0.10835,
+            "petrol_eur_per_litre": 1.4423
+          },
+          "cost_eur": {
+            "electricity": 120.72,
+            "heating": 203.71,
+            "mobility": 93.75,
+            "total": 418.18
+          }
+        },
+        {
+          "month": "2027-04",
+          "consumption": {
+            "electricity_kwh": 327.04,
+            "heating_value": 919.289,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32393,
+            "electricity_fixed_eur": 12.5927,
+            "heating_eur_per_unit": 0.10896,
+            "petrol_eur_per_litre": 1.4774
+          },
+          "cost_eur": {
+            "electricity": 118.53,
+            "heating": 100.17,
+            "mobility": 96.03,
+            "total": 314.73
+          }
+        },
+        {
+          "month": "2027-05",
+          "consumption": {
+            "electricity_kwh": 274.584,
+            "heating_value": 19.79,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32525,
+            "electricity_fixed_eur": 12.6238,
+            "heating_eur_per_unit": 0.10958,
+            "petrol_eur_per_litre": 1.5128
+          },
+          "cost_eur": {
+            "electricity": 101.93,
+            "heating": 2.17,
+            "mobility": 98.33,
+            "total": 202.43
+          }
+        },
+        {
+          "month": "2027-06",
+          "consumption": {
+            "electricity_kwh": 270.028,
+            "heating_value": 0.0,
+            "heating_unit": "kwh",
+            "mobility_km": 1000.0,
+            "mobility_fuel_litres": 65.0
+          },
+          "prices": {
+            "electricity_eur_per_kwh": 0.32657,
+            "electricity_fixed_eur": 12.6549,
+            "heating_eur_per_unit": 0.1102,
+            "petrol_eur_per_litre": 1.5338
+          },
+          "cost_eur": {
+            "electricity": 100.84,
+            "heating": 0.0,
+            "mobility": 99.69,
+            "total": 200.53
+          }
+        }
+      ],
+      "long_term_forecast": [
+        {
+          "year": 2026,
+          "consumption": {
+            "electricity_kwh": 4198.11,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1499.78,
+            "heating": 1499.65,
+            "mobility": 1126.86,
+            "total": 4126.29
+          }
+        },
+        {
+          "year": 2027,
+          "consumption": {
+            "electricity_kwh": 4211.78,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1566.57,
+            "heating": 1604.62,
+            "mobility": 1183.21,
+            "total": 4354.4
+          }
+        },
+        {
+          "year": 2028,
+          "consumption": {
+            "electricity_kwh": 4192.85,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1635.17,
+            "heating": 1716.95,
+            "mobility": 1242.37,
+            "total": 4594.48
+          }
+        },
+        {
+          "year": 2029,
+          "consumption": {
+            "electricity_kwh": 4198.81,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1715.91,
+            "heating": 1837.13,
+            "mobility": 1304.49,
+            "total": 4857.53
+          }
+        },
+        {
+          "year": 2030,
+          "consumption": {
+            "electricity_kwh": 4199.85,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1798.83,
+            "heating": 1965.73,
+            "mobility": 1369.71,
+            "total": 5134.27
+          }
+        },
+        {
+          "year": 2031,
+          "consumption": {
+            "electricity_kwh": 4204.41,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1887.27,
+            "heating": 2103.33,
+            "mobility": 1438.2,
+            "total": 5428.8
+          }
+        },
+        {
+          "year": 2032,
+          "consumption": {
+            "electricity_kwh": 4195.02,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 1974.19,
+            "heating": 2250.57,
+            "mobility": 1510.11,
+            "total": 5734.86
+          }
+        },
+        {
+          "year": 2033,
+          "consumption": {
+            "electricity_kwh": 4202.46,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2072.63,
+            "heating": 2408.11,
+            "mobility": 1585.61,
+            "total": 6066.35
+          }
+        },
+        {
+          "year": 2034,
+          "consumption": {
+            "electricity_kwh": 4199.45,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2171.16,
+            "heating": 2576.67,
+            "mobility": 1664.89,
+            "total": 6412.72
+          }
+        },
+        {
+          "year": 2035,
+          "consumption": {
+            "electricity_kwh": 4206.35,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2279.32,
+            "heating": 2757.04,
+            "mobility": 1748.14,
+            "total": 6784.49
+          }
+        },
+        {
+          "year": 2036,
+          "consumption": {
+            "electricity_kwh": 4190.92,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2381.38,
+            "heating": 2950.03,
+            "mobility": 1835.54,
+            "total": 7166.96
+          }
+        },
+        {
+          "year": 2037,
+          "consumption": {
+            "electricity_kwh": 4198.11,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2500.3,
+            "heating": 3156.53,
+            "mobility": 1927.32,
+            "total": 7584.16
+          }
+        },
+        {
+          "year": 2038,
+          "consumption": {
+            "electricity_kwh": 4202.72,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2623.84,
+            "heating": 3377.49,
+            "mobility": 2023.69,
+            "total": 8025.02
+          }
+        },
+        {
+          "year": 2039,
+          "consumption": {
+            "electricity_kwh": 4209.6,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2754.92,
+            "heating": 3613.92,
+            "mobility": 2124.87,
+            "total": 8493.7
+          }
+        },
+        {
+          "year": 2040,
+          "consumption": {
+            "electricity_kwh": 4191.13,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 2876.6,
+            "heating": 3866.89,
+            "mobility": 2231.11,
+            "total": 8974.6
+          }
+        },
+        {
+          "year": 2041,
+          "consumption": {
+            "electricity_kwh": 4199.85,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 3021.62,
+            "heating": 4137.57,
+            "mobility": 2342.67,
+            "total": 9501.86
+          }
+        },
+        {
+          "year": 2042,
+          "consumption": {
+            "electricity_kwh": 4198.61,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 3167.18,
+            "heating": 4427.2,
+            "mobility": 2459.8,
+            "total": 10054.19
+          }
+        },
+        {
+          "year": 2043,
+          "consumption": {
+            "electricity_kwh": 4207.95,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 3327.59,
+            "heating": 4737.11,
+            "mobility": 2582.79,
+            "total": 10647.49
+          }
+        },
+        {
+          "year": 2044,
+          "consumption": {
+            "electricity_kwh": 4195.34,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 3479.4,
+            "heating": 5068.71,
+            "mobility": 2711.93,
+            "total": 11260.04
+          }
+        },
+        {
+          "year": 2045,
+          "consumption": {
+            "electricity_kwh": 4199.45,
+            "heating": 14000.0,
+            "heating_unit": "kwh",
+            "mobility_fuel_litres": 780.0
+          },
+          "cost_eur": {
+            "electricity": 3651.52,
+            "heating": 5423.51,
+            "mobility": 2847.53,
+            "total": 11922.57
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "metadata": {
+    "source": "DWD — Deutscher Wetterdienst",
+    "dataset": "Klimanormalwerte 1991-2020 — monthly mean air temperature at 2 m (°C)",
+    "reference": "https://www.dwd.de/DE/leistungen/klimadatendeutschland/klimadatendeutschland.html",
+    "opendata_api": "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/monthly/kl/",
+    "heating_degree_day_base_temp_c": 15.0,
+    "hdd_method": "Gradtagszahl-Methode: HDD_month = max(0, (T_base - T_mean_monthly) * days_in_month)",
+    "placeholder_note": "PLACEHOLDER — values are representative regional averages approximated from DWD climate normals 1991-2020. Replace with station-specific normals from the DWD OpenData portal, selected by nearest station to user postcode.",
+    "months": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+  },
+  "postcode_prefix_to_region": {
+    "_note": "Maps first 2 digits of German PLZ to a climate region. Simplified — precise mapping requires full PLZ lookup table.",
+    "01": "east_germany", "02": "east_germany", "03": "east_germany",
+    "04": "east_germany", "05": "east_germany", "06": "east_germany",
+    "07": "east_germany", "08": "east_germany", "09": "east_germany",
+    "10": "berlin", "11": "berlin", "12": "berlin", "13": "berlin", "14": "berlin",
+    "15": "north_east", "16": "north_east", "17": "north_east",
+    "18": "north_east", "19": "north_east",
+    "20": "hamburg", "21": "hamburg", "22": "hamburg", "23": "hamburg",
+    "24": "hamburg", "25": "hamburg",
+    "26": "lower_saxony", "27": "lower_saxony", "28": "lower_saxony",
+    "29": "lower_saxony", "30": "lower_saxony", "31": "lower_saxony",
+    "32": "lower_saxony", "33": "lower_saxony", "34": "lower_saxony",
+    "35": "lower_saxony", "36": "lower_saxony", "37": "lower_saxony",
+    "38": "lower_saxony", "39": "lower_saxony",
+    "40": "nrw", "41": "nrw", "42": "nrw", "43": "nrw", "44": "nrw",
+    "45": "nrw", "46": "nrw", "47": "nrw", "48": "nrw", "49": "nrw",
+    "50": "nrw", "51": "nrw", "52": "nrw", "53": "nrw",
+    "54": "rhineland", "55": "rhineland", "56": "rhineland",
+    "57": "nrw", "58": "nrw", "59": "nrw",
+    "60": "frankfurt", "61": "frankfurt", "63": "frankfurt",
+    "64": "frankfurt", "65": "frankfurt", "62": "rhineland",
+    "66": "saarland", "67": "rhineland",
+    "68": "bw", "69": "bw", "70": "bw", "71": "bw",
+    "72": "bw", "73": "bw", "74": "bw", "75": "bw",
+    "76": "bw", "77": "bw", "78": "bw", "79": "bw",
+    "80": "munich", "81": "munich", "82": "munich", "83": "munich",
+    "84": "munich", "85": "munich", "86": "munich", "87": "munich",
+    "88": "munich", "89": "munich",
+    "90": "bavaria_north", "91": "bavaria_north", "92": "bavaria_north",
+    "93": "bavaria_north", "94": "bavaria_north", "95": "bavaria_north",
+    "96": "bavaria_north", "97": "bavaria_north", "98": "bavaria_north",
+    "99": "east_germany"
+  },
+  "regions": {
+    "berlin": {
+      "station": "Berlin-Tempelhof (DWD 10384)",
+      "mean_temp_c": [-0.1, 1.4, 5.5, 10.2, 14.9, 18.0, 20.3, 19.8, 15.4,  9.9,  4.9,  1.2]
+    },
+    "hamburg": {
+      "station": "Hamburg-Fuhlsbüttel (DWD 01975)",
+      "mean_temp_c": [ 2.3, 2.9, 6.2, 10.2, 14.4, 17.5, 19.8, 19.4, 15.7, 11.3,  6.7,  3.4]
+    },
+    "munich": {
+      "station": "München-Stadt (DWD 03672)",
+      "mean_temp_c": [-0.4, 1.5, 5.7, 10.1, 14.5, 17.7, 19.8, 19.4, 15.2,  9.7,  4.2,  0.2]
+    },
+    "nrw": {
+      "station": "Köln-Bonn (DWD 02564)",
+      "mean_temp_c": [ 3.2, 4.2, 7.7, 12.0, 16.0, 18.8, 20.9, 20.6, 16.5, 11.5,  6.8,  3.9]
+    },
+    "frankfurt": {
+      "station": "Frankfurt/Main (DWD 01420)",
+      "mean_temp_c": [ 2.0, 3.4, 7.2, 11.4, 15.7, 18.5, 20.7, 20.3, 16.2, 11.0,  6.0,  2.9]
+    },
+    "bw": {
+      "station": "Stuttgart-Schnarrenberg (DWD 04931)",
+      "mean_temp_c": [ 1.2, 2.9, 7.0, 11.4, 15.5, 18.5, 20.4, 19.9, 15.7, 10.5,  5.4,  2.2]
+    },
+    "east_germany": {
+      "station": "Dresden-Klotzsche (DWD 01048)",
+      "mean_temp_c": [-0.2, 1.3, 5.7, 10.4, 14.9, 18.1, 20.3, 19.8, 15.4,  9.8,  4.7,  1.0]
+    },
+    "lower_saxony": {
+      "station": "Hannover (DWD 02564)",
+      "mean_temp_c": [ 1.8, 2.8, 6.5, 10.8, 15.1, 17.8, 20.2, 19.8, 15.5, 10.6,  5.9,  2.7]
+    },
+    "rhineland": {
+      "station": "Trier (DWD 05100)",
+      "mean_temp_c": [ 2.8, 3.8, 7.5, 11.7, 15.8, 18.6, 20.8, 20.4, 16.3, 11.3,  6.6,  3.5]
+    },
+    "north_east": {
+      "station": "Rostock-Warnemünde (DWD 04271)",
+      "mean_temp_c": [ 0.9, 1.5, 5.0,  9.7, 14.0, 17.2, 19.5, 19.1, 14.8,  9.8,  5.0,  2.0]
+    },
+    "saarland": {
+      "station": "Saarbrücken-Ensheim (DWD 04336)",
+      "mean_temp_c": [ 2.8, 4.1, 8.1, 12.3, 16.4, 19.1, 21.1, 20.7, 16.6, 11.4,  6.6,  3.4]
+    },
+    "bavaria_north": {
+      "station": "Nürnberg (DWD 03668)",
+      "mean_temp_c": [ 0.1, 1.7, 6.0, 10.6, 15.0, 18.2, 20.4, 19.9, 15.6, 10.1,  4.8,  1.3]
+    },
+    "germany_average": {
+      "station": "Deutschland Mittel (Flächenmittel DWD)",
+      "mean_temp_c": [ 1.5, 2.9, 6.5, 10.9, 15.2, 18.2, 20.4, 19.9, 15.6, 10.3,  5.6,  2.3]
+    }
+  },
+  "fallback_region": "germany_average"
+}

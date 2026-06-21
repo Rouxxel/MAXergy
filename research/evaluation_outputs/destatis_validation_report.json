@@ -1,0 +1,140 @@
+{
+  "file_path": "/Users/jv/Documents/GitHub/MAXergy/scripts/evaluation/61111-0004_de.csv",
+  "encoding": "utf-8-sig",
+  "delimiter": ";",
+  "decimal_separator": ",",
+  "n_header_rows": 9,
+  "n_footer_rows": 9,
+  "n_data_rows": 441,
+  "table_id": "61111-0004",
+  "table_title": "Verbraucherpreisindex: Deutschland, Monate,",
+  "base_year": "2020",
+  "value_type": "price_index",
+  "date_range_in_file": [
+    "2025-01",
+    "2026-12"
+  ],
+  "n_time_columns": 24,
+  "series": {
+    "electricity": {
+      "series_id": "electricity",
+      "coicop_code": "CC13-0451",
+      "description_de": "Strom",
+      "description_en": "Electricity",
+      "found": true,
+      "n_observations": 17,
+      "n_missing": 7,
+      "n_provisional": 17,
+      "first_date": "2025-01",
+      "last_date": "2026-05",
+      "value_range": [
+        118.4,
+        124.8
+      ],
+      "flags_found": [
+        "e"
+      ],
+      "backtesting_suitable": false,
+      "backtesting_reason": "Only 17 observations available; ETS/SARIMA require ≥60 months. This export covers only the most recent 24-month window. Obtain the full historical series from Destatis GENESIS (table 61111-0001 provides monthly data from 1991).",
+      "notes": [
+        "17 of 17 observations carry provisional flag 'e' (vorläufig — subject to revision).",
+        "Missing (not yet published): ['2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12']"
+      ]
+    },
+    "gas": {
+      "series_id": "gas",
+      "coicop_code": "CC13-04521",
+      "description_de": "Erdgas, einschließlich Betriebskosten",
+      "description_en": "Natural gas incl. distribution charges",
+      "found": true,
+      "n_observations": 17,
+      "n_missing": 7,
+      "n_provisional": 17,
+      "first_date": "2025-01",
+      "last_date": "2026-05",
+      "value_range": [
+        180.0,
+        185.6
+      ],
+      "flags_found": [
+        "e"
+      ],
+      "backtesting_suitable": false,
+      "backtesting_reason": "Only 17 observations available; ETS/SARIMA require ≥60 months. This export covers only the most recent 24-month window. Obtain the full historical series from Destatis GENESIS (table 61111-0001 provides monthly data from 1991).",
+      "notes": [
+        "17 of 17 observations carry provisional flag 'e' (vorläufig — subject to revision).",
+        "Missing (not yet published): ['2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12']"
+      ]
+    },
+    "heating_oil": {
+      "series_id": "heating_oil",
+      "coicop_code": "CC13-04530",
+      "description_de": "Heizöl, einschließlich Betriebskosten",
+      "description_en": "Heating oil incl. distribution charges",
+      "found": true,
+      "n_observations": 17,
+      "n_missing": 7,
+      "n_provisional": 17,
+      "first_date": "2025-01",
+      "last_date": "2026-05",
+      "value_range": [
+        143.9,
+        190.1
+      ],
+      "flags_found": [
+        "e"
+      ],
+      "backtesting_suitable": false,
+      "backtesting_reason": "Only 17 observations available; ETS/SARIMA require ≥60 months. This export covers only the most recent 24-month window. Obtain the full historical series from Destatis GENESIS (table 61111-0001 provides monthly data from 1991).",
+      "notes": [
+        "17 of 17 observations carry provisional flag 'e' (vorläufig — subject to revision).",
+        "Missing (not yet published): ['2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12']"
+      ]
+    },
+    "petrol": {
+      "series_id": "petrol",
+      "coicop_code": "CC13-07222",
+      "description_de": "Superbenzin",
+      "description_en": "Super petrol (unleaded)",
+      "found": true,
+      "n_observations": 17,
+      "n_missing": 7,
+      "n_provisional": 17,
+      "first_date": "2025-01",
+      "last_date": "2026-05",
+      "value_range": [
+        131.7,
+        164.8
+      ],
+      "flags_found": [
+        "e"
+      ],
+      "backtesting_suitable": false,
+      "backtesting_reason": "Only 17 observations available; ETS/SARIMA require ≥60 months. This export covers only the most recent 24-month window. Obtain the full historical series from Destatis GENESIS (table 61111-0001 provides monthly data from 1991).",
+      "notes": [
+        "Super petrol (Superbenzin) selected as petrol proxy. Dieselkraftstoff (CC13-07221) is also present in this file. Choose whichever matches the household vehicle type.",
+        "17 of 17 observations carry provisional flag 'e' (vorläufig — subject to revision).",
+        "Missing (not yet published): ['2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12']"
+      ]
+    }
+  },
+  "overall_backtesting_suitable": false,
+  "overall_backtesting_reason": "Only 17 months of data available. ETS and SARIMA backtesting require at least 60 months (5 years). Supplement with longer historical series from Destatis GENESIS (table 61111-0001 or 61111-0006 provides monthly data from 1991 onward).",
+  "missing_series": [],
+  "ambiguous_series": [],
+  "warnings": [],
+  "transformations_applied": [
+    "Decimal separator ',' converted to '.' for numeric parsing.",
+    "Missing value markers ('...', '.', '') replaced with None / NaN.",
+    "Date columns constructed from separate year and month header rows.",
+    "Quality flag columns removed from output; stored in report.",
+    "Footer metadata rows excluded."
+  ],
+  "post_load_validation": [
+    "Column 'electricity_index': 7 missing values out of 24 rows.",
+    "Column 'gas_index': 7 missing values out of 24 rows.",
+    "Column 'heating_oil_index': 7 missing values out of 24 rows.",
+    "Column 'petrol_index': 7 missing values out of 24 rows.",
+    "INFO: Values are price indices with base year 2020=100. No base-year change detected within this export (single 2020=100 base stated in header row 6)."
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "profile_name": "high_benefit_household",
+  "recommended_scenario": "full_upgrade",
+  "recommended_scenario_label": "Full Upgrade",
+  "recommendation_reason": "Highest projected 20-year cumulative net savings with positive cash flow from Year 1.",
+  "yr1_baseline_energy_cost_eur": 10247.02,
+  "yr1_upgraded_energy_cost_eur": 4039.59,
+  "yr1_financing_payments_eur": 2310.56,
+  "yr1_upgraded_total_cost_eur": 6350.15,
+  "yr1_net_savings_eur": 3896.87,
+  "monthly_net_savings_yr1_eur": 324.74,
+  "cum20_net_savings_central_eur": 126420.43,
+  "cum20_net_savings_low_eur": 126420.43,
+  "break_even_year": 1.0,
+  "break_even_month_approx": 12,
+  "financing_monthly_instalment_eur": 192.55,
+  "financing_loan_term_months": 240,
+  "financing_end_year": 20,
+  "validation_warnings": [
+    "solar_kwp not provided; estimated 10.00 kWp from 60.0 m² roof",
+    "battery_kwh not specified; using default 10.0 kWh"
+  ],
+  "note_st_vs_lt": "Year 1 values use the central long-term scenario price model. The short-term estimate (constant prices) may differ slightly."
+}

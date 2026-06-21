@@ -1,0 +1,65 @@
+[
+  {
+    "profile_name": "average_german_household",
+    "profile_description": "3-person semi-detached house in Cologne. Typical electricity use (3,500 kWh), gas heating (14,000 kWh), 12,000 km/yr petrol, 35 m² south-facing roof. Standard 15-yr loan at 4.5 %.",
+    "input_json_path": "documentation/data/test_profiles/average_german_household.json",
+    "output_json_path": "documentation/data/test_outputs/average_german_household_output.json",
+    "best_scenario": "full_upgrade",
+    "best_scenario_selection_basis": "highest 20-yr cumulative net savings (central LT scenario)",
+    "baseline_yr1_energy_cost_eur": 3916.13,
+    "upgraded_yr1_energy_cost_eur": 1700.98,
+    "yr1_energy_cost_reduction_eur": 2215.15,
+    "yr1_financing_payments_eur": 2512.24,
+    "yr1_net_savings_eur": -297.09,
+    "monthly_net_savings_yr1_eur": -24.76,
+    "cum20_net_savings_eur": 24827.86,
+    "monthly_instalment_eur": 209.35,
+    "figure_path": "documentation/figures/test_profiles/average_german_household_comparison.png",
+    "validation_warnings": [
+      "solar_kwp not provided; estimated 5.83 kWp from 35.0 m² roof",
+      "battery_kwh not specified; using default 10.0 kWh"
+    ]
+  },
+  {
+    "profile_name": "low_benefit_household",
+    "profile_description": "Single-person flat in Hamburg. Low electricity use (1,500 kWh), minimal gas heating (4,500 kWh), 4,000 km/yr, small 12 m² north-facing shaded roof (40 % shading). Shorter 10-yr loan at 6.5 %.",
+    "input_json_path": "documentation/data/test_profiles/low_benefit_household.json",
+    "output_json_path": "documentation/data/test_outputs/low_benefit_household_output.json",
+    "best_scenario": "pv_ev",
+    "best_scenario_selection_basis": "highest 20-yr cumulative net savings (central LT scenario)",
+    "baseline_yr1_energy_cost_eur": 1554.04,
+    "upgraded_yr1_energy_cost_eur": 1163.43,
+    "yr1_energy_cost_reduction_eur": 390.62,
+    "yr1_financing_payments_eur": 545.03,
+    "yr1_net_savings_eur": -154.41,
+    "monthly_net_savings_yr1_eur": -12.87,
+    "cum20_net_savings_eur": 4843.52,
+    "monthly_instalment_eur": 45.42,
+    "figure_path": "documentation/figures/test_profiles/low_benefit_household_comparison.png",
+    "validation_warnings": [
+      "solar_kwp not provided; estimated 2.00 kWp from 12.0 m² roof",
+      "battery_kwh not specified; using default 10.0 kWh"
+    ]
+  },
+  {
+    "profile_name": "high_benefit_household",
+    "profile_description": "5-person detached house in Munich. High electricity use (7,200 kWh), oil heating (3,200 litres), 28,000 km/yr petrol SUV, 60 m² south-facing roof (5 % shading). 20-yr green mortgage at 3.5 %.",
+    "input_json_path": "documentation/data/test_profiles/high_benefit_household.json",
+    "output_json_path": "documentation/data/test_outputs/high_benefit_household_output.json",
+    "best_scenario": "full_upgrade",
+    "best_scenario_selection_basis": "highest 20-yr cumulative net savings (central LT scenario)",
+    "baseline_yr1_energy_cost_eur": 10247.02,
+    "upgraded_yr1_energy_cost_eur": 4039.59,
+    "yr1_energy_cost_reduction_eur": 6207.43,
+    "yr1_financing_payments_eur": 2310.56,
+    "yr1_net_savings_eur": 3896.87,
+    "monthly_net_savings_yr1_eur": 324.74,
+    "cum20_net_savings_eur": 126420.43,
+    "monthly_instalment_eur": 192.55,
+    "figure_path": "documentation/figures/test_profiles/high_benefit_household_comparison.png",
+    "validation_warnings": [
+      "solar_kwp not provided; estimated 10.00 kWp from 60.0 m² roof",
+      "battery_kwh not specified; using default 10.0 kWh"
+    ]
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "profile_name": "low_benefit_household",
+  "recommended_scenario": "pv_ev",
+  "recommended_scenario_label": "PV + EV",
+  "recommendation_reason": "Highest projected 20-year cumulative net savings. Year 1 net savings are negative — loan repayments exceed energy savings in early years. Break-even projected in Year 11 (central price scenario).",
+  "yr1_baseline_energy_cost_eur": 1554.04,
+  "yr1_upgraded_energy_cost_eur": 1163.43,
+  "yr1_financing_payments_eur": 545.03,
+  "yr1_upgraded_total_cost_eur": 1708.46,
+  "yr1_net_savings_eur": -154.41,
+  "monthly_net_savings_yr1_eur": -12.87,
+  "cum20_net_savings_central_eur": 4843.52,
+  "cum20_net_savings_low_eur": 4843.52,
+  "break_even_year": 11.9,
+  "break_even_month_approx": 143,
+  "financing_monthly_instalment_eur": 45.42,
+  "financing_loan_term_months": 120,
+  "financing_end_year": 10,
+  "validation_warnings": [
+    "solar_kwp not provided; estimated 2.00 kWp from 12.0 m² roof",
+    "battery_kwh not specified; using default 10.0 kWh"
+  ],
+  "note_st_vs_lt": "Year 1 values use the central long-term scenario price model. The short-term estimate (constant prices) may differ slightly."
+}
