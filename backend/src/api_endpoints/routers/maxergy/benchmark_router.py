@@ -38,7 +38,7 @@ def load_benchmark_data() -> Dict[str, Any]:
     try:
         # Path to benchmark output file (relative to repository root)
         # Go up from backend/src/api_endpoints/routers/maxergy/ to repository root
-        repo_root = Path(__file__).parent.parent.parent.parent.parent
+        repo_root = Path(__file__).parent.parent.parent.parent.parent.parent
         benchmark_path = repo_root / "documentation" / "data" / "test_outputs" / "average_german_household_output.json"
 
         if not benchmark_path.exists():
