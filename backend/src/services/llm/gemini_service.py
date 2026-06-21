@@ -72,7 +72,7 @@ class GeminiService:
         
         try:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.model = genai.GenerativeModel('gemini-3.5-flash')
             self._initialized = True
             log_handler.info("[gemini_service] Gemini service initialized successfully")
         except Exception as e:

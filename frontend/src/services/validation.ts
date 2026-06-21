@@ -259,7 +259,7 @@ const AdvisorMessageSchema = z.object({
 export const AdvisorChatRequestSchema = z.object({
   user_message: z.string().min(1),
   forecast_result: z.null(),
-  assessment_id: z.string().nullable(),
+  assessment_id: z.string(),
 }) satisfies z.ZodType<AdvisorChatRequest>;
 
 export const AdvisorChatResponseSchema = z.object({

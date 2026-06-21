@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, SendHorizonal } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 import { AppShell, BrandMark } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -110,7 +111,7 @@ function Advisor() {
         className="flex-1 space-y-3 overflow-y-auto pb-4"
       >
         {messages.map((m) => (
-          <Bubble key={m.id} role={m.role} content={m.content} />
+          <Bubble key={m.id} role={m.role} content={m.content} suggestions={m.suggestions} />
         ))}
         {send.isPending ? <Bubble role="assistant" content="…" pulse /> : null}
       </div>
@@ -163,20 +164,40 @@ function Bubble({
   }
   return (
     <div className="flex justify-start">
-      <div className="max-w-[90%] space-y-2">
-        <div
-          className={
-            "text-sm leading-relaxed text-foreground " +
-            (pulse ? "animate-pulse text-muted-foreground" : "")
-          }
-        >
-          {content}
-        </div>
+      <div
+        className={
+          "max-w-[90%] rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed text-white " +
+          (pulse ? "animate-pulse opacity-60" : "")
+        }
+        style={{ backgroundColor: "#6C63FF" }}
+      >
+        {pulse ? (
+          <span>…</span>
+        ) : (
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+              strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+              em: ({ children }) => <em className="italic">{children}</em>,
+              ul: ({ children }) => <ul className="mb-2 ml-4 list-disc space-y-1">{children}</ul>,
+              ol: ({ children }) => <ol className="mb-2 ml-4 list-decimal space-y-1">{children}</ol>,
+              li: ({ children }) => <li className="leading-snug">{children}</li>,
+              h1: ({ children }) => <h1 className="mb-1 text-base font-bold">{children}</h1>,
+              h2: ({ children }) => <h2 className="mb-1 text-sm font-bold">{children}</h2>,
+              h3: ({ children }) => <h3 className="mb-1 text-sm font-semibold">{children}</h3>,
+              code: ({ children }) => (
+                <code className="rounded bg-white/20 px-1 py-0.5 font-mono text-xs">{children}</code>
+              ),
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+        )}
         {suggestions && suggestions.length > 0 && (
-          <div className="space-y-1">
+          <div className="mt-2 space-y-1 border-t border-white/20 pt-2">
             {suggestions.map((s, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary" />
+              <div key={i} className="flex items-start gap-2 text-xs text-white/80">
+                <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-white" />
                 <span>{s}</span>
               </div>
             ))}

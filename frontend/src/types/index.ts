@@ -146,7 +146,7 @@ export interface Recommendation {
 export interface AdvisorChatRequest {
   user_message: string;
   forecast_result: ForecastResult | null;
-  assessment_id: string | null;
+  assessment_id: string;
 }
 
 export interface AdvisorChatResponse {
