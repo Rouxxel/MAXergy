@@ -7,6 +7,7 @@ import { BrandMark } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { getBenchmark } from "@/services/endpoints";
 import { FeatureCard, StepCard, SummaryCard, FAQItem } from "@/components/landing";
+import { trackPageView, trackCTAClick, trackScrollDepth, trackBenchmarkLoad, trackFAQExpand } from "@/services/analytics";
 import cumulativeNetSavings from "@/assets/cumulative_net_savings.png";
 import averageGermanHousehold from "@/assets/average_german_household_comparison.png";
 import highBenefitHousehold from "@/assets/high_benefit_household_comparison.png";
