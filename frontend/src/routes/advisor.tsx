@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { postAdvisorChat } from "@/services/endpoints";
 import { useResultsStore } from "@/stores/resultsStore";
+import { useAssessmentStore } from "@/stores/assessmentStore";
 
 export const Route = createFileRoute("/advisor")({
   head: () => ({ meta: [{ title: "AI advisor — MAXergy" }] }),
@@ -24,6 +25,7 @@ interface Message {
 
 function Advisor() {
   const { forecast } = useResultsStore();
+  const { submittedId } = useAssessmentStore();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -41,7 +43,7 @@ function Advisor() {
       postAdvisorChat({
         user_message: text,
         forecast_result: forecast || null,
-        assessment_id: null,
+        assessment_id: submittedId || null,
       }),
     onSuccess: (res) => {
       setMessages((m) => [

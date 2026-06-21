@@ -248,7 +248,7 @@ class AssessmentResponse(BaseModel):
 
 class AdvisorChatRequest(BaseModel):
     """Request to AI advisor."""
-    assessment_id: str = Field(..., description="Assessment ID for context")
+    assessment_id: Optional[str] = Field(None, description="Assessment ID for context")
     forecast_result: Optional[ForecastResult] = Field(None, description="Forecast result for context")
     user_message: str = Field(..., description="User's question")
     conversation_history: list[dict] = Field(default_factory=list, description="Previous conversation")
