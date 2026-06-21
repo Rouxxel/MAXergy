@@ -12,7 +12,10 @@ export const Route = createFileRoute("/compare")({
   component: Compare,
 });
 
-const euro = (n: number) => `€${n.toLocaleString()}`;
+const euro = (n: number | undefined | null) =>
+  n !== undefined && n !== null
+    ? `€${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+    : "€0";
 
 function Compare() {
   const { forecast, selectedScenarioId, selectScenario } = useResultsStore();

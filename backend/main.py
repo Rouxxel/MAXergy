@@ -76,10 +76,14 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         json.dumps(exc.errors(), indent=2)
     )
     log_handler.error("Request body: %s", exc.body)
-    return {
-        "detail": exc.errors(),
-        "body": exc.body,
-    }
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": exc.errors(),
+            "body": exc.body,
+        }
+    )
 
 #Setup CORS for web app and future React Native app
 app.add_middleware(

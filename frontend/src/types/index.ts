@@ -5,10 +5,6 @@ export interface Location {
   country: string;
 }
 
-export interface HouseholdOccupants {
-  count: number;
-}
-
 export interface HouseholdElectricity {
   annual_kwh: number;
   current_tariff_type: string;
@@ -26,7 +22,7 @@ export interface HouseholdRoof {
 }
 
 export interface Household {
-  occupants: HouseholdOccupants;
+  occupants: number;
   electricity: HouseholdElectricity;
   roof: HouseholdRoof;
 }
@@ -88,21 +84,25 @@ export interface HouseholdAssessment {
 
 export interface MonthlyCostEur {
   electricity: number;
-  gas_oil: number;
-  fuel: number;
+  heating: number;
+  mobility: number;
   total: number;
 }
 
-export interface ForecastPoint {
-  month: number;
+export interface ShortTermForecastPoint {
+  month: string;
+  total_eur: number;
+}
+
+export interface LongTermForecastPoint {
   year: number;
-  cost_eur: number;
+  annual_total_eur: number;
 }
 
 export interface Baseline {
   monthly_cost_eur: MonthlyCostEur;
-  short_term_forecast: ForecastPoint[];
-  long_term_forecast: ForecastPoint[];
+  short_term_forecast: ShortTermForecastPoint[];
+  long_term_forecast: LongTermForecastPoint[];
 }
 
 export interface ScenarioComponents {
@@ -128,8 +128,8 @@ export interface Scenario {
   monthly_saving_post_payoff_eur: number;
   self_consumption_ratio: number;
   payback_month: number | null;
-  short_term_forecast: ForecastPoint[];
-  long_term_forecast: ForecastPoint[];
+  short_term_forecast: ShortTermForecastPoint[];
+  long_term_forecast: LongTermForecastPoint[];
 }
 
 export interface ForecastResult {

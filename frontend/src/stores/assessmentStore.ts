@@ -26,7 +26,7 @@ const initial: AssessmentDraft = {
     country: "DE",
   },
   household: {
-    occupants: { count: 2 },
+    occupants: 2,
     electricity: {
       annual_kwh: 3000,
       current_tariff_type: "standard",
@@ -92,7 +92,7 @@ export const useAssessmentStore = create<AssessmentState>()(
         if (
           !d.location?.postcode ||
           !d.location?.country ||
-          !d.household?.occupants?.count ||
+          !d.household?.occupants ||
           !d.household?.electricity?.annual_kwh ||
           !d.heating?.fuel_type ||
           !d.heating?.building?.floor_area_m2 ||

@@ -176,14 +176,57 @@ def run_model(input_path: Path, output_path: Path) -> None:
         base_heat_annual = heating["annual_consumption"] * GAS_PRICE_EUR_PER_KWH
     base_heat_monthly = base_heat_annual / 12
 
-    if mobility.get("annual_fuel_spend_eur"):
-        base_mob_annual = float(mobility["annual_fuel_spend_eur"])
+    # Handle both old single-vehicle and new multi-vehicle mobility structures
+    if "vehicles" in mobility and isinstance(mobility["vehicles"], list):
+        # New multi-vehicle structure
+        vehicle_count = mobility.get("vehicle_count", 0)
+        vehicles = mobility["vehicles"]
+        
+        # Calculate total mobility costs from all vehicles
+        base_mob_annual = 0.0
+        total_annual_mileage_km = 0.0
+        
+        for vehicle in vehicles:
+            if vehicle.get("annual_fuel_spend_eur"):
+                base_mob_annual += float(vehicle["annual_fuel_spend_eur"])
+            else:
+                # Calculate from mileage and fuel consumption
+                annual_mileage_km = vehicle.get("annual_mileage_km", 0)
+                fuel_consumption = vehicle.get("fuel_consumption_l_per_100km", 0)
+                vehicle_type = vehicle.get("vehicle_type", "petrol")
+                
+                if annual_mileage_km and fuel_consumption:
+                    if vehicle_type in ["petrol", "gas"]:
+                        base_mob_annual += (
+                            annual_mileage_km / 100
+                            * fuel_consumption
+                            * PETROL_PRICE_EUR_PER_LITRE
+                        )
+                    elif vehicle_type == "diesel":
+                        DIESEL_PRICE_EUR_PER_LITRE = 1.65  # placeholder
+                        base_mob_annual += (
+                            annual_mileage_km / 100
+                            * fuel_consumption
+                            * DIESEL_PRICE_EUR_PER_LITRE
+                        )
+                    # EV vehicles handled separately in scenario calculations
+            
+            total_annual_mileage_km += vehicle.get("annual_mileage_km", 0)
+        
+        # If no vehicles or all fields missing, use fallback
+        if base_mob_annual == 0.0 and vehicle_count == 0:
+            base_mob_annual = 0.0
     else:
-        base_mob_annual = (
-            mobility["annual_mileage_km"] / 100
-            * mobility["fuel_consumption_l_per_100km"]
-            * PETROL_PRICE_EUR_PER_LITRE
-        )
+        # Old single-vehicle structure (backward compatibility)
+        if mobility.get("annual_fuel_spend_eur"):
+            base_mob_annual = float(mobility["annual_fuel_spend_eur"])
+        else:
+            base_mob_annual = (
+                mobility["annual_mileage_km"] / 100
+                * mobility["fuel_consumption_l_per_100km"]
+                * PETROL_PRICE_EUR_PER_LITRE
+            )
+        total_annual_mileage_km = mobility.get("annual_mileage_km", 0)
     base_mob_monthly = base_mob_annual / 12
 
     base_total_monthly = base_elec_monthly + base_heat_monthly + base_mob_monthly
@@ -227,7 +270,16 @@ def run_model(input_path: Path, output_path: Path) -> None:
     hp_load_kwh = heating_demand_kwh / COP
 
     # ── EV load ───────────────────────────────────────────────────────────────
-    ev_load_kwh = mobility["annual_mileage_km"] / 100 * EV_EFFICIENCY_KWH_PER_100KM
+    # Calculate total EV load from all vehicles in the new structure
+    ev_load_kwh = 0.0
+    if "vehicles" in mobility and isinstance(mobility["vehicles"], list):
+        for vehicle in mobility["vehicles"]:
+            if vehicle.get("vehicle_type") == "ev":
+                annual_mileage_km = vehicle.get("annual_mileage_km", 0)
+                ev_load_kwh += annual_mileage_km / 100 * EV_EFFICIENCY_KWH_PER_100KM
+    else:
+        # Old single-vehicle structure (backward compatibility)
+        ev_load_kwh = mobility.get("annual_mileage_km", 0) / 100 * EV_EFFICIENCY_KWH_PER_100KM
 
     # ── Component sizing & costs ──────────────────────────────────────────────
     battery_kwh: float = float(upgrades.get("battery_kwh") or DEFAULT_BATTERY_KWH)

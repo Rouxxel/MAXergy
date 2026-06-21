@@ -5,22 +5,28 @@ import type {
   HouseholdAssessment,
   Recommendation,
   Scenario,
-  ForecastPoint,
+  ShortTermForecastPoint,
+  LongTermForecastPoint,
   MonthlyCostEur,
   Baseline,
 } from "@/types";
 
-const createForecastPoints = (months: number, baseCost: number): ForecastPoint[] =>
+const createForecastPoints = (months: number, baseCost: number): ShortTermForecastPoint[] =>
   Array.from({ length: months }, (_, i) => ({
-    month: (i % 12) + 1,
-    year: Math.floor(i / 12) + 1,
-    cost_eur: baseCost * (1 + 0.03 * (i / 12)), // 3% annual escalation
+    month: `${2026 + Math.floor(i / 12)}-${String(((i % 12) + 1)).padStart(2, '0')}`,
+    total_eur: baseCost * (1 + 0.03 * (i / 12)), // 3% annual escalation
+  }));
+
+const createLongTermForecastPoints = (years: number, baseCost: number): LongTermForecastPoint[] =>
+  Array.from({ length: years }, (_, i) => ({
+    year: 2026 + i,
+    annual_total_eur: baseCost * 12 * (1 + 0.03 * i), // 3% annual escalation
   }));
 
 const createMonthlyCost = (total: number): MonthlyCostEur => ({
   electricity: total * 0.4,
-  gas_oil: total * 0.35,
-  fuel: total * 0.25,
+  heating: total * 0.35,
+  mobility: total * 0.25,
   total,
 });
 
@@ -36,7 +42,7 @@ const scenarios: Scenario[] = [
     self_consumption_ratio: 0.3,
     payback_month: 90,
     short_term_forecast: createForecastPoints(12, 245),
-    long_term_forecast: createForecastPoints(240, 245),
+    long_term_forecast: createLongTermForecastPoints(20, 245),
   },
   {
     id: "pv_battery",
@@ -49,7 +55,7 @@ const scenarios: Scenario[] = [
     self_consumption_ratio: 0.65,
     payback_month: 85,
     short_term_forecast: createForecastPoints(12, 199),
-    long_term_forecast: createForecastPoints(240, 199),
+    long_term_forecast: createLongTermForecastPoints(20, 199),
   },
   {
     id: "pv_heatpump",
@@ -62,7 +68,7 @@ const scenarios: Scenario[] = [
     self_consumption_ratio: 0.45,
     payback_month: 77,
     short_term_forecast: createForecastPoints(12, 123),
-    long_term_forecast: createForecastPoints(240, 123),
+    long_term_forecast: createLongTermForecastPoints(20, 123),
   },
   {
     id: "pv_ev",
@@ -75,7 +81,7 @@ const scenarios: Scenario[] = [
     self_consumption_ratio: 0.4,
     payback_month: 82,
     short_term_forecast: createForecastPoints(12, 161),
-    long_term_forecast: createForecastPoints(240, 161),
+    long_term_forecast: createLongTermForecastPoints(20, 161),
   },
   {
     id: "pv_battery_heatpump",
@@ -88,7 +94,7 @@ const scenarios: Scenario[] = [
     self_consumption_ratio: 0.75,
     payback_month: 72,
     short_term_forecast: createForecastPoints(12, 77),
-    long_term_forecast: createForecastPoints(240, 77),
+    long_term_forecast: createLongTermForecastPoints(20, 77),
   },
   {
     id: "full_upgrade",
@@ -101,7 +107,7 @@ const scenarios: Scenario[] = [
     self_consumption_ratio: 0.8,
     payback_month: 68,
     short_term_forecast: createForecastPoints(12, 41),
-    long_term_forecast: createForecastPoints(240, 41),
+    long_term_forecast: createLongTermForecastPoints(20, 41),
   },
 ];
 
@@ -113,7 +119,7 @@ export const mockForecast = (_a: HouseholdAssessment): ForecastResult => {
   const baseline: Baseline = {
     monthly_cost_eur: createMonthlyCost(337),
     short_term_forecast: createForecastPoints(12, 337),
-    long_term_forecast: createForecastPoints(240, 337),
+    long_term_forecast: createLongTermForecastPoints(20, 337),
   };
 
   return {

@@ -276,11 +276,11 @@ function StepView({ step }: { step: StepId }) {
             inputMode="numeric"
             className="h-12"
             type="number"
-            value={draft.household?.occupants?.count ?? ""}
+            value={draft.household?.occupants ?? ""}
             onChange={(e) => {
               const n = parseInt(e.target.value, 10);
               setField("household", {
-                occupants: { count: Number.isFinite(n) && n > 0 ? n : 1 },
+                occupants: Number.isFinite(n) && n > 0 ? n : 1,
                 electricity: draft.household?.electricity ?? {
                   annual_kwh: 3000,
                   current_tariff_type: "standard",
@@ -314,7 +314,7 @@ function StepView({ step }: { step: StepId }) {
                 onChange={(e) => {
                   const n = Number(e.target.value);
                   setField("household", {
-                    occupants: draft.household?.occupants ?? { count: 2 },
+                    occupants: draft.household?.occupants ?? 2,
                     electricity: {
                       annual_kwh: Number.isFinite(n) ? n : 0,
                       current_tariff_type: draft.household?.electricity?.current_tariff_type ?? "standard",
@@ -343,7 +343,7 @@ function StepView({ step }: { step: StepId }) {
                 value={draft.household?.electricity?.current_tariff_type ?? "standard"}
                 onValueChange={(v) =>
                   setField("household", {
-                    occupants: draft.household?.occupants ?? { count: 2 },
+                    occupants: draft.household?.occupants ?? 2,
                     electricity: {
                       annual_kwh: draft.household?.electricity?.annual_kwh ?? 3000,
                       current_tariff_type: v,
@@ -384,7 +384,7 @@ function StepView({ step }: { step: StepId }) {
                     onChange={(e) => {
                       const n = Number(e.target.value);
                       setField("household", {
-                        occupants: draft.household?.occupants ?? { count: 2 },
+                        occupants: draft.household?.occupants ?? 2,
                         electricity: {
                           annual_kwh: draft.household?.electricity?.annual_kwh ?? 3000,
                           current_tariff_type: draft.household?.electricity?.current_tariff_type ?? "standard",
@@ -421,7 +421,7 @@ function StepView({ step }: { step: StepId }) {
                     onChange={(e) => {
                       const n = Number(e.target.value);
                       setField("household", {
-                        occupants: draft.household?.occupants ?? { count: 2 },
+                        occupants: draft.household?.occupants ?? 2,
                         electricity: {
                           annual_kwh: draft.household?.electricity?.annual_kwh ?? 3000,
                           current_tariff_type: draft.household?.electricity?.current_tariff_type ?? "standard",
@@ -463,7 +463,7 @@ function StepView({ step }: { step: StepId }) {
                 onChange={(e) => {
                   const n = Number(e.target.value);
                   setField("household", {
-                    occupants: draft.household?.occupants ?? { count: 2 },
+                    occupants: draft.household?.occupants ?? 2,
                     electricity: draft.household?.electricity ?? {
                       annual_kwh: 3000,
                       current_tariff_type: "standard",
@@ -492,7 +492,7 @@ function StepView({ step }: { step: StepId }) {
                 value={draft.household?.roof?.orientation ?? "south"}
                 onValueChange={(v) =>
                   setField("household", {
-                    occupants: draft.household?.occupants ?? { count: 2 },
+                    occupants: draft.household?.occupants ?? 2,
                     electricity: draft.household?.electricity ?? {
                       annual_kwh: 3000,
                       current_tariff_type: "standard",
@@ -535,7 +535,7 @@ function StepView({ step }: { step: StepId }) {
                     onChange={(e) => {
                       const n = Number(e.target.value);
                       setField("household", {
-                        occupants: draft.household?.occupants ?? { count: 2 },
+                        occupants: draft.household?.occupants ?? 2,
                         electricity: draft.household?.electricity ?? {
                           annual_kwh: 3000,
                           current_tariff_type: "standard",
@@ -574,7 +574,7 @@ function StepView({ step }: { step: StepId }) {
                       const n = Number(e.target.value);
                       const clamped = Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0.1));
                       setField("household", {
-                        occupants: draft.household?.occupants ?? { count: 2 },
+                        occupants: draft.household?.occupants ?? 2,
                         electricity: draft.household?.electricity ?? {
                           annual_kwh: 3000,
                           current_tariff_type: "standard",

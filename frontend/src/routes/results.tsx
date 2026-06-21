@@ -13,8 +13,19 @@ export const Route = createFileRoute("/results")({
   component: Results,
 });
 
-const euro = (n: number) =>
-  `€${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+const euro = (n: number | undefined | null) =>
+  n !== undefined && n !== null
+    ? `€${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+    : "€0";
+
+const scenarioNames: Record<string, string> = {
+  solar_only: "Solar Only",
+  pv_battery: "Solar + Battery",
+  pv_heatpump: "Solar + Heat Pump",
+  pv_ev: "Solar + EV Charger",
+  pv_battery_heatpump: "Solar + Battery + Heat Pump",
+  full_upgrade: "Full Upgrade (All Components)",
+};
 
 function Results() {
   const { forecast, recommendation } = useResultsStore();
@@ -90,8 +101,8 @@ function Results() {
           </div>
           <div className="mt-3 space-y-2">
             <CostRow icon={<Zap className="h-4 w-4" />} label="Electricity" value={euro(forecast.baseline.monthly_cost_eur.electricity)} />
-            <CostRow icon={<Flame className="h-4 w-4" />} label="Heating" value={euro(forecast.baseline.monthly_cost_eur.gas_oil)} />
-            <CostRow icon={<Car className="h-4 w-4" />} label="Mobility" value={euro(forecast.baseline.monthly_cost_eur.fuel)} />
+            <CostRow icon={<Flame className="h-4 w-4" />} label="Heating" value={euro(forecast.baseline.monthly_cost_eur.heating)} />
+            <CostRow icon={<Car className="h-4 w-4" />} label="Mobility" value={euro(forecast.baseline.monthly_cost_eur.mobility)} />
             <div className="mt-2 border-t border-border pt-2">
               <CostRow icon={<DollarSign className="h-4 w-4" />} label="Total" value={euro(forecast.baseline.monthly_cost_eur.total)} bold />
             </div>
@@ -104,8 +115,8 @@ function Results() {
           </div>
           <div className="mt-3 space-y-2">
             <CostRow icon={<Zap className="h-4 w-4" />} label="Electricity" value={euro(selectedScenario.monthly_cost_eur.electricity)} />
-            <CostRow icon={<Flame className="h-4 w-4" />} label="Heating" value={euro(selectedScenario.monthly_cost_eur.gas_oil)} />
-            <CostRow icon={<Car className="h-4 w-4" />} label="Mobility" value={euro(selectedScenario.monthly_cost_eur.fuel)} />
+            <CostRow icon={<Flame className="h-4 w-4" />} label="Heating" value={euro(selectedScenario.monthly_cost_eur.heating)} />
+            <CostRow icon={<Car className="h-4 w-4" />} label="Mobility" value={euro(selectedScenario.monthly_cost_eur.mobility)} />
             <CostRow icon={<DollarSign className="h-4 w-4" />} label="Financing" value={euro(selectedScenario.financing_installment_eur)} />
             <div className="mt-2 border-t border-border pt-2">
               <CostRow icon={<DollarSign className="h-4 w-4" />} label="Total" value={euro(selectedScenario.monthly_cost_eur.total)} bold />
@@ -140,7 +151,7 @@ function Results() {
             <TrendingUp className="h-3.5 w-3.5" /> Recommended bundle
           </div>
           <div className="mt-2 text-lg font-semibold">
-            Scenario {selectedScenario.id}
+            {scenarioNames[selectedScenario.id] || selectedScenario.id}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {selectedScenario.components.solar_pv && (
@@ -180,8 +191,8 @@ function Results() {
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
-                <Line type="monotone" dataKey="cost_eur" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Scenario" />
-                <Line type="monotone" dataKey="cost_eur" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Baseline" data={forecast.baseline.short_term_forecast} />
+                <Line type="monotone" dataKey="total_eur" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Scenario" />
+                <Line type="monotone" dataKey="total_eur" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Baseline" data={forecast.baseline.short_term_forecast} />
               </RechartsLineChart>
             </ResponsiveContainer>
           </div>
@@ -198,8 +209,8 @@ function Results() {
                 <XAxis dataKey="year" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
-                <Line type="monotone" dataKey="cost_eur" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Scenario" />
-                <Line type="monotone" dataKey="cost_eur" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Baseline" data={forecast.baseline.long_term_forecast} />
+                <Line type="monotone" dataKey="annual_total_eur" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Scenario" />
+                <Line type="monotone" dataKey="annual_total_eur" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Baseline" data={forecast.baseline.long_term_forecast} />
               </RechartsLineChart>
             </ResponsiveContainer>
           </div>

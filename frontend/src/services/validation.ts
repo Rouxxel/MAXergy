@@ -22,9 +22,7 @@ export const StepPostcodeSchema = z.object({
 
 export const StepOccupantsSchema = z.object({
   household: z.object({
-    occupants: z.object({
-      count: z.number().min(1).max(20),
-    }),
+    occupants: z.number().min(1).max(20),
   }),
 });
 
@@ -104,10 +102,6 @@ export const StepHorizonSchema = z.object({
 });
 
 // Household schemas
-const HouseholdOccupantsSchema = z.object({
-  count: z.number().min(1).max(20),
-});
-
 const HouseholdElectricitySchema = z.object({
   annual_kwh: z.number().min(0),
   current_tariff_type: z.string(),
@@ -125,7 +119,7 @@ const HouseholdRoofSchema = z.object({
 });
 
 const HouseholdSchema = z.object({
-  occupants: HouseholdOccupantsSchema,
+  occupants: z.number().min(1).max(20),
   electricity: HouseholdElectricitySchema,
   roof: HouseholdRoofSchema,
 });
@@ -194,21 +188,25 @@ export const HouseholdAssessmentSchema = z.object({
 // Forecast result schemas
 const MonthlyCostEurSchema = z.object({
   electricity: z.number(),
-  gas_oil: z.number(),
-  fuel: z.number(),
+  heating: z.number(),
+  mobility: z.number(),
   total: z.number(),
 });
 
-const ForecastPointSchema = z.object({
-  month: z.number(),
+const ShortTermForecastPointSchema = z.object({
+  month: z.string(),
+  total_eur: z.number(),
+});
+
+const LongTermForecastPointSchema = z.object({
   year: z.number(),
-  cost_eur: z.number(),
+  annual_total_eur: z.number(),
 });
 
 const BaselineSchema = z.object({
   monthly_cost_eur: MonthlyCostEurSchema,
-  short_term_forecast: z.array(ForecastPointSchema),
-  long_term_forecast: z.array(ForecastPointSchema),
+  short_term_forecast: z.array(ShortTermForecastPointSchema),
+  long_term_forecast: z.array(LongTermForecastPointSchema),
 });
 
 const ScenarioComponentsSchema = z.object({
@@ -234,8 +232,8 @@ const ScenarioSchema = z.object({
   monthly_saving_post_payoff_eur: z.number(),
   self_consumption_ratio: z.number(),
   payback_month: z.number().nullable(),
-  short_term_forecast: z.array(ForecastPointSchema),
-  long_term_forecast: z.array(ForecastPointSchema),
+  short_term_forecast: z.array(ShortTermForecastPointSchema),
+  long_term_forecast: z.array(LongTermForecastPointSchema),
 });
 
 export const ForecastResultSchema = z.object({
