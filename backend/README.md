@@ -188,10 +188,46 @@ The MAXergy backend provides the following endpoints:
 
 | Method | Path | Description |
 |---|---|---|
+| `GET` | `/api/v1/maxergy/benchmark` | Get pre-computed benchmark data for typical German household |
 | `POST` | `/api/v1/maxergy/assessment` | Submit household assessment |
 | `POST` | `/api/v1/maxergy/forecast` | Generate energy forecast |
 | `POST` | `/api/v1/maxergy/recommendation` | Get upgrade recommendations |
 | `POST` | `/api/v1/maxergy/advisor/chat` | Chat with AI advisor |
+
+### Benchmark Endpoint
+
+The `/api/v1/maxergy/benchmark` endpoint returns pre-computed energy upgrade results for a typical German household. This data is displayed on the landing page to show users example outputs before they complete their own assessment.
+
+**Response:**
+```json
+{
+  "household": {
+    "location": "Cologne (50667)",
+    "occupants": 3,
+    "annual_electricity_kwh": 3500,
+    "heating_type": "gas",
+    "heating_annual_kwh": 14000,
+    "vehicle_type": "petrol",
+    "annual_mileage_km": 12000,
+    "roof_area_m2": 35,
+    "roof_orientation": "south",
+    "roof_tilt_deg": 32
+  },
+  "recommendation": {
+    "scenario": "full_upgrade",
+    "break_even_year": 8,
+    "monthly_instalment_eur": 209,
+    "cumulative_savings_eur": 24828,
+    "description": "Solar panels + battery storage + heat pump + EV charger. Highest projected 20-year cumulative net savings under the central price scenario."
+  }
+}
+```
+
+**Features:**
+- Caching with 1-hour TTL
+- Rate limiting (3 requests per minute)
+- Error handling with logging
+- Fallback to hardcoded data if JSON file is unavailable
 
 See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for detailed request/response examples.
 

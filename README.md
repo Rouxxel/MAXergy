@@ -173,13 +173,14 @@ The frontend is a **mobile-first PWA shell** with mocked data, designed to be ea
 
 ## Features
 
+- **Landing Page**: Marketing page with benchmark data display, scroll animations, and responsive design
 - **Household Assessment**: 9-step onboarding form collecting energy usage, building characteristics, and upgrade preferences
 - **Forecast Generation**: Baseline model calculates costs for 6 upgrade scenarios with short-term and long-term projections
 - **Recommendation Engine**: Selects optimal scenario based on 20-year cumulative net savings (primary criterion)
 - **Results Display**: Interactive charts showing cost breakdowns, savings, ROI, and break-even analysis
 - **Scenario Comparison**: Compare all 6 scenarios side-by-side
 - **AI Advisor**: Chat with AI about energy upgrades using Gemini LLM
-- **Benchmark Mode**: Landing page displays results for a typical German household before personalization
+- **Benchmark Data**: Pre-computed typical German household results displayed on landing page
 
 ## Documentation
 
@@ -193,13 +194,14 @@ The frontend is a **mobile-first PWA shell** with mocked data, designed to be ea
 
 ## Development Status
 
-- ✅ Phase 3: Household Assessment Flow
-- ✅ Phase 4: Recommendation Engine
-- ✅ Phase 5: Results Display
-- ✅ Phase 6: AI Advisor Integration
-- ✅ Phase 7: Polish and User Experience
-- ✅ Phase 8: Testing and Quality Assurance
-- ✅ Phase 9: Documentation and Deployment
+- ✅ Phase 1: Design and Content
+- ✅ Phase 2: Frontend Implementation
+- ✅ Phase 3: Backend Integration (Benchmark Data)
+- ✅ Phase 4: Component Library Extensions
+- ✅ Phase 5: Content Localization (Partial - German locale configured, full translation pending)
+- ✅ Phase 6: Testing and Quality Assurance (Partial - code-based tests complete, manual testing pending)
+- ✅ Phase 7: Analytics and Tracking (Infrastructure complete, provider integration pending)
+- ✅ Phase 8: Documentation
 
 ## License
 

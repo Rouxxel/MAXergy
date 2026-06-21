@@ -56,18 +56,26 @@ src/
 ├── routes/                  # File-based routes → URLs
 │   ├── __root.tsx           # HTML shell, fonts, global providers
 │   ├── index.tsx            # / — onboarding (9-step assessment)
+│   ├── landing.tsx          # /landing — marketing landing page
 │   ├── loading.tsx          # /loading — runs forecast mutation
 │   ├── results.tsx          # /results — savings + ROI summary
 │   ├── compare.tsx          # /compare — scenario comparison
 │   └── advisor.tsx          # /advisor — chat with the AI advisor
 ├── components/
 │   ├── app-shell.tsx        # Page wrapper + bottom tab nav
+│   ├── landing/             # Landing page components
+│   │   ├── FeatureCard.tsx
+│   │   ├── StepCard.tsx
+│   │   ├── SummaryCard.tsx
+│   │   ├── FAQItem.tsx
+│   │   └── index.ts
 │   ├── metric-card.tsx
 │   ├── progress-steps.tsx
 │   └── ui/                  # shadcn primitives (button, slider, …)
 ├── services/
 │   ├── apiClient.ts         # fetch wrapper, retries, USE_MOCKS flag
-│   ├── endpoints.ts         # 4 typed POST methods (the API surface)
+│   ├── endpoints.ts         # 5 typed methods (the API surface)
+│   ├── analytics.ts         # Analytics tracking service
 │   └── mocks.ts             # Local fixtures used when VITE_USE_MOCKS=true
 ├── stores/
 │   ├── assessmentStore.ts   # Onboarding draft + validation
@@ -113,11 +121,12 @@ Screens never call `fetch` directly. They call functions from
 
 ## 5. Wiring the real backend
 
-The shell talks to four endpoints. Implement them in your backend and the UI
+The shell talks to five endpoints. Implement them in your backend and the UI
 lights up — no component changes required.
 
 | Method | Path              | Request body          | Response type         |
 | ------ | ----------------- | --------------------- | --------------------- |
+| GET    | `/benchmark`      | N/A                   | `BenchmarkData`       |
 | POST   | `/assessment`     | `HouseholdAssessment` | `AssessmentResponse`  |
 | POST   | `/forecast`       | `HouseholdAssessment` | `ForecastResult`      |
 | POST   | `/recommendation` | `HouseholdAssessment` | `Recommendation`      |
@@ -154,7 +163,48 @@ failure. CORS must be enabled on the backend for the frontend origin.
 
 ---
 
-## 6. Adding a new page
+## 6. Landing Page
+
+The landing page (`/landing`) is a marketing page that showcases MAXergy's value proposition and displays benchmark data for a typical German household.
+
+### Features
+
+- **Hero Section**: Headline, subheadline, and CTAs linking to assessment
+- **What is MAXergy**: Overview of the product and its benefits
+- **How It Works**: 4-step process explanation
+- **Example Output**: Benchmark data display with household details, recommended plan, and cost comparison charts
+- **Features Grid**: 6 key features with icons
+- **FAQ**: Accordion-style frequently asked questions
+- **Analytics Integration**: Page view, CTA click, scroll depth, and FAQ expansion tracking
+
+### Components
+
+The landing page uses reusable components from `src/components/landing/`:
+
+- `FeatureCard`: Display feature with icon, title, and description
+- `StepCard`: Display process step with number, title, and description
+- `SummaryCard`: Display key metric with label and value
+- `FAQItem`: Accordion FAQ item with expand/collapse
+
+### Benchmark Data
+
+The landing page fetches benchmark data from the `/api/v1/maxergy/benchmark` endpoint using TanStack Query with 1-hour caching. If the API fails, it falls back to hardcoded data.
+
+### Analytics
+
+The landing page includes analytics tracking via `src/services/analytics.ts`:
+
+- Page view tracking on mount
+- CTA click tracking (primary and secondary buttons)
+- Scroll depth tracking at 25%, 50%, 75%, and 100%
+- Benchmark data load success/error tracking
+- FAQ expansion tracking
+
+To connect to an analytics provider, implement the `trackEvent` function in `analytics.ts` with your provider's SDK (Google Analytics, Plausible, etc.).
+
+---
+
+## 7. Adding a new page
 
 File-based routing: the filename **is** the URL.
 
@@ -264,7 +314,7 @@ and `src/services/` move over as-is. Only `src/routes/` and
 
 ---
 
-## 11. Conventions & gotchas
+## 12. Conventions & gotchas
 
 - **Never edit `src/routeTree.gen.ts`** — it's regenerated on every build.
 - **Never import from `react-router-dom`** — this is TanStack Router.
@@ -277,3 +327,4 @@ and `src/services/` move over as-is. Only `src/routes/` and
 ---
 
 Happy building. ⚡
+1
