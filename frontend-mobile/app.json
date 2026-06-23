@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "MAXergy",
+    "slug": "maxergy-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/tab_icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/logo_512.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#111827"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.maxergy.mobile"
+    },
+    "android": {
+      "package": "com.maxergy.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#111827",
+        "foregroundImage": "./assets/tab_icon.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/tab_icon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}

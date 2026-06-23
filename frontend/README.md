@@ -36,6 +36,16 @@ bun run build              # production build
 bun run preview            # serve the production build locally
 ```
 
+OR
+
+```bash
+npm install
+cp .env.example .env       # adjust VITE_API_BASE_URL / VITE_USE_MOCKS
+npm run dev                # http://localhost:8080
+npm run build              # production build
+npm run preview            # serve the production build locally
+```
+
 ### Environment variables
 
 | Variable            | Default                 | Purpose                                                          |
