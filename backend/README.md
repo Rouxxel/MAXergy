@@ -339,6 +339,57 @@ Once running:
 - Docker (optional)
 - Docker Compose (optional)
 
+## MAXnergy MCP (energy tools)
+
+The AI advisor is backed by the **MAXnergy MCP server** — a standalone
+[Model Context Protocol](https://modelcontextprotocol.io) server that exposes the
+energy-modelling tools (PV production, roof geometry, savings, scenarios, …). Its
+source is vendored in this repo under [`mcp/`](mcp/) and it is deployed separately
+on Railway over streamable HTTP. The advisor (`/advisor/chat`) connects to it as an
+MCP client and lets the LLM call these tools via function calling to ground its
+answers in real numbers instead of estimates.
+
+### What it exposes
+
+13 tools, including: `geocode_address`, `get_roof_geometry`,
+`estimate_roof_capacity_from_area`, `estimate_pv_production`,
+`suggest_battery_kwh`, `estimate_heating_spend`, `suggest_electricity_price`,
+`compare_scenarios`, `model_savings`, `project_savings`, `recommend_upsell`,
+`energy_savings_overview`, and `start_advisor`.
+
+### How the advisor connects
+
+The advisor reads these environment variables (add them to `.env`):
+
+```bash
+# Enable the MCP energy tools for the advisor
+MAXNERGY_MCP_ENABLED=true
+MAXNERGY_MCP_URL=https://maxnergy-bearer-production.up.railway.app/mcp
+MAXNERGY_MCP_TOKEN=        # bearer token — ask a maintainer, do NOT commit it
+```
+
+The deployed server runs in **bearer** auth mode, so the app sends
+`Authorization: Bearer <MAXNERGY_MCP_TOKEN>`. The token is a shared secret and is
+**never committed** — request it privately and keep it in your local `.env` only.
+
+> Note: only the AI advisor uses the MCP. The forecast / recommendation endpoints
+> are computed locally by the baseline model and do not call the MCP.
+
+### Running the MCP server
+
+The vendored server in [`mcp/`](mcp/) is a [uv](https://docs.astral.sh/uv/) project:
+
+```bash
+cd mcp
+cp .env.example .env          # set GOOGLE_MAPS_API_KEY and MAXNERGY_API_TOKEN
+uv run maxnergy-mcp           # stdio locally; streamable HTTP when PORT is set
+```
+
+See [`mcp/README.md`](mcp/README.md) for full configuration, auth modes
+(bearer / fastmcp / passphrase / google), and Railway deployment details. None of
+the MCP's keys (`GOOGLE_MAPS_API_KEY`, `MAXNERGY_API_TOKEN`) are committed — see
+[`mcp/.env.example`](mcp/.env.example) for the template.
+
 ## License
 
 Proprietary - All rights reserved

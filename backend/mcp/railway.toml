@@ -1,0 +1,13 @@
+# Railway deploys this MCP over streamable HTTP.
+# PORT is injected by Railway, so server.main() auto-selects the http transport.
+# Set GOOGLE_MAPS_API_KEY in the Railway service variables for the roof/geocode tools.
+
+[build]
+# Railpack (Railway's default) has first-class uv support. Avoids the Nixpacks
+# `pip install uv==$NIXPACKS_UV_VERSION` empty-version build failure.
+builder = "railpack"
+
+[deploy]
+startCommand = "uv run maxnergy-mcp"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
