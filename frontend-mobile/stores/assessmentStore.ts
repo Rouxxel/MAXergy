@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { HouseholdAssessment } from "@/types";
+import { zustandStorage } from "@/lib/storage";
 
 export type AssessmentDraft = Partial<HouseholdAssessment>;
 
@@ -75,6 +76,8 @@ const initial: AssessmentDraft = {
   },
 };
 
+type PersistedAssessmentState = Pick<AssessmentState, "draft" | "step">;
+
 export const useAssessmentStore = create<AssessmentState>()(
   persist(
     (set, get) => ({
@@ -107,7 +110,8 @@ export const useAssessmentStore = create<AssessmentState>()(
     }),
     {
       name: "maxergy-assessment-storage",
-      partialize: (state) => ({ draft: state.draft, step: state.step }),
+      storage: zustandStorage,
+      partialize: (state): PersistedAssessmentState => ({ draft: state.draft, step: state.step }),
     },
   ),
 );

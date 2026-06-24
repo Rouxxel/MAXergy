@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ForecastResult, Recommendation, Scenario } from "@/types";
+import { zustandStorage } from "@/lib/storage";
 
 interface ResultsState {
   forecast?: ForecastResult;
@@ -12,6 +13,8 @@ interface ResultsState {
   getSelected: () => Scenario | undefined;
   reset: () => void;
 }
+
+type PersistedResultsState = Pick<ResultsState, "forecast" | "recommendation" | "selectedScenarioId">;
 
 export const useResultsStore = create<ResultsState>()(
   persist(
@@ -33,7 +36,8 @@ export const useResultsStore = create<ResultsState>()(
     }),
     {
       name: "maxergy-results-storage",
-      partialize: (state) => ({
+      storage: zustandStorage,
+      partialize: (state): PersistedResultsState => ({
         forecast: state.forecast,
         recommendation: state.recommendation,
         selectedScenarioId: state.selectedScenarioId,
