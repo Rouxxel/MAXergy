@@ -1,17 +1,20 @@
-import React, { useEffect } from "react";
-import { ScrollView, View, Text, Image, Pressable } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { ScrollView, View, Text, Image, Pressable, Animated } from "react-native";
 import { Link, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ChevronDown } from "lucide-react-native";
+import { ArrowRight } from "lucide-react-native";
 
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/Button";
 import { getBenchmark } from "@/services/endpoints";
 import { FeatureCard, StepCard, SummaryCard, FAQItem } from "@/components/landing";
 import { trackPageView, trackCTAClick, trackBenchmarkLoad } from "@/services/analytics";
+import useScrollAnimation from "@/lib/useScrollAnimation";
 
 export default function LandingPage() {
   const router = useRouter();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [scrollY, setScrollY] = useState(new Animated.Value(0));
 
   // Track page view on mount
   useEffect(() => {
@@ -66,13 +69,43 @@ export default function LandingPage() {
     router.push("/assessment");
   };
 
+  const heroAnim = useScrollAnimation();
+  const whatIsMaxergyAnim = useScrollAnimation();
+  const howItWorksAnim = useScrollAnimation();
+  const exampleOutputAnim = useScrollAnimation();
+  const featuresAnim = useScrollAnimation();
+  const faqAnim = useScrollAnimation();
+
+  // Track scroll position and trigger animations when in view
+  const onScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { useNativeDriver: false }
+  );
+
+  // For simplicity, we'll trigger animations manually on component mount for each section
+  useEffect(() => {
+    // Trigger hero animation immediately
+    setTimeout(heroAnim.triggerAnimation, 100);
+    // Trigger other sections with delay
+    setTimeout(whatIsMaxergyAnim.triggerAnimation, 300);
+    setTimeout(howItWorksAnim.triggerAnimation, 500);
+    setTimeout(exampleOutputAnim.triggerAnimation, 700);
+    setTimeout(featuresAnim.triggerAnimation, 900);
+    setTimeout(faqAnim.triggerAnimation, 1100);
+  }, []);
+
   return (
-    <ScrollView className="flex-1 bg-background">
+    <Animated.ScrollView
+      ref={scrollViewRef}
+      className="flex-1 bg-background"
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+    >
       <Header />
 
       <View className="px-5 py-12 space-y-12">
         {/* Hero Section */}
-        <View className="space-y-6">
+        <Animated.View className="space-y-6" style={heroAnim.animatedStyle}>
           <Text className="text-4xl font-extrabold tracking-tight text-foreground text-center leading-tight">
             Plan your energy upgrade with confidence
           </Text>
@@ -110,10 +143,10 @@ export default function LandingPage() {
               </View>
             </View>
           </View>
-        </View>
+        </Animated.View>
 
         {/* What is MAXergy Section */}
-        <View className="border-t border-border pt-12 space-y-6">
+        <Animated.View className="border-t border-border pt-12 space-y-6" style={whatIsMaxergyAnim.animatedStyle}>
           <View className="space-y-3">
             <Text className="text-2xl font-bold tracking-tight text-foreground text-center">What is MAXergy?</Text>
             <Text className="text-sm text-muted-foreground text-center leading-relaxed">
@@ -146,10 +179,10 @@ export default function LandingPage() {
               Built for the German energy market with current tariffs (Arbeitspreis, Grundpreis), EEG feed-in tariffs, and subsidy considerations.
             </Text>
           </View>
-        </View>
+        </Animated.View>
 
         {/* How It Works Section */}
-        <View className="border-t border-border pt-12 space-y-6">
+        <Animated.View className="border-t border-border pt-12 space-y-6" style={howItWorksAnim.animatedStyle}>
           <Text className="text-2xl font-bold tracking-tight text-foreground text-center">How it works</Text>
           
           <View className="space-y-6">
@@ -179,10 +212,10 @@ export default function LandingPage() {
               description="Ask questions about your results, get explanations of savings calculations, and explore what-if scenarios."
             />
           </View>
-        </View>
+        </Animated.View>
 
         {/* Example Output Section */}
-        <View className="border-t border-border pt-12 space-y-6">
+        <Animated.View className="border-t border-border pt-12 space-y-6" style={exampleOutputAnim.animatedStyle}>
           <View className="space-y-3 items-center">
             <View className="bg-primary/10 rounded-full px-3 py-1">
               <Text className="text-xs font-semibold text-primary">Typical German household benchmark</Text>
@@ -297,10 +330,10 @@ export default function LandingPage() {
               Personalise the estimate using your roof, heating, driving and energy use.
             </Text>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Features Section */}
-        <View className="border-t border-border pt-12 space-y-6">
+        <Animated.View className="border-t border-border pt-12 space-y-6" style={featuresAnim.animatedStyle}>
           <Text className="text-2xl font-bold tracking-tight text-foreground text-center">Why MAXergy?</Text>
           
           <View className="space-y-4">
@@ -335,10 +368,10 @@ export default function LandingPage() {
               description="20-year projections help you make long-term decisions."
             />
           </View>
-        </View>
+        </Animated.View>
 
         {/* FAQ Section */}
-        <View className="border-t border-border pt-12 space-y-6">
+        <Animated.View className="border-t border-border pt-12 space-y-6" style={faqAnim.animatedStyle}>
           <Text className="text-2xl font-bold tracking-tight text-foreground text-center">Frequently Asked Questions</Text>
           
           <View className="space-y-3">
@@ -363,7 +396,7 @@ export default function LandingPage() {
               answer="MAXergy analyzes all scenarios, including those that don't require solar panels (e.g., heat pump only, EV charging only). The recommendation engine will suggest the best option for your specific situation."
             />
           </View>
-        </View>
+        </Animated.View>
 
         {/* Footer */}
         <View className="border-t border-border pt-12 pb-8 space-y-6">
@@ -401,6 +434,6 @@ export default function LandingPage() {
           </Text>
         </View>
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
