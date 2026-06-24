@@ -1,7 +1,8 @@
 import React from "react";
-import { ScrollView, View, Text, Pressable } from "react-native";
+import { ScrollView, View, Text, Pressable, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
-import { MessageSquare, LineChart, Leaf, Clock, TrendingUp, Zap, Flame, Car, DollarSign } from "lucide-react-native";
+import { MessageSquare, LineChart as LineChartIcon, Leaf, Clock, TrendingUp, Zap, Flame, Car, DollarSign } from "lucide-react-native";
+import { LineChart as RNLineChart } from "react-native-chart-kit";
 
 import { Header } from "@/components/header";
 import { MetricCard } from "@/components/metric-card";
@@ -224,18 +225,100 @@ export default function Results() {
             </Text>
           </View>
 
-          {/* Short term forecast chart placeholder */}
-          <View className="rounded-2xl border border-border bg-card p-4 items-center justify-center min-h-[160px] space-y-2">
-            <LineChart size={32} className="text-primary opacity-60" />
-            <Text className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Short-term forecast (12 months)</Text>
-            <Text className="text-[10px] text-muted-foreground text-center">Interactive charts will be activated in Phase 8</Text>
+          {/* Short term forecast chart */}
+          <View className="rounded-2xl border border-border bg-card p-4">
+            <Text className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Short-term forecast (12 months)
+            </Text>
+            <RNLineChart
+              data={{
+                labels: selectedScenario.short_term_forecast.map((pt) => pt.month.slice(-3)),
+                datasets: [
+                  {
+                    data: selectedScenario.short_term_forecast.map((pt) => pt.total_eur),
+                    color: () => '#ffffff',
+                    strokeWidth: 2,
+                  },
+                  {
+                    data: forecast.baseline.short_term_forecast.map((pt) => pt.total_eur),
+                    color: () => '#94a3b8',
+                    strokeWidth: 2,
+                  }
+                ],
+                legend: ['Scenario', 'Baseline']
+              }}
+              width={Dimensions.get('window').width - 72}
+              height={200}
+              chartConfig={{
+                backgroundColor: '#111827',
+                backgroundGradientFrom: '#111827',
+                backgroundGradientTo: '#111827',
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(148, 163, 184, ${opacity})`,
+                style: {
+                  borderRadius: 16
+                },
+                propsForDots: {
+                  r: '2',
+                  strokeWidth: '1',
+                  stroke: '#ffffff'
+                }
+              }}
+              bezier
+              style={{
+                marginVertical: 8,
+                borderRadius: 16
+              }}
+            />
           </View>
 
-          {/* Long term forecast chart placeholder */}
-          <View className="rounded-2xl border border-border bg-card p-4 items-center justify-center min-h-[160px] space-y-2">
-            <LineChart size={32} className="text-primary opacity-60" />
-            <Text className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Long-term forecast (20 years)</Text>
-            <Text className="text-[10px] text-muted-foreground text-center">Interactive charts will be activated in Phase 8</Text>
+          {/* Long term forecast chart */}
+          <View className="rounded-2xl border border-border bg-card p-4">
+            <Text className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Long-term forecast (20 years)
+            </Text>
+            <RNLineChart
+              data={{
+                labels: selectedScenario.long_term_forecast.map((pt) => String(pt.year)),
+                datasets: [
+                  {
+                    data: selectedScenario.long_term_forecast.map((pt) => pt.annual_total_eur),
+                    color: () => '#ffffff',
+                    strokeWidth: 2,
+                  },
+                  {
+                    data: forecast.baseline.long_term_forecast.map((pt) => pt.annual_total_eur),
+                    color: () => '#94a3b8',
+                    strokeWidth: 2,
+                  }
+                ],
+                legend: ['Scenario', 'Baseline']
+              }}
+              width={Dimensions.get('window').width - 72}
+              height={200}
+              chartConfig={{
+                backgroundColor: '#111827',
+                backgroundGradientFrom: '#111827',
+                backgroundGradientTo: '#111827',
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(148, 163, 184, ${opacity})`,
+                style: {
+                  borderRadius: 16
+                },
+                propsForDots: {
+                  r: '2',
+                  strokeWidth: '1',
+                  stroke: '#ffffff'
+                }
+              }}
+              bezier
+              style={{
+                marginVertical: 8,
+                borderRadius: 16
+              }}
+            />
           </View>
 
           {selectedScenario.payback_month && (
@@ -260,7 +343,7 @@ export default function Results() {
 
           <View className="flex-row justify-between space-x-1 pt-2">
             <View className="flex-1 mr-1">
-              <Detail icon={<LineChart size={14} className="text-muted-foreground" />} label="Modeled" />
+              <Detail icon={<LineChartIcon size={14} className="text-muted-foreground" />} label="Modeled" />
             </View>
             <View className="flex-1 mx-1">
               <Detail icon={<Clock size={14} className="text-muted-foreground" />} label="Tariffs" />
