@@ -6,6 +6,14 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "types": ["node"]
-  }
+    "types": ["node", "jest", "@testing-library/jest-native"]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
 }

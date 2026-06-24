@@ -1,16 +1,16 @@
 module.exports = {
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['./jest.setup.js'],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  testPathIgnorePatterns: [
-    '<rootDir>/node_modules/',
-    '<rootDir>/.expo/'
-  ],
+  testEnvironment: 'node',
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest',
-    '^.+\\.(js|jsx)$': 'babel-jest'
+    '^.+\\.jsx?$': 'babel-jest',
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.json' }],
   },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|react-native-chart-kit)'
-  ]
+    'node_modules/(?!(jest-)?react-native|react-clone-referenced-element|@react-native-community|expo(nent)?|@expo(nent)?/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|@sentry/.*)',
+  ],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1',
+    'test-renderer': 'react-test-renderer',
+  },
 };
