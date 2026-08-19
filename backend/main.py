@@ -19,6 +19,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.exceptions import RequestValidationError
 from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
@@ -29,6 +30,8 @@ load_dotenv()
 from src.utils.request_limiter import rate_limit_handler
 from src.utils.custom_logger import log_handler
 from src.utils.limiter import limiter
+from src.utils.security_headers import SecurityHeadersMiddleware
+from src.utils.body_size_limit import BodySizeLimitMiddleware
 
 #Json files
 from src.core_specs.configuration.config_loader import config_loader
@@ -52,12 +55,23 @@ async def lifespan(app: FastAPI):
     yield
     log_handler.info("MAXnergy server shutting down")
 
+#Get environment configuration
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
+#Disable docs in production
+DOCS_URL = None if ENVIRONMENT == "production" else "/docs"
+REDOC_URL = None if ENVIRONMENT == "production" else "/redoc"
+OPENAPI_URL = None if ENVIRONMENT == "production" else "/openapi.json"
+
 #Create FastAPI app
 app = FastAPI(
-    lifespan=lifespan, 
+    lifespan=lifespan,
     title=os.getenv("API_TITLE", "MAXnergy"),
     version=os.getenv("API_VERSION", "1.0.0"),
-    description=os.getenv("API_DESCRIPTION", "A for building MAXnergys with FastAPI")
+    description=os.getenv("API_DESCRIPTION", "A for building MAXnergys with FastAPI"),
+    docs_url=DOCS_URL,
+    redoc_url=REDOC_URL,
+    openapi_url=OPENAPI_URL
 )
 
 """VARIOUS-----------------------------------------------------------"""
@@ -73,33 +87,65 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     log_handler.error(
         "Validation error on %s %s: %s",
         request.method,
-        request.url,
+        request.url.path,
         json.dumps(exc.errors(), indent=2)
     )
-    log_handler.error("Request body: %s", exc.body)
     from fastapi.responses import JSONResponse
+    # In development, return field errors for debugging
+    if os.getenv("ENVIRONMENT") == "development":
+        return JSONResponse(
+            status_code=422,
+            content={"detail": exc.errors()}
+        )
+    # In production, return generic message
     return JSONResponse(
         status_code=422,
-        content={
-            "detail": exc.errors(),
-            "body": exc.body,
-        }
+        content={"detail": "Invalid request."}
+    )
+
+#Add global unhandled exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    log_handler.error(
+        "Unhandled exception on %s %s: %s",
+        request.method,
+        request.url.path,
+        type(exc).__name__
+    )
+    from fastapi.responses import JSONResponse
+    # In development, return exception type for debugging
+    if os.getenv("ENVIRONMENT") == "development":
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Internal server error: {type(exc).__name__}"}
+        )
+    # In production, return generic message
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error."}
     )
 
 #Setup CORS for web app and future React Native app
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:8080,http://127.0.0.1:8080,http://localhost:3000,http://127.0.0.1:3000")
+ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ORIGINS.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8080",  # TanStack Start dev server
-        "http://127.0.0.1:8080",
-        "http://localhost:3000",  # Alternative dev port
-        "http://127.0.0.1:3000",
-        # Add production frontend URLs when deployed
-    ],
-    allow_credentials=True,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,  # SPA uses JSON POSTs, no cookies
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+#Add security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
+#Add trusted host middleware
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
+
+#Add body size limit middleware (256 KB)
+app.add_middleware(BodySizeLimitMiddleware, max_size=256 * 1024)
 
 """Routers-----------------------------------------------------------"""
 #Root
