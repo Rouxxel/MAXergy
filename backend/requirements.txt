@@ -7,7 +7,7 @@ cryptography==46.0.7
 requests==2.33.1
 pydantic==2.11.4
 pyyaml==6.0.2
-phonenumbers==9.0.31
+phonenumbers==9.0.37
 numpy==1.26.4
 pandas==2.2.0
 matplotlib==3.8.2
