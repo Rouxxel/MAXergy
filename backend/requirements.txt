@@ -6,7 +6,7 @@ slowapi==0.1.9
 cryptography==46.0.7
 requests==2.33.1
 pydantic==2.11.4
-pyyaml==6.0.2
+pyyaml==6.0.3
 phonenumbers==9.0.31
 numpy==1.26.4
 pandas==2.2.0
