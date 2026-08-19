@@ -9,7 +9,7 @@
 POST /forecast endpoint for generating energy forecasts.
 """
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 
 from src.utils.custom_logger import log_handler
 from src.utils.limiter import limiter as SlowLimiter
@@ -19,6 +19,7 @@ from src.models.forecast_schemas import (
     ForecastResult,
 )
 from src.services.forecasting.baseline_service import get_forecasting_service
+from src.utils.timeout import timeout
 
 router = APIRouter(
     prefix=config_loader["endpoints"]["maxergy_forecast"]["endpoint_prefix"],
@@ -31,7 +32,8 @@ router = APIRouter(
     f"{config_loader['endpoints']['maxergy_forecast']['request_limit']}/"
     f"{config_loader['endpoints']['maxergy_forecast']['unit_of_time_for_limit']}"
 )
-async def generate_forecast(request: Request, assessment: HouseholdAssessment) -> ForecastResult:
+@timeout(seconds=30)
+async def generate_forecast(request: Request, assessment: HouseholdAssessment) -> Response:
     """
     Generate energy forecast for a household assessment.
     
@@ -43,29 +45,33 @@ async def generate_forecast(request: Request, assessment: HouseholdAssessment) -
         assessment (HouseholdAssessment): Household assessment data.
     
     Returns:
-        ForecastResult: Complete forecast with baseline and scenarios.
+        Response: Complete forecast with baseline and scenarios.
     
     Raises:
         HTTPException: If forecast generation fails.
     """
     try:
         forecasting_service = get_forecasting_service()
-        
+
         log_handler.info(
             "[forecast_router] Generating forecast for location %s, %s",
             assessment.location.postcode,
             assessment.location.country,
         )
-        
+
         forecast = forecasting_service.generate_forecast(assessment)
-        
+
         log_handler.info(
             "[forecast_router] Forecast generated successfully with %d scenarios",
             len(forecast.scenarios),
         )
-        
-        return forecast
-        
+
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            content=forecast.model_dump(),
+            headers={"Cache-Control": "no-store"}
+        )
+
     except Exception as e:
         log_handler.error("[forecast_router] Forecast generation failed: %s", str(e))
-        raise HTTPException(status_code=500, detail=f"Forecast generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Forecast generation failed")

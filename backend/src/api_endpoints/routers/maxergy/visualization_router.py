@@ -77,4 +77,4 @@ async def generate_forecast_chart(
         
     except Exception as e:
         log_handler.error("[visualization_router] Chart generation failed: %s", str(e))
-        raise HTTPException(status_code=500, detail=f"Chart generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Chart generation failed")

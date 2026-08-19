@@ -9,7 +9,7 @@
 POST /recommendation endpoint for generating upgrade recommendations.
 """
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 
 from src.utils.custom_logger import log_handler
 from src.utils.limiter import limiter as SlowLimiter
@@ -32,9 +32,9 @@ router = APIRouter(
     f"{config_loader['endpoints']['maxergy_recommendation']['unit_of_time_for_limit']}"
 )
 async def generate_recommendation(
-    request: Request, 
+    request: Request,
     assessment: HouseholdAssessment
-) -> Recommendation:
+) -> Response:
     """
     Generate upgrade recommendation based on household assessment.
     
@@ -46,8 +46,8 @@ async def generate_recommendation(
         assessment (HouseholdAssessment): Household assessment data.
     
     Returns:
-        Recommendation: Recommended scenario with rationale.
-    
+        Response: Recommended scenario with rationale.
+
     Raises:
         HTTPException: If recommendation generation fails.
     """
@@ -100,13 +100,16 @@ async def generate_recommendation(
             top_savings,
         )
         
-        return Recommendation(
-            selected_scenario_id=top_scenario_id,
-            selected_scenario=selected_scenario,
-            ranked_scenarios=ranked_scenarios,
-            rationale=rationale,
+        return JSONResponse(
+            content=Recommendation(
+                selected_scenario_id=top_scenario_id,
+                selected_scenario=selected_scenario,
+                ranked_scenarios=ranked_scenarios,
+                rationale=rationale,
+            ).model_dump(),
+            headers={"Cache-Control": "no-store"}
         )
         
     except Exception as e:
         log_handler.error("[recommendation_router] Recommendation generation failed: %s", str(e))
-        raise HTTPException(status_code=500, detail=f"Recommendation generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Recommendation generation failed")
