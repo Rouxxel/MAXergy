@@ -12,7 +12,7 @@ POST /assessment endpoint for submitting household assessments.
 import uuid
 from typing import Dict
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 
 from src.utils.custom_logger import log_handler
 from src.utils.limiter import limiter as SlowLimiter
@@ -36,7 +36,7 @@ router = APIRouter(
     f"{config_loader['endpoints']['maxergy_assessment']['request_limit']}/"
     f"{config_loader['endpoints']['maxergy_assessment']['unit_of_time_for_limit']}"
 )
-async def submit_assessment(request: Request, assessment: HouseholdAssessment) -> AssessmentResponse:
+async def submit_assessment(request: Request, assessment: HouseholdAssessment) -> Response:
     """
     Submit a household assessment for energy forecasting.
 
@@ -47,7 +47,11 @@ async def submit_assessment(request: Request, assessment: HouseholdAssessment) -
     Returns:
         AssessmentResponse: Assessment ID and status.
     """
-    log_handler.info("[assessment_router] Received assessment request: %s", assessment.model_dump_json(indent=2))
+    log_handler.info(
+        "[assessment_router] Received assessment request for location %s, %s",
+        assessment.location.postcode,
+        assessment.location.country,
+    )
     assessment_id = str(uuid.uuid4())
 
     # Store assessment (in-memory for demo)
@@ -60,8 +64,12 @@ async def submit_assessment(request: Request, assessment: HouseholdAssessment) -
         assessment.location.country,
     )
 
-    return AssessmentResponse(
-        assessment_id=assessment_id,
-        status="submitted",
-        message="Assessment submitted successfully. Use the assessment_id to request forecasts.",
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        content=AssessmentResponse(
+            assessment_id=assessment_id,
+            status="submitted",
+            message="Assessment submitted successfully. Use the assessment_id to request forecasts.",
+        ).model_dump(),
+        headers={"Cache-Control": "no-store"}
     )
