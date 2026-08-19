@@ -314,6 +314,20 @@ host works. For Render/Railway:
 SPA deep links work out of the box when properly configured; make sure unknown
 paths fall back to `index.html`.
 
+### Security Headers
+
+The Vite config includes security headers for dev and preview servers. However,
+when deploying to production (Render/Railway/nginx/Cloudflare), you must configure
+the same security headers at the host level:
+
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+- `Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self' https:; connect-src 'self' https:; frame-ancestors 'none'`
+
+Vite preview headers do not apply when serving from a static bucket or CDN.
+
 ---
 
 ## 10. Porting to React Native
