@@ -10,7 +10,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "expo": "^46.0.21",
-    "expo-router": "~56.2.11",
+    "expo-router": "~57.0.13",
     "expo-status-bar": "~56.0.4",
     "lucide-react-native": "^1.21.0",
     "nativewind": "^4.2.6",
