@@ -129,15 +129,15 @@ class GeminiService:
     def _build_prompt(self, user_message: str, forecast_result: Optional[Dict]) -> str:
         """
         Build the prompt for the Gemini API.
-        
+
         Args:
             user_message: User's question or message.
             forecast_result: Optional forecast result data for context.
-        
+
         Returns:
             Formatted prompt string.
         """
-        base_prompt = """You are MAXergy, an AI advisor specializing in home energy efficiency upgrades. 
+        base_prompt = """You are MAXergy, an AI advisor specializing in home energy efficiency upgrades.
 You provide helpful, accurate advice about solar PV, battery storage, heat pumps, EV charging and financing options.
 
 Your responses should be:
@@ -148,12 +148,14 @@ Your responses should be:
 
 Format your response as a clear message followed by 2-3 bullet point suggestions.
 """
-        
+
         if forecast_result:
             context_prompt = self._build_forecast_context(forecast_result)
-            return f"{base_prompt}\n\n{context_prompt}\n\nUser question: {user_message}"
-        
-        return f"{base_prompt}\n\nUser question: {user_message}"
+            # Use delimiter to separate user input from system prompt (prompt injection mitigation)
+            return f"{base_prompt}\n\n{context_prompt}\n\n=== USER QUESTION ===\n{user_message}\n=== END USER QUESTION ==="
+
+        # Use delimiter to separate user input from system prompt (prompt injection mitigation)
+        return f"{base_prompt}\n\n=== USER QUESTION ===\n{user_message}\n=== END USER QUESTION ==="
     
     def _build_forecast_context(self, forecast_result: Dict) -> str:
         """
