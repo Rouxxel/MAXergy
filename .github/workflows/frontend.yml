@@ -1,0 +1,77 @@
+name: Frontend
+
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.21"
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Verify formatting
+        run: bun run format:check
+        continue-on-error: true
+
+      - name: Production build
+        run: bun run build
+        env:
+          VITE_API_BASE_URL: https://api.example.test
+          VITE_USE_MOCKS: "true"
+
+  supply-chain:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.21"
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Audit dependencies
+        run: bun audit
+        continue-on-error: true
+
+      - name: Block committed env files and obvious secrets
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          test ! -f frontend/.env
+          if grep -RInE 'BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY' \
+            --include='*.ts' --include='*.tsx' --include='*.js' frontend/src; then
+            echo "Forbidden private key material in frontend sources."
+            exit 1
+          fi

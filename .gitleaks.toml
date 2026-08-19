@@ -1,0 +1,12 @@
+title = "MAXergy"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Local security notes and generic templates, not production secrets"
+paths = [
+  '''(^|/)min_sec_list\.md$''',
+  '''(^|/)min_sec_prac\.md$''',
+  '''(^|/)min_yml_flow\.md$''',
+]
