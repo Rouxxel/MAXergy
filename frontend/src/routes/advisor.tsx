@@ -39,6 +39,9 @@ function Advisor() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Cap client input length to match API limit
+  const MAX_INPUT_LENGTH = 1000;
+
   const send = useMutation({
     mutationFn: (text: string) =>
       postAdvisorChat({
@@ -172,6 +175,8 @@ function Bubble({
           <span>…</span>
         ) : (
           <ReactMarkdown
+            skipHtml={true}
+            disallowedElements={["script", "iframe", "object", "embed", "form", "input", "button"]}
             components={{
               p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
               strong: ({ children }) => (
@@ -195,6 +200,16 @@ function Bubble({
                 <code className="rounded bg-white/20 px-1 py-0.5 font-mono text-xs">
                   {children}
                 </code>
+              ),
+              a: ({ children, href }) => (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  {children}
+                </a>
               ),
             }}
           >
