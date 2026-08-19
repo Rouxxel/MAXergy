@@ -7,11 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAssessmentStore } from "@/stores/assessmentStore";
 import { useResultsStore } from "@/stores/resultsStore";
 import { useUiStore } from "@/stores/uiStore";
-import {
-  postAssessment,
-  postForecast,
-  postRecommendation,
-} from "@/services/endpoints";
+import { postAssessment, postForecast, postRecommendation } from "@/services/endpoints";
 
 export const Route = createFileRoute("/loading")({
   head: () => ({ meta: [{ title: "Calculating — MAXergy" }] }),
@@ -61,10 +57,7 @@ function LoadingScreen() {
   }, []);
 
   useEffect(() => {
-    const id = setInterval(
-      () => setStage((s) => Math.min(s + 1, STAGES.length - 1)),
-      900,
-    );
+    const id = setInterval(() => setStage((s) => Math.min(s + 1, STAGES.length - 1)), 900);
     return () => clearInterval(id);
   }, []);
 

@@ -39,7 +39,10 @@ export const Route = createFileRoute("/assessment")({
   head: () => ({
     meta: [
       { title: "MAXergy - Assessment" },
-      { name: "description", content: "Tell us about your home in a minute and see your potential monthly savings." },
+      {
+        name: "description",
+        content: "Tell us about your home in a minute and see your potential monthly savings.",
+      },
     ],
   }),
   component: Onboarding,
@@ -198,9 +201,7 @@ function Onboarding() {
 
       <div className="mt-8 min-h-[260px]">
         <StepView step={current} />
-        {error ? (
-          <p className="mt-3 text-sm text-destructive">{error}</p>
-        ) : null}
+        {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
       </div>
 
       <div className="mt-8 flex items-center gap-3">
@@ -263,7 +264,10 @@ function StepView({ step }: { step: StepId }) {
             className="h-12"
             value={draft.location?.postcode ?? ""}
             onChange={(e) =>
-              setField("location", { country: draft.location?.country ?? "DE", postcode: e.target.value.replace(/[^0-9A-Za-z\s-]/g, "") })
+              setField("location", {
+                country: draft.location?.country ?? "DE",
+                postcode: e.target.value.replace(/[^0-9A-Za-z\s-]/g, ""),
+              })
             }
             placeholder="e.g. 10115"
           />
@@ -271,7 +275,10 @@ function StepView({ step }: { step: StepId }) {
       );
     case "occupants":
       return (
-        <Field title="How many people live in your home?" subtitle="This helps estimate energy usage patterns.">
+        <Field
+          title="How many people live in your home?"
+          subtitle="This helps estimate energy usage patterns."
+        >
           <Input
             inputMode="numeric"
             className="h-12"
@@ -317,9 +324,12 @@ function StepView({ step }: { step: StepId }) {
                     occupants: draft.household?.occupants ?? 2,
                     electricity: {
                       annual_kwh: Number.isFinite(n) ? n : 0,
-                      current_tariff_type: draft.household?.electricity?.current_tariff_type ?? "standard",
-                      arbeitspreis_eur_per_kwh: draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
-                      grundpreis_eur_per_month: draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
+                      current_tariff_type:
+                        draft.household?.electricity?.current_tariff_type ?? "standard",
+                      arbeitspreis_eur_per_kwh:
+                        draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
+                      grundpreis_eur_per_month:
+                        draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
                       contract_end_date: draft.household?.electricity?.contract_end_date ?? null,
                     },
                     roof: draft.household?.roof ?? {
@@ -347,8 +357,10 @@ function StepView({ step }: { step: StepId }) {
                     electricity: {
                       annual_kwh: draft.household?.electricity?.annual_kwh ?? 3000,
                       current_tariff_type: v,
-                      arbeitspreis_eur_per_kwh: draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
-                      grundpreis_eur_per_month: draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
+                      arbeitspreis_eur_per_kwh:
+                        draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
+                      grundpreis_eur_per_month:
+                        draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
                       contract_end_date: draft.household?.electricity?.contract_end_date ?? null,
                     },
                     roof: draft.household?.roof ?? {
@@ -387,10 +399,13 @@ function StepView({ step }: { step: StepId }) {
                         occupants: draft.household?.occupants ?? 2,
                         electricity: {
                           annual_kwh: draft.household?.electricity?.annual_kwh ?? 3000,
-                          current_tariff_type: draft.household?.electricity?.current_tariff_type ?? "standard",
+                          current_tariff_type:
+                            draft.household?.electricity?.current_tariff_type ?? "standard",
                           arbeitspreis_eur_per_kwh: Number.isFinite(n) ? n : 0.35,
-                          grundpreis_eur_per_month: draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
-                          contract_end_date: draft.household?.electricity?.contract_end_date ?? null,
+                          grundpreis_eur_per_month:
+                            draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
+                          contract_end_date:
+                            draft.household?.electricity?.contract_end_date ?? null,
                         },
                         roof: draft.household?.roof ?? {
                           available: true,
@@ -407,7 +422,9 @@ function StepView({ step }: { step: StepId }) {
                     €
                   </span>
                 </div>
-                <p className="text-[10px] text-muted-foreground">Arbeitspreis - price per kWh consumed</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Arbeitspreis - price per kWh consumed
+                </p>
               </div>
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Base fee (€/month)</Label>
@@ -424,10 +441,13 @@ function StepView({ step }: { step: StepId }) {
                         occupants: draft.household?.occupants ?? 2,
                         electricity: {
                           annual_kwh: draft.household?.electricity?.annual_kwh ?? 3000,
-                          current_tariff_type: draft.household?.electricity?.current_tariff_type ?? "standard",
-                          arbeitspreis_eur_per_kwh: draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
+                          current_tariff_type:
+                            draft.household?.electricity?.current_tariff_type ?? "standard",
+                          arbeitspreis_eur_per_kwh:
+                            draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
                           grundpreis_eur_per_month: Number.isFinite(n) ? n : 10,
-                          contract_end_date: draft.household?.electricity?.contract_end_date ?? null,
+                          contract_end_date:
+                            draft.household?.electricity?.contract_end_date ?? null,
                         },
                         roof: draft.household?.roof ?? {
                           available: true,
@@ -452,7 +472,10 @@ function StepView({ step }: { step: StepId }) {
       );
     case "roof":
       return (
-        <Field title="Roughly, how big is your roof?" subtitle="A rough estimate in square meters is fine.">
+        <Field
+          title="Roughly, how big is your roof?"
+          subtitle="A rough estimate in square meters is fine."
+        >
           <div className="space-y-4">
             <div className="relative">
               <Input
@@ -597,7 +620,9 @@ function StepView({ step }: { step: StepId }) {
                     0-1
                   </span>
                 </div>
-                <p className="text-[10px] text-muted-foreground">0 = no shading, 1 = full shading</p>
+                <p className="text-[10px] text-muted-foreground">
+                  0 = no shading, 1 = full shading
+                </p>
               </div>
             </div>
           </div>
@@ -612,16 +637,16 @@ function StepView({ step }: { step: StepId }) {
               <Select
                 value={draft.heating?.fuel_type}
                 onValueChange={(v) =>
-                setField("heating", {
-                  fuel_type: v,
-                  annual_consumption: draft.heating?.annual_consumption ?? null,
-                  annual_spend_eur: draft.heating?.annual_spend_eur ?? null,
-                  building: draft.heating?.building ?? {
-                    floor_area_m2: 120,
-                    insulation_class: "medium",
-                  },
-                })
-              }
+                  setField("heating", {
+                    fuel_type: v,
+                    annual_consumption: draft.heating?.annual_consumption ?? null,
+                    annual_spend_eur: draft.heating?.annual_spend_eur ?? null,
+                    building: draft.heating?.building ?? {
+                      floor_area_m2: 120,
+                      insulation_class: "medium",
+                    },
+                  })
+                }
               >
                 <SelectTrigger className="h-12">
                   <SelectValue placeholder="Select heating type" />
@@ -689,7 +714,9 @@ function StepView({ step }: { step: StepId }) {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-[10px] text-muted-foreground">Affects heating demand calculations</p>
+              <p className="text-[10px] text-muted-foreground">
+                Affects heating demand calculations
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -753,10 +780,15 @@ function StepView({ step }: { step: StepId }) {
       );
     case "mobility":
       return (
-        <Field title="Do you own a vehicle?" subtitle="We'll factor in fuel savings from charging at home.">
+        <Field
+          title="Do you own a vehicle?"
+          subtitle="We'll factor in fuel savings from charging at home."
+        >
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">How many vehicles do you have?</Label>
+              <Label className="text-sm text-muted-foreground">
+                How many vehicles do you have?
+              </Label>
               <Select
                 value={draft.mobility?.vehicle_count?.toString() ?? "0"}
                 onValueChange={(v) => {
@@ -820,7 +852,9 @@ function StepView({ step }: { step: StepId }) {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">Approximate annual mileage</Label>
+                      <Label className="text-sm text-muted-foreground">
+                        Approximate annual mileage
+                      </Label>
                       <div className="relative">
                         <Input
                           inputMode="numeric"
@@ -855,7 +889,9 @@ function StepView({ step }: { step: StepId }) {
                             className="h-12 pr-12"
                             type="number"
                             step="0.1"
-                            value={draft.mobility?.vehicles?.[index]?.fuel_consumption_l_per_100km ?? ""}
+                            value={
+                              draft.mobility?.vehicles?.[index]?.fuel_consumption_l_per_100km ?? ""
+                            }
                             onChange={(e) => {
                               const n = Number(e.target.value);
                               const newVehicles = [...(draft.mobility?.vehicles ?? [])];
@@ -984,7 +1020,9 @@ function StepView({ step }: { step: StepId }) {
               />
             </div>
             <div className="space-y-3 pt-2">
-              <p className="text-xs text-muted-foreground">Optional size overrides (leave blank for auto-sizing)</p>
+              <p className="text-xs text-muted-foreground">
+                Optional size overrides (leave blank for auto-sizing)
+              </p>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Solar (kWp)</Label>
@@ -1080,9 +1118,7 @@ function Field({
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        {subtitle ? (
-          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
-        ) : null}
+        {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
       </div>
       <Label className="sr-only">{title}</Label>
       {children}
@@ -1189,17 +1225,12 @@ function ForecastHorizonStep() {
   const longTerm = draft.forecast_horizon?.long_term_years ?? 20;
 
   return (
-    <Field
-      title="Forecast horizon"
-      subtitle="Choose the time periods for your savings forecast."
-    >
+    <Field title="Forecast horizon" subtitle="Choose the time periods for your savings forecast.">
       <div className="space-y-6">
         <div className="rounded-2xl border border-border bg-card p-4">
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-muted-foreground">Short-term (months)</span>
-            <span className="text-lg font-semibold text-primary">
-              {shortTerm} mo
-            </span>
+            <span className="text-lg font-semibold text-primary">{shortTerm} mo</span>
           </div>
           <Slider
             className="mt-4"
@@ -1222,9 +1253,7 @@ function ForecastHorizonStep() {
         <div className="rounded-2xl border border-border bg-card p-4">
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-muted-foreground">Long-term (years)</span>
-            <span className="text-lg font-semibold text-primary">
-              {longTerm} yr
-            </span>
+            <span className="text-lg font-semibold text-primary">{longTerm} yr</span>
           </div>
           <Slider
             className="mt-4"

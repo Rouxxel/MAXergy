@@ -26,11 +26,5 @@ export function Logo({ size = 64, className, alt = "MAXergy Logo" }: LogoProps) 
   const logoSrc = logoMap[size];
   const sizeClass = sizeMap[size];
 
-  return (
-    <img
-      src={logoSrc}
-      alt={alt}
-      className={`${sizeClass} ${className || ""}`}
-    />
-  );
+  return <img src={logoSrc} alt={alt} className={`${sizeClass} ${className || ""}`} />;
 }

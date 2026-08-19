@@ -1,6 +1,6 @@
 /**
  * Analytics tracking service
- * 
+ *
  * This service provides a simple interface for tracking events.
  * Connect to your analytics provider (Google Analytics, Plausible, etc.)
  * by implementing the trackEvent function.
@@ -16,7 +16,7 @@ type AnalyticsEvent =
 
 /**
  * Track an analytics event
- * 
+ *
  * TODO: Connect to your analytics provider
  * Example implementations:
  * - Google Analytics: gtag('event', event.type, { ...event })

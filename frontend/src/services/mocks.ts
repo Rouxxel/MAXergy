@@ -13,7 +13,7 @@ import type {
 
 const createForecastPoints = (months: number, baseCost: number): ShortTermForecastPoint[] =>
   Array.from({ length: months }, (_, i) => ({
-    month: `${2026 + Math.floor(i / 12)}-${String(((i % 12) + 1)).padStart(2, '0')}`,
+    month: `${2026 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}`,
     total_eur: baseCost * (1 + 0.03 * (i / 12)), // 3% annual escalation
   }));
 
@@ -111,9 +111,10 @@ const scenarios: Scenario[] = [
   },
 ];
 
-export const mockAssessmentResponse = (
-  _a: HouseholdAssessment,
-): AssessmentResponse => ({ id: "mock_" + Date.now(), status: "created" });
+export const mockAssessmentResponse = (_a: HouseholdAssessment): AssessmentResponse => ({
+  id: "mock_" + Date.now(),
+  status: "created",
+});
 
 export const mockForecast = (_a: HouseholdAssessment): ForecastResult => {
   const baseline: Baseline = {
@@ -133,7 +134,8 @@ export const mockRecommendation = (_a: HouseholdAssessment): Recommendation => {
   return {
     selected_scenario: selected,
     ranked_scenarios: scenarios.sort((a, b) => b.monthly_saving_eur - a.monthly_saving_eur),
-    reasoning: "Based on your household profile, the Solar + Battery + Heat Pump combination offers the best balance of monthly savings and payback period. The battery increases self-consumption to 75%, while the heat pump replaces your most expensive heating fuel.",
+    reasoning:
+      "Based on your household profile, the Solar + Battery + Heat Pump combination offers the best balance of monthly savings and payback period. The battery increases self-consumption to 75%, while the heat pump replaces your most expensive heating fuel.",
   };
 };
 
@@ -145,9 +147,7 @@ const advisorReplies = [
 
 export const mockAdvisorReply = (msg: string): AdvisorChatResponse => {
   const lower = msg.toLowerCase();
-  if (lower.includes("financing") || lower.includes("term"))
-    return { reply: advisorReplies[2] };
-  if (lower.includes("why") || lower.includes("config"))
-    return { reply: advisorReplies[1] };
+  if (lower.includes("financing") || lower.includes("term")) return { reply: advisorReplies[2] };
+  if (lower.includes("why") || lower.includes("config")) return { reply: advisorReplies[1] };
   return { reply: advisorReplies[0] };
 };

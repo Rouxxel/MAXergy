@@ -1,5 +1,12 @@
 import { z } from "zod";
-import type { HouseholdAssessment, ForecastResult, Recommendation, AdvisorChatRequest, AdvisorChatResponse, AssessmentResponse } from "@/types";
+import type {
+  HouseholdAssessment,
+  ForecastResult,
+  Recommendation,
+  AdvisorChatRequest,
+  AdvisorChatResponse,
+  AssessmentResponse,
+} from "@/types";
 
 // Location schema
 const LocationSchema = z.object({
@@ -65,12 +72,14 @@ export const StepHeatingSchema = z.object({
 export const StepMobilitySchema = z.object({
   mobility: z.object({
     vehicle_count: z.number().min(0).max(5),
-    vehicles: z.array(z.object({
-      vehicle_type: z.string(),
-      annual_mileage_km: z.number().nullable(),
-      fuel_consumption_l_per_100km: z.number().nullable(),
-      annual_fuel_spend_eur: z.number().nullable(),
-    })),
+    vehicles: z.array(
+      z.object({
+        vehicle_type: z.string(),
+        annual_mileage_km: z.number().nullable(),
+        fuel_consumption_l_per_100km: z.number().nullable(),
+        annual_fuel_spend_eur: z.number().nullable(),
+      }),
+    ),
   }),
 });
 

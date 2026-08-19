@@ -106,10 +106,7 @@ function Advisor() {
         <BrandMark />
       </header>
 
-      <div
-        ref={scrollRef}
-        className="flex-1 space-y-3 overflow-y-auto pb-4"
-      >
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto pb-4">
         {messages.map((m) => (
           <Bubble key={m.id} role={m.role} content={m.content} suggestions={m.suggestions} />
         ))}
@@ -177,10 +174,14 @@ function Bubble({
           <ReactMarkdown
             components={{
               p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-              strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+              strong: ({ children }) => (
+                <strong className="font-semibold text-white">{children}</strong>
+              ),
               em: ({ children }) => <em className="italic">{children}</em>,
               ul: ({ children }) => <ul className="mb-2 ml-4 list-disc space-y-1">{children}</ul>,
-              ol: ({ children }) => <ol className="mb-2 ml-4 list-decimal space-y-1">{children}</ol>,
+              ol: ({ children }) => (
+                <ol className="mb-2 ml-4 list-decimal space-y-1">{children}</ol>
+              ),
               li: ({ children }) => <li className="leading-snug">{children}</li>,
               h1: ({ children }) => <h1 className="mb-1 text-base font-bold">{children}</h1>,
               h2: ({ children }) => <h2 className="mb-1 text-sm font-bold">{children}</h2>,
@@ -191,7 +192,9 @@ function Bubble({
                 </blockquote>
               ),
               code: ({ children }) => (
-                <code className="rounded bg-white/20 px-1 py-0.5 font-mono text-xs">{children}</code>
+                <code className="rounded bg-white/20 px-1 py-0.5 font-mono text-xs">
+                  {children}
+                </code>
               ),
             }}
           >

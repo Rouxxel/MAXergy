@@ -15,33 +15,24 @@ import type {
   BenchmarkData,
 } from "@/types";
 
-const mockDelay = <T,>(value: T, ms = 600) =>
-  new Promise<T>((r) => setTimeout(() => r(value), ms));
+const mockDelay = <T>(value: T, ms = 600) => new Promise<T>((r) => setTimeout(() => r(value), ms));
 
-export const postAssessment = (
-  data: HouseholdAssessment,
-): Promise<AssessmentResponse> =>
+export const postAssessment = (data: HouseholdAssessment): Promise<AssessmentResponse> =>
   USE_MOCKS
     ? mockDelay(mockAssessmentResponse(data), 400)
     : apiRequest<AssessmentResponse>("/assessment", { method: "POST", body: data });
 
-export const postForecast = (
-  data: HouseholdAssessment,
-): Promise<ForecastResult> =>
+export const postForecast = (data: HouseholdAssessment): Promise<ForecastResult> =>
   USE_MOCKS
     ? mockDelay(mockForecast(data), 900)
     : apiRequest<ForecastResult>("/forecast", { method: "POST", body: data });
 
-export const postRecommendation = (
-  data: HouseholdAssessment,
-): Promise<Recommendation> =>
+export const postRecommendation = (data: HouseholdAssessment): Promise<Recommendation> =>
   USE_MOCKS
     ? mockDelay(mockRecommendation(data), 700)
     : apiRequest<Recommendation>("/recommendation", { method: "POST", body: data });
 
-export const postAdvisorChat = (
-  data: AdvisorChatRequest,
-): Promise<AdvisorChatResponse> =>
+export const postAdvisorChat = (data: AdvisorChatRequest): Promise<AdvisorChatResponse> =>
   USE_MOCKS
     ? mockDelay(mockAdvisorReply(data.user_message), 700)
     : apiRequest<AdvisorChatResponse>("/advisor/chat", { method: "POST", body: data });

@@ -7,7 +7,13 @@ import { BrandMark } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { getBenchmark } from "@/services/endpoints";
 import { FeatureCard, StepCard, SummaryCard, FAQItem } from "@/components/landing";
-import { trackPageView, trackCTAClick, trackScrollDepth, trackBenchmarkLoad, trackFAQExpand } from "@/services/analytics";
+import {
+  trackPageView,
+  trackCTAClick,
+  trackScrollDepth,
+  trackBenchmarkLoad,
+  trackFAQExpand,
+} from "@/services/analytics";
 import cumulativeNetSavings from "@/assets/cumulative_net_savings.png";
 import averageGermanHousehold from "@/assets/average_german_household_comparison.png";
 import highBenefitHousehold from "@/assets/high_benefit_household_comparison.png";
@@ -64,7 +70,11 @@ function LandingPage() {
   }, []);
 
   // Fetch benchmark data
-  const { data: benchmarkData, isLoading: benchmarkLoading, error: benchmarkError } = useQuery({
+  const {
+    data: benchmarkData,
+    isLoading: benchmarkLoading,
+    error: benchmarkError,
+  } = useQuery({
     queryKey: ["benchmark"],
     queryFn: getBenchmark,
     staleTime: 60 * 60 * 1000, // 1 hour
@@ -92,16 +102,17 @@ function LandingPage() {
             setIsVisible(true);
           }
         },
-        { threshold: 0.1 }
+        { threshold: 0.1 },
       );
 
-      if (ref.current) {
-        observer.observe(ref.current);
+      const node = ref.current;
+      if (node) {
+        observer.observe(node);
       }
 
       return () => {
-        if (ref.current) {
-          observer.unobserve(ref.current);
+        if (node) {
+          observer.unobserve(node);
         }
       };
     }, []);
@@ -178,14 +189,16 @@ function LandingPage() {
 
       {/* Hero Section */}
       <section ref={heroAnimation.ref} className="container mx-auto px-4 py-20 md:py-32">
-        <div className={`grid gap-12 lg:grid-cols-2 lg:gap-8 items-center transition-opacity duration-700 ${heroAnimation.isVisible ? 'opacity-100' : 'opacity-0'}`}>
+        <div
+          className={`grid gap-12 lg:grid-cols-2 lg:gap-8 items-center transition-opacity duration-700 ${heroAnimation.isVisible ? "opacity-100" : "opacity-0"}`}
+        >
           <div className="space-y-8">
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
               Plan your energy upgrade with confidence
             </h1>
             <p className="text-lg text-muted-foreground md:text-xl">
-              AI-powered analysis for German households. See how solar, batteries, heat pumps, and EV charging could
-              save you money over 20 years.
+              AI-powered analysis for German households. See how solar, batteries, heat pumps, and
+              EV charging could save you money over 20 years.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/assessment">
@@ -247,14 +260,20 @@ function LandingPage() {
       </section>
 
       {/* What is MAXergy Section */}
-      <section id="what-is-maxergy" ref={whatIsMaxergyAnimation.ref} className="container mx-auto px-4 py-20 border-t border-border">
-        <div className={`space-y-12 transition-opacity duration-700 ${whatIsMaxergyAnimation.isVisible ? 'opacity-100' : 'opacity-0'}`}>
+      <section
+        id="what-is-maxergy"
+        ref={whatIsMaxergyAnimation.ref}
+        className="container mx-auto px-4 py-20 border-t border-border"
+      >
+        <div
+          className={`space-y-12 transition-opacity duration-700 ${whatIsMaxergyAnimation.isVisible ? "opacity-100" : "opacity-0"}`}
+        >
           <div className="text-center space-y-4">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">What is MAXergy?</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              MAXergy is an AI-powered home energy upgrade planner designed specifically for German households. We help
-              you understand the financial impact of energy efficiency upgrades like solar PV, battery storage, heat
-              pumps, and EV charging.
+              MAXergy is an AI-powered home energy upgrade planner designed specifically for German
+              households. We help you understand the financial impact of energy efficiency upgrades
+              like solar PV, battery storage, heat pumps, and EV charging.
             </p>
           </div>
 
@@ -279,16 +298,22 @@ function LandingPage() {
 
           <div className="rounded-lg border border-border bg-card p-6">
             <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">German Market Context:</strong> Built for the German energy market
-              with current tariffs (Arbeitspreis, Grundpreis), EEG feed-in tariffs, and subsidy considerations.
+              <strong className="text-foreground">German Market Context:</strong> Built for the
+              German energy market with current tariffs (Arbeitspreis, Grundpreis), EEG feed-in
+              tariffs, and subsidy considerations.
             </p>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section ref={howItWorksAnimation.ref} className="container mx-auto px-4 py-20 border-t border-border">
-        <div className={`space-y-12 transition-opacity duration-700 ${howItWorksAnimation.isVisible ? 'opacity-100' : 'opacity-0'}`}>
+      <section
+        ref={howItWorksAnimation.ref}
+        className="container mx-auto px-4 py-20 border-t border-border"
+      >
+        <div
+          className={`space-y-12 transition-opacity duration-700 ${howItWorksAnimation.isVisible ? "opacity-100" : "opacity-0"}`}
+        >
           <div className="text-center space-y-4">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">How it works</h2>
           </div>
@@ -324,18 +349,26 @@ function LandingPage() {
       </section>
 
       {/* Example Output Section */}
-      <section ref={exampleOutputAnimation.ref} className="container mx-auto px-4 py-20 border-t border-border">
-        <div className={`space-y-12 transition-opacity duration-700 ${exampleOutputAnimation.isVisible ? 'opacity-100' : 'opacity-0'}`}>
+      <section
+        ref={exampleOutputAnimation.ref}
+        className="container mx-auto px-4 py-20 border-t border-border"
+      >
+        <div
+          className={`space-y-12 transition-opacity duration-700 ${exampleOutputAnimation.isVisible ? "opacity-100" : "opacity-0"}`}
+        >
           <div className="text-center space-y-4">
             <div className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1 text-sm font-medium text-primary">
               Typical German household benchmark
             </div>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              A typical German household could save around €{data.recommendation.cumulative_savings_eur.toLocaleString('de-DE')} over 20 years
+              A typical German household could save around €
+              {data.recommendation.cumulative_savings_eur.toLocaleString("de-DE")} over 20 years
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              This estimate is based on a representative {data.household.occupants}-person household in {data.household.location.split(',')[0]} with {data.household.heating_type} heating, a {data.household.vehicle_type} car,
-              and a {data.household.roof_orientation}-facing roof.
+              This estimate is based on a representative {data.household.occupants}-person household
+              in {data.household.location.split(",")[0]} with {data.household.heating_type} heating,
+              a {data.household.vehicle_type} car, and a {data.household.roof_orientation}-facing
+              roof.
             </p>
           </div>
 
@@ -343,25 +376,47 @@ function LandingPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <SummaryCard label="Location" value={data.household.location} />
             <SummaryCard label="Household size" value={`${data.household.occupants} people`} />
-            <SummaryCard label="Annual electricity" value={`${data.household.annual_electricity_kwh.toLocaleString('de-DE')} kWh`} />
-            <SummaryCard label="Heating type" value={`${data.household.heating_type.charAt(0).toUpperCase() + data.household.heating_type.slice(1)} (${data.household.heating_annual_kwh.toLocaleString('de-DE')} kWh)`} />
-            <SummaryCard label="Vehicle type" value={data.household.vehicle_type.charAt(0).toUpperCase() + data.household.vehicle_type.slice(1)} />
-            <SummaryCard label="Annual mileage" value={`${data.household.annual_mileage_km.toLocaleString('de-DE')} km`} />
+            <SummaryCard
+              label="Annual electricity"
+              value={`${data.household.annual_electricity_kwh.toLocaleString("de-DE")} kWh`}
+            />
+            <SummaryCard
+              label="Heating type"
+              value={`${data.household.heating_type.charAt(0).toUpperCase() + data.household.heating_type.slice(1)} (${data.household.heating_annual_kwh.toLocaleString("de-DE")} kWh)`}
+            />
+            <SummaryCard
+              label="Vehicle type"
+              value={
+                data.household.vehicle_type.charAt(0).toUpperCase() +
+                data.household.vehicle_type.slice(1)
+              }
+            />
+            <SummaryCard
+              label="Annual mileage"
+              value={`${data.household.annual_mileage_km.toLocaleString("de-DE")} km`}
+            />
             <SummaryCard label="Roof area" value={`${data.household.roof_area_m2} m²`} />
-            <SummaryCard label="Roof orientation" value={`${data.household.roof_orientation.charAt(0).toUpperCase() + data.household.roof_orientation.slice(1)}, ${data.household.roof_tilt_deg}° tilt`} />
+            <SummaryCard
+              label="Roof orientation"
+              value={`${data.household.roof_orientation.charAt(0).toUpperCase() + data.household.roof_orientation.slice(1)}, ${data.household.roof_tilt_deg}° tilt`}
+            />
           </div>
 
           {/* Recommended Plan Card */}
           <div className="rounded-lg border border-border bg-card p-6 space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">Recommended Plan: {data.recommendation.scenario.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</h3>
+              <h3 className="text-xl font-semibold">
+                Recommended Plan:{" "}
+                {data.recommendation.scenario
+                  .split("_")
+                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                  .join(" ")}
+              </h3>
               <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
                 Best option
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {data.recommendation.description}
-            </p>
+            <p className="text-sm text-muted-foreground">{data.recommendation.description}</p>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">Break-even</div>
@@ -369,11 +424,15 @@ function LandingPage() {
               </div>
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">Monthly instalment</div>
-                <div className="text-2xl font-bold">€{data.recommendation.monthly_instalment_eur}</div>
+                <div className="text-2xl font-bold">
+                  €{data.recommendation.monthly_instalment_eur}
+                </div>
               </div>
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">20-year savings</div>
-                <div className="text-2xl font-bold text-primary">€{data.recommendation.cumulative_savings_eur.toLocaleString('de-DE')}</div>
+                <div className="text-2xl font-bold text-primary">
+                  €{data.recommendation.cumulative_savings_eur.toLocaleString("de-DE")}
+                </div>
               </div>
             </div>
           </div>
@@ -421,9 +480,9 @@ function LandingPage() {
           {/* Disclaimer */}
           <div className="rounded-lg border border-border bg-muted/50 p-4 text-sm text-muted-foreground">
             <p>
-              <strong className="text-foreground">Note:</strong> These figures describe a typical German household
-              benchmark. They are not yet personalised for your home. Your actual savings may differ based on your
-              specific situation.
+              <strong className="text-foreground">Note:</strong> These figures describe a typical
+              German household benchmark. They are not yet personalised for your home. Your actual
+              savings may differ based on your specific situation.
             </p>
           </div>
 
@@ -443,8 +502,13 @@ function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section ref={featuresAnimation.ref} className="container mx-auto px-4 py-20 border-t border-border">
-        <div className={`space-y-12 transition-opacity duration-700 ${featuresAnimation.isVisible ? 'opacity-100' : 'opacity-0'}`}>
+      <section
+        ref={featuresAnimation.ref}
+        className="container mx-auto px-4 py-20 border-t border-border"
+      >
+        <div
+          className={`space-y-12 transition-opacity duration-700 ${featuresAnimation.isVisible ? "opacity-100" : "opacity-0"}`}
+        >
           <div className="text-center space-y-4">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Why MAXergy?</h2>
           </div>
@@ -485,10 +549,17 @@ function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section ref={faqAnimation.ref} className="container mx-auto px-4 py-20 border-t border-border">
-        <div className={`space-y-12 max-w-3xl mx-auto transition-opacity duration-700 ${faqAnimation.isVisible ? 'opacity-100' : 'opacity-0'}`}>
+      <section
+        ref={faqAnimation.ref}
+        className="container mx-auto px-4 py-20 border-t border-border"
+      >
+        <div
+          className={`space-y-12 max-w-3xl mx-auto transition-opacity duration-700 ${faqAnimation.isVisible ? "opacity-100" : "opacity-0"}`}
+        >
           <div className="text-center space-y-4">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Frequently Asked Questions</h2>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Frequently Asked Questions
+            </h2>
           </div>
 
           <div className="space-y-4">
@@ -580,4 +651,3 @@ function LandingPage() {
     </div>
   );
 }
-

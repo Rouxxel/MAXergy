@@ -6,9 +6,10 @@ export function ErrorBanner() {
 
   if (!globalError) return null;
 
-  const isOffline = globalError.toLowerCase().includes("network") || 
-                    globalError.toLowerCase().includes("offline") ||
-                    globalError.toLowerCase().includes("fetch");
+  const isOffline =
+    globalError.toLowerCase().includes("network") ||
+    globalError.toLowerCase().includes("offline") ||
+    globalError.toLowerCase().includes("fetch");
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 border-b border-destructive bg-destructive/10 px-4 py-3">

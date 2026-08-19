@@ -15,15 +15,8 @@ export function MetricCard({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "rounded-2xl border border-border bg-card p-4",
-        className,
-      )}
-    >
-      <div className="text-xs uppercase tracking-wider text-muted-foreground">
-        {label}
-      </div>
+    <div className={cn("rounded-2xl border border-border bg-card p-4", className)}>
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
       <div
         className={cn(
           "mt-1 text-2xl font-bold tabular-nums",
@@ -33,9 +26,7 @@ export function MetricCard({
       >
         {value}
       </div>
-      {hint ? (
-        <div className="mt-1 text-xs text-muted-foreground">{hint}</div>
-      ) : null}
+      {hint ? <div className="mt-1 text-xs text-muted-foreground">{hint}</div> : null}
     </div>
   );
 }

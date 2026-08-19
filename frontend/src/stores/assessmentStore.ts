@@ -9,10 +9,7 @@ interface AssessmentState {
   step: number;
   submitting: boolean;
   submittedId?: string;
-  setField: <K extends keyof HouseholdAssessment>(
-    key: K,
-    value: HouseholdAssessment[K],
-  ) => void;
+  setField: <K extends keyof HouseholdAssessment>(key: K, value: HouseholdAssessment[K]) => void;
   setStep: (step: number) => void;
   setSubmitting: (v: boolean) => void;
   setSubmittedId: (id: string) => void;
@@ -81,8 +78,7 @@ export const useAssessmentStore = create<AssessmentState>()(
       draft: initial,
       step: 0,
       submitting: false,
-      setField: (key, value) =>
-        set((s) => ({ draft: { ...s.draft, [key]: value } })),
+      setField: (key, value) => set((s) => ({ draft: { ...s.draft, [key]: value } })),
       setStep: (step) => set({ step }),
       setSubmitting: (submitting) => set({ submitting }),
       setSubmittedId: (submittedId) => set({ submittedId }),

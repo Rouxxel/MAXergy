@@ -25,15 +25,9 @@ export function FAQItem({ question, answer }: FAQItemProps) {
         aria-expanded={isOpen}
       >
         <span className="font-medium">{question}</span>
-        <ChevronDown
-          className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
-        />
+        <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
-      {isOpen && (
-        <div className="px-4 pb-4 text-sm text-muted-foreground">
-          {answer}
-        </div>
-      )}
+      {isOpen && <div className="px-4 pb-4 text-sm text-muted-foreground">{answer}</div>}
     </div>
   );
 }

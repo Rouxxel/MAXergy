@@ -1,6 +1,25 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { MessageSquare, LineChart, Leaf, Clock, TrendingUp, Zap, Flame, Car, DollarSign } from "lucide-react";
-import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import {
+  MessageSquare,
+  LineChart,
+  Leaf,
+  Clock,
+  TrendingUp,
+  Zap,
+  Flame,
+  Car,
+  DollarSign,
+} from "lucide-react";
+import {
+  LineChart as RechartsLineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 import { AppShell, BrandMark } from "@/components/app-shell";
 import { MetricCard } from "@/components/metric-card";
@@ -71,12 +90,7 @@ function Results() {
       <header className="mb-6 flex items-center justify-between">
         <BrandMark />
         <div className="flex items-center gap-2">
-          <Button
-            onClick={handleCreateNewScenario}
-            variant="outline"
-            size="sm"
-            className="text-xs"
-          >
+          <Button onClick={handleCreateNewScenario} variant="outline" size="sm" className="text-xs">
             Create new scenario
           </Button>
           <Link
@@ -89,9 +103,7 @@ function Results() {
       </header>
 
       <section className="rounded-3xl border border-primary/30 bg-gradient-to-b from-primary/15 to-transparent p-6 text-center">
-        <div className="text-xs uppercase tracking-widest text-primary">
-          You could save
-        </div>
+        <div className="text-xs uppercase tracking-widest text-primary">You could save</div>
         <div className="mt-2 text-6xl font-extrabold tracking-tight text-primary tabular-nums">
           {euro(monthlySavings)}
         </div>
@@ -105,12 +117,7 @@ function Results() {
           </div>
           <div className="mt-3 space-y-3">
             <Bar label="Now" amount={baselineTotal} pct={100} tone="muted" />
-            <Bar
-              label="After"
-              amount={scenarioTotal}
-              pct={futurePct}
-              tone="primary"
-            />
+            <Bar label="After" amount={scenarioTotal} pct={futurePct} tone="primary" />
           </div>
         </div>
 
@@ -119,11 +126,28 @@ function Results() {
             Baseline monthly costs
           </div>
           <div className="mt-3 space-y-2">
-            <CostRow icon={<Zap className="h-4 w-4" />} label="Electricity" value={euro(forecast.baseline.monthly_cost_eur.electricity)} />
-            <CostRow icon={<Flame className="h-4 w-4" />} label="Heating" value={euro(forecast.baseline.monthly_cost_eur.heating)} />
-            <CostRow icon={<Car className="h-4 w-4" />} label="Mobility" value={euro(forecast.baseline.monthly_cost_eur.mobility)} />
+            <CostRow
+              icon={<Zap className="h-4 w-4" />}
+              label="Electricity"
+              value={euro(forecast.baseline.monthly_cost_eur.electricity)}
+            />
+            <CostRow
+              icon={<Flame className="h-4 w-4" />}
+              label="Heating"
+              value={euro(forecast.baseline.monthly_cost_eur.heating)}
+            />
+            <CostRow
+              icon={<Car className="h-4 w-4" />}
+              label="Mobility"
+              value={euro(forecast.baseline.monthly_cost_eur.mobility)}
+            />
             <div className="mt-2 border-t border-border pt-2">
-              <CostRow icon={<DollarSign className="h-4 w-4" />} label="Total" value={euro(forecast.baseline.monthly_cost_eur.total)} bold />
+              <CostRow
+                icon={<DollarSign className="h-4 w-4" />}
+                label="Total"
+                value={euro(forecast.baseline.monthly_cost_eur.total)}
+                bold
+              />
             </div>
           </div>
         </div>
@@ -133,12 +157,33 @@ function Results() {
             Scenario monthly costs
           </div>
           <div className="mt-3 space-y-2">
-            <CostRow icon={<Zap className="h-4 w-4" />} label="Electricity" value={euro(selectedScenario.monthly_cost_eur.electricity)} />
-            <CostRow icon={<Flame className="h-4 w-4" />} label="Heating" value={euro(selectedScenario.monthly_cost_eur.heating)} />
-            <CostRow icon={<Car className="h-4 w-4" />} label="Mobility" value={euro(selectedScenario.monthly_cost_eur.mobility)} />
-            <CostRow icon={<DollarSign className="h-4 w-4" />} label="Financing" value={euro(selectedScenario.financing_installment_eur)} />
+            <CostRow
+              icon={<Zap className="h-4 w-4" />}
+              label="Electricity"
+              value={euro(selectedScenario.monthly_cost_eur.electricity)}
+            />
+            <CostRow
+              icon={<Flame className="h-4 w-4" />}
+              label="Heating"
+              value={euro(selectedScenario.monthly_cost_eur.heating)}
+            />
+            <CostRow
+              icon={<Car className="h-4 w-4" />}
+              label="Mobility"
+              value={euro(selectedScenario.monthly_cost_eur.mobility)}
+            />
+            <CostRow
+              icon={<DollarSign className="h-4 w-4" />}
+              label="Financing"
+              value={euro(selectedScenario.financing_installment_eur)}
+            />
             <div className="mt-2 border-t border-border pt-2">
-              <CostRow icon={<DollarSign className="h-4 w-4" />} label="Total" value={euro(selectedScenario.monthly_cost_eur.total)} bold />
+              <CostRow
+                icon={<DollarSign className="h-4 w-4" />}
+                label="Total"
+                value={euro(selectedScenario.monthly_cost_eur.total)}
+                bold
+              />
             </div>
           </div>
         </div>
@@ -156,7 +201,11 @@ function Results() {
           />
           <MetricCard
             label="Payback"
-            value={selectedScenario.payback_month ? `${(selectedScenario.payback_month / 12).toFixed(1)} yrs` : "N/A"}
+            value={
+              selectedScenario.payback_month
+                ? `${(selectedScenario.payback_month / 12).toFixed(1)} yrs`
+                : "N/A"
+            }
           />
           <MetricCard
             label="Monthly saving"
@@ -194,9 +243,7 @@ function Results() {
               </span>
             )}
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">
-            {recommendation.reasoning}
-          </p>
+          <p className="mt-3 text-sm text-muted-foreground">{recommendation.reasoning}</p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-4">
@@ -217,16 +264,30 @@ function Results() {
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#111827',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
+                    backgroundColor: "#111827",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
                   }}
-                  labelStyle={{ color: '#ffffff' }}
-                  itemStyle={{ color: '#ffffff' }}
+                  labelStyle={{ color: "#ffffff" }}
+                  itemStyle={{ color: "#ffffff" }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="scenario" stroke="#ffffff" strokeWidth={2} dot={false} name="Scenario" />
-                <Line type="monotone" dataKey="baseline" stroke="#94a3b8" strokeWidth={2} dot={false} name="Baseline" />
+                <Line
+                  type="monotone"
+                  dataKey="scenario"
+                  stroke="#ffffff"
+                  strokeWidth={2}
+                  dot={false}
+                  name="Scenario"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="baseline"
+                  stroke="#94a3b8"
+                  strokeWidth={2}
+                  dot={false}
+                  name="Baseline"
+                />
               </RechartsLineChart>
             </ResponsiveContainer>
           </div>
@@ -250,16 +311,30 @@ function Results() {
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#111827',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
+                    backgroundColor: "#111827",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
                   }}
-                  labelStyle={{ color: '#ffffff' }}
-                  itemStyle={{ color: '#ffffff' }}
+                  labelStyle={{ color: "#ffffff" }}
+                  itemStyle={{ color: "#ffffff" }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="scenario" stroke="#ffffff" strokeWidth={2} dot={false} name="Scenario" />
-                <Line type="monotone" dataKey="baseline" stroke="#94a3b8" strokeWidth={2} dot={false} name="Baseline" />
+                <Line
+                  type="monotone"
+                  dataKey="scenario"
+                  stroke="#ffffff"
+                  strokeWidth={2}
+                  dot={false}
+                  name="Scenario"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="baseline"
+                  stroke="#94a3b8"
+                  strokeWidth={2}
+                  dot={false}
+                  name="Baseline"
+                />
               </RechartsLineChart>
             </ResponsiveContainer>
           </div>
@@ -278,9 +353,7 @@ function Results() {
             <div className="mt-2 text-lg font-semibold text-primary">
               {euro(selectedScenario.monthly_saving_post_payoff_eur)}/month
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              After loan is paid off
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">After loan is paid off</p>
           </div>
         )}
 
@@ -323,8 +396,7 @@ function Bar({
       <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
         <div
           className={
-            "h-full rounded-full " +
-            (tone === "primary" ? "bg-primary" : "bg-muted-foreground/40")
+            "h-full rounded-full " + (tone === "primary" ? "bg-primary" : "bg-muted-foreground/40")
           }
           style={{ width: `${pct}%` }}
         />
@@ -342,7 +414,17 @@ function Detail({ icon, label }: { icon: React.ReactNode; label: string }) {
   );
 }
 
-function CostRow({ icon, label, value, bold = false }: { icon: React.ReactNode; label: string; value: string; bold?: boolean }) {
+function CostRow({
+  icon,
+  label,
+  value,
+  bold = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  bold?: boolean;
+}) {
   return (
     <div className={`flex items-center justify-between ${bold ? "font-semibold" : ""}`}>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">

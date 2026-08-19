@@ -42,7 +42,9 @@ function Compare() {
 
   const recommendedId = useMemo(() => {
     if (!forecast) return undefined;
-    const top = [...forecast.scenarios].sort((a, b) => b.monthly_saving_eur - a.monthly_saving_eur)[0];
+    const top = [...forecast.scenarios].sort(
+      (a, b) => b.monthly_saving_eur - a.monthly_saving_eur,
+    )[0];
     return top?.id;
   }, [forecast]);
 
@@ -111,7 +113,11 @@ function Compare() {
               key={s.id}
               className={
                 "overflow-hidden rounded-2xl border bg-card transition " +
-                (selected ? "border-primary" : isNegativeSavings ? "border-orange-500/30" : "border-border")
+                (selected
+                  ? "border-primary"
+                  : isNegativeSavings
+                    ? "border-orange-500/30"
+                    : "border-border")
               }
             >
               <button
@@ -137,7 +143,9 @@ function Compare() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className={`text-lg font-bold tabular-nums ${isNegativeSavings ? "text-orange-500" : "text-primary"}`}>
+                  <div
+                    className={`text-lg font-bold tabular-nums ${isNegativeSavings ? "text-orange-500" : "text-primary"}`}
+                  >
                     {euro(s.monthly_saving_eur)}
                   </div>
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -153,15 +161,33 @@ function Compare() {
                       Component sizing
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-xs">
-                      {s.sizing.solar_pv_kwp && <div className="rounded-lg bg-background/40 p-2 text-center">Solar: {s.sizing.solar_pv_kwp} kWp</div>}
-                      {s.sizing.battery_kwh && <div className="rounded-lg bg-background/40 p-2 text-center">Battery: {s.sizing.battery_kwh} kWh</div>}
-                      {s.sizing.heat_pump_kw && <div className="rounded-lg bg-background/40 p-2 text-center">Heat Pump: {s.sizing.heat_pump_kw} kW</div>}
+                      {s.sizing.solar_pv_kwp && (
+                        <div className="rounded-lg bg-background/40 p-2 text-center">
+                          Solar: {s.sizing.solar_pv_kwp} kWp
+                        </div>
+                      )}
+                      {s.sizing.battery_kwh && (
+                        <div className="rounded-lg bg-background/40 p-2 text-center">
+                          Battery: {s.sizing.battery_kwh} kWh
+                        </div>
+                      )}
+                      {s.sizing.heat_pump_kw && (
+                        <div className="rounded-lg bg-background/40 p-2 text-center">
+                          Heat Pump: {s.sizing.heat_pump_kw} kW
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3 text-center">
                     <Stat label="Monthly payment" value={euro(s.financing_installment_eur)} />
-                    <Stat label="Self-consumption" value={`${(s.self_consumption_ratio * 100).toFixed(0)}%`} />
-                    <Stat label="Payback" value={s.payback_month ? `${(s.payback_month / 12).toFixed(1)} yr` : "N/A"} />
+                    <Stat
+                      label="Self-consumption"
+                      value={`${(s.self_consumption_ratio * 100).toFixed(0)}%`}
+                    />
+                    <Stat
+                      label="Payback"
+                      value={s.payback_month ? `${(s.payback_month / 12).toFixed(1)} yr` : "N/A"}
+                    />
                   </div>
                   <Button
                     onClick={() => selectScenario(s.id)}
@@ -188,9 +214,7 @@ function Compare() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-border bg-background/40 p-2">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-        {label}
-      </div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="mt-0.5 text-sm font-semibold tabular-nums">{value}</div>
     </div>
   );

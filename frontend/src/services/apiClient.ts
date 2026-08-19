@@ -12,8 +12,7 @@ const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
   "http://localhost:8000";
 
-export const USE_MOCKS =
-  (import.meta.env.VITE_USE_MOCKS as string | undefined) !== "false";
+export const USE_MOCKS = (import.meta.env.VITE_USE_MOCKS as string | undefined) !== "false";
 
 export class ApiError extends Error {
   status: number;
@@ -58,12 +57,10 @@ export async function apiRequest<T>(
         let parsed: unknown = text;
         try {
           parsed = JSON.parse(text);
-        } catch {}
-        throw new ApiError(
-          `Request failed: ${res.status}`,
-          res.status,
-          parsed,
-        );
+        } catch {
+          // Keep the raw response body when it is not JSON.
+        }
+        throw new ApiError(`Request failed: ${res.status}`, res.status, parsed);
       }
 
       return (await res.json()) as T;
@@ -74,7 +71,5 @@ export async function apiRequest<T>(
     }
   }
 
-  throw lastError instanceof Error
-    ? lastError
-    : new Error("Unknown network error");
+  throw lastError instanceof Error ? lastError : new Error("Unknown network error");
 }
