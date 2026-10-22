@@ -9,7 +9,7 @@ present a **credible monthly-saving figure** for a full home-energy upgrade
 > - Done: renamed from "MAXnergy" to MAXergy (package `maxergy_mcp`, command `maxergy-mcp`,
 >   env prefix `MAXERGY_`).
 > - **Today the savings numbers are NOT from the production engine.** `energy_savings_overview`
->   runs `model_engine.py`, a copy of the legacy `scripts/run_baseline_model.py`, which
+>   runs `model_engine.py`, a copy of the legacy `research/legacy/run_baseline_model.py`, which
 >   overstates savings. The other savings tools use a separate heuristic engine (`savings.py`).
 > - Planned: savings tools become thin clients of the backend `POST /plan` (production
 >   `scripts/energy_model`), the schema is generated from the backend OpenAPI, and all
@@ -47,7 +47,7 @@ cd backend/mcp
 uv sync
 cp .env.example .env        # optional: GOOGLE_MAPS_API_KEY (Solar + Geocoding enabled)
 uv run maxergy-mcp          # stdio MCP server
-uv run python overview_smoke.py   # offline smoke test (parity with scripts/run_baseline_model.py)
+uv run python overview_smoke.py   # offline smoke test (parity with research/legacy/run_baseline_model.py)
 ```
 
 PVGIS and the local engines need **no key**; only `geocode_address` and `get_roof_geometry`
@@ -139,8 +139,8 @@ claude mcp add --transport http maxergy https://<service-domain>/mcp \
 ## Modeling notes (current, to be replaced)
 
 - `model_schema.py` copies the **v1** (legacy) API shape — see
-  [`documentation/app/API_CONTRACT.md`](../../documentation/app/API_CONTRACT.md) §3.1.
-- `model_engine.py` reproduces `scripts/run_baseline_model.py` exactly (`overview_smoke.py`
+  [`documentation/app/API_CONTRACT.md`](../../documentation/app/API_CONTRACT.md) §3.2.
+- `model_engine.py` reproduces `research/legacy/run_baseline_model.py` exactly (`overview_smoke.py`
   checks parity). For `documentation/data/model_input1.json` it reports e.g. `full_upgrade`
   +€87/month and `pv_ev` +€127/month, while the production engine shows negative first-year net
   savings for an average household (`documentation/data/test_outputs/model_test_summary.md`).

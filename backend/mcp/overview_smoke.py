@@ -1,8 +1,8 @@
 """Smoke test for the in-repo overview model.
 
-Proves the port in `model_engine.py` reproduces the team's canonical model
-(`scripts/run_baseline_model.py` in the Rouxxel/MAXergy monorepo) byte-for-byte, then
-checks the structural invariants the contract requires.
+Proves the port in `model_engine.py` reproduces the legacy baseline model
+(`research/legacy/run_baseline_model.py`) byte-for-byte, then checks the structural
+invariants of the legacy (v1) output shape. The legacy model is no longer used by the API.
 
 Run:  uv run python overview_smoke.py    (or: python overview_smoke.py)
 Fully offline — no network, no Google key. If the canonical repo isn't present locally
@@ -25,8 +25,8 @@ TEMPLATE_INPUT = CANONICAL_REPO / "documentation" / "data" / "model_input1.json"
 
 
 def _canonical_output(raw_in: dict, today: date) -> dict | None:
-    """Run the teammate's canonical model on the same input, into a temp file (never theirs)."""
-    script_dir = CANONICAL_REPO / "scripts"
+    """Run the legacy model on the same input, into a temp file."""
+    script_dir = CANONICAL_REPO / "research" / "legacy"
     if not (script_dir / "run_baseline_model.py").exists():
         return None
     sys.path.insert(0, str(script_dir))
