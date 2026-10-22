@@ -23,7 +23,7 @@ from datetime import date
 
 from .model_schema import ModelInput, ModelOutput
 
-log = logging.getLogger("maxnergy.model")
+log = logging.getLogger("maxergy.model")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONSTANTS — all placeholders (mirror the canonical run_baseline_model.py)

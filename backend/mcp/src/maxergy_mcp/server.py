@@ -1,4 +1,4 @@
-"""MAXnergy MCP server.
+"""MAXergy MCP server.
 
 The client LLM runs the onboarding conversation and holds the HouseholdProfile.
 These tools are the calculators it can't do reliably in-context: roof geometry,
@@ -18,6 +18,8 @@ import os
 
 from fastmcp import FastMCP
 
+from .config import env
+
 
 def _public_base_url() -> str:
     """Public https URL of this server, for OAuth metadata/redirects."""
@@ -31,45 +33,45 @@ def _public_base_url() -> str:
 def _warn(msg: str) -> None:
     import sys
 
-    print(f"[maxnergy] {msg}", file=sys.stderr)
+    print(f"[maxergy] {msg}", file=sys.stderr)
 
 
 def _bearer_auth():
-    token = os.environ.get("MAXNERGY_API_TOKEN", "").strip()
+    token = env("API_TOKEN")
     if not token:
         return None
     from fastmcp.server.auth.providers.jwt import StaticTokenVerifier
 
-    return StaticTokenVerifier(tokens={token: {"client_id": "maxnergy", "scopes": []}})
+    return StaticTokenVerifier(tokens={token: {"client_id": "maxergy", "scopes": []}})
 
 
 def _build_auth():
-    """Select the auth provider via MAXNERGY_AUTH_MODE — switchable on redeploy, no code change.
+    """Select the auth provider via MAXERGY_AUTH_MODE — switchable on redeploy, no code change.
 
-      - "bearer" (default): shared-secret StaticTokenVerifier (MAXNERGY_API_TOKEN). Simplest;
+      - "bearer" (default): shared-secret StaticTokenVerifier (MAXERGY_API_TOKEN). Simplest;
         for Claude Code / the Anthropic API MCP connector. Cannot be used by the claude.ai app.
       - "fastmcp": InMemoryOAuthProvider — FastMCP *is* the OAuth server (DCR + authorize +
         token), no external identity provider. Lets the claude.ai web/desktop/mobile connector
         attach with zero IdP setup. Caveat: it simulates consent (no real login) and keeps
         clients/tokens in memory, so it's effectively open access and re-auths after a redeploy.
       - "passphrase": self-hosted OAuth (as "fastmcp") but the authorization step is held
-        behind one shared passphrase (MAXNERGY_AUTH_PASSPHRASE). Works in the claude.ai app,
+        behind one shared passphrase (MAXERGY_AUTH_PASSPHRASE). Works in the claude.ai app,
         no IdP, single shared secret (no per-user identity).
       - "google": GoogleProvider — real Google login via OAuth proxy. Needs
         GOOGLE_OAUTH_CLIENT_ID/SECRET; gives genuine per-user access control.
 
     Unknown/misconfigured modes fall back to bearer (with a warning) so a deploy never breaks.
     """
-    mode = os.environ.get("MAXNERGY_AUTH_MODE", "bearer").strip().lower()
+    mode = env("AUTH_MODE", "bearer").lower()
     base_url = _public_base_url()
 
     if mode == "passphrase":
-        passphrase = os.environ.get("MAXNERGY_AUTH_PASSPHRASE", "").strip()
+        passphrase = env("AUTH_PASSPHRASE")
         if passphrase and base_url:
             from .passphrase_auth import PassphraseOAuthProvider
 
             return PassphraseOAuthProvider(base_url=base_url, passphrase=passphrase)
-        _warn("MAXNERGY_AUTH_MODE=passphrase but MAXNERGY_AUTH_PASSPHRASE or base URL missing — using bearer.")
+        _warn("MAXERGY_AUTH_MODE=passphrase but MAXERGY_AUTH_PASSPHRASE or base URL missing — using bearer.")
 
     if mode == "fastmcp":
         from fastmcp.server.auth.providers.in_memory import (
@@ -93,7 +95,7 @@ def _build_auth():
 
             # jwt_signing_key (optional) makes access tokens stateless JWTs so they
             # survive redeploys/restarts — avoids forcing a re-auth on every deploy.
-            signing_key = os.environ.get("MAXNERGY_JWT_SIGNING_KEY", "").strip() or None
+            signing_key = env("JWT_SIGNING_KEY") or None
             return GoogleProvider(
                 client_id=client_id,
                 client_secret=client_secret,
@@ -101,10 +103,10 @@ def _build_auth():
                 required_scopes=["openid", "email"],
                 jwt_signing_key=signing_key,
             )
-        _warn("MAXNERGY_AUTH_MODE=google but GOOGLE_OAUTH_CLIENT_ID/SECRET or base URL missing — using bearer.")
+        _warn("MAXERGY_AUTH_MODE=google but GOOGLE_OAUTH_CLIENT_ID/SECRET or base URL missing — using bearer.")
 
     if mode not in {"bearer", "fastmcp", "passphrase", "google"}:
-        _warn(f"unknown MAXNERGY_AUTH_MODE={mode!r} — using bearer.")
+        _warn(f"unknown MAXERGY_AUTH_MODE={mode!r} — using bearer.")
 
     return _bearer_auth()
 
@@ -122,10 +124,10 @@ setup_logging()
 _auth = _build_auth()
 
 mcp = FastMCP(
-    name="maxnergy-advisor",
+    name="maxergy-advisor",
     instructions=(
-        "MAXnergy is a household energy-transition advisor. When the user wants to use "
-        "MAXnergy (or asks about home-energy savings), FIRST call the `start_advisor` "
+        "MAXergy is a household energy-transition advisor. When the user wants to use "
+        "MAXergy (or asks about home-energy savings), FIRST call the `start_advisor` "
         "tool and follow the onboarding script it returns: ask the household questions "
         "ONE AT A TIME like a form, wait for each answer, and never dump the whole "
         "questionnaire at once. After collecting the inputs, call `compare_scenarios` and "
@@ -176,7 +178,7 @@ _register_static()
 # /.well-known/oauth-protected-resource/mcp. Some Claude discovery paths also fetch the
 # ROOT /.well-known/oauth-protected-resource and 404 on it — alias it to avoid stalling
 # the connector handshake.
-if _public_base_url() and os.environ.get("MAXNERGY_AUTH_MODE", "bearer").strip().lower() in {
+if _public_base_url() and env("AUTH_MODE", "bearer").lower() in {
     "fastmcp",
     "passphrase",
     "google",
@@ -196,12 +198,12 @@ if _public_base_url() and os.environ.get("MAXNERGY_AUTH_MODE", "bearer").strip()
         )
 
 
-ONBOARDING_SCRIPT = """You are running the MAXnergy home-energy onboarding. Conduct it like a
+ONBOARDING_SCRIPT = """You are running the MAXergy home-energy onboarding. Conduct it like a
 friendly form: ask ONE question at a time, wait for the answer, then ask the next. Do NOT
 list all questions at once. If the user doesn't know a value, apply the stated default,
 say which default you used, and move on. Keep each question to one short sentence.
 
-MAXnergy serves both private homes and commercial buildings with ONE flow — a home is just
+MAXergy serves both private homes and commercial buildings with ONE flow — a home is just
 the default building type. Set the profile's `building_type` from the user's answer
 (home | office | retail | warehouse | hotel | school); it drives the heating benchmark and,
 importantly, how much solar is self-consumed (daytime businesses self-consume far more than
@@ -252,18 +254,18 @@ call `compare_scenarios`, `project_savings`, and `recommend_upsell`.
 
 @mcp.tool
 def start_advisor() -> str:
-    """Begin a MAXnergy home-energy savings analysis. Call this FIRST whenever the user
-    wants to use MAXnergy or asks about saving on home energy / solar / heat pump / EV.
+    """Begin a MAXergy home-energy savings analysis. Call this FIRST whenever the user
+    wants to use MAXergy or asks about saving on home energy / solar / heat pump / EV.
     Returns the onboarding script — then ask the household the questions one at a time,
     like a form, before running the savings tools."""
     return ONBOARDING_SCRIPT
 
 
-@mcp.prompt(name="maxnergy_advisor", title="Start MAXnergy energy advisor")
-def maxnergy_advisor_prompt() -> str:
-    """Kick off the MAXnergy onboarding + savings analysis."""
+@mcp.prompt(name="maxergy_advisor", title="Start MAXergy energy advisor")
+def maxergy_advisor_prompt() -> str:
+    """Kick off the MAXergy onboarding + savings analysis."""
     return (
-        "Act as the MAXnergy home-energy advisor. " + ONBOARDING_SCRIPT
+        "Act as the MAXergy home-energy advisor. " + ONBOARDING_SCRIPT
     )
 
 

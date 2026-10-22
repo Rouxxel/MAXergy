@@ -14,7 +14,7 @@ import httpx
 
 from .models import RoofGeometry, RoofSegment
 
-log = logging.getLogger("maxnergy.google")
+log = logging.getLogger("maxergy.providers")
 
 GOOGLE_KEY_ENV = "GOOGLE_MAPS_API_KEY"
 # ~0.19 kWp per m2 of modern roof-mounted modules (≈ 1.7 m²/panel @ ~330 Wp usable).

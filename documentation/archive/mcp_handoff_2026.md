@@ -1,3 +1,11 @@
+> **Archived / superseded (2026-10-22).** This brief was written in the MCP's original repo,
+> before it was imported into MAXergy. It asks for a port of the legacy engine
+> (`scripts/run_baseline_model.py`), which the project is retiring in favour of
+> `scripts/energy_model` (`compute_model`). Paths (`/Users/sandbox1/...`), the old product name
+> "MAXnergy", and the package name `maxnergy_mcp` are historical. The current direction is in
+> [`backend/mcp/README.md`](../../backend/mcp/README.md) and
+> [`documentation/app/API_CONTRACT.md`](../app/API_CONTRACT.md).
+
 # Handoff: implement the shared model I/O structure from the teammate's template
 
 You are picking up work on **MAXnergy**, a Python **FastMCP** energy-transition advisor

@@ -9,7 +9,7 @@ deferred until the user enters the correct passphrase on a small page we serve.
 PKCE still applies at token exchange, so the passphrase only gates *who can start* the
 flow.
 
-State (registered clients + tokens) is persisted to a JSON file when MAXNERGY_OAUTH_STATE_PATH
+State (registered clients + tokens) is persisted to a JSON file when MAXERGY_OAUTH_STATE_PATH
 is set (point it at a Railway volume, e.g. /data/oauth.json). Without it, state is in-memory
 and a redeploy forces every client to re-register — which is why the claude.ai connector
 breaks on each deploy. With it, the DCR client_id and tokens survive restarts.
@@ -31,6 +31,8 @@ from fastmcp.server.auth.providers.in_memory import (
 )
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
+
+from .config import env
 
 # Persisted dicts of pydantic models: name -> the model class to rebuild each value with.
 _MODEL_DICTS = {
@@ -54,7 +56,7 @@ class PassphraseOAuthProvider(InMemoryOAuthProvider):
         self._gate_base = str(base_url).rstrip("/")
         # one-time gate token -> the real client redirect (carrying code + state)
         self._pending: dict[str, str] = {}
-        self._state_path = os.environ.get("MAXNERGY_OAUTH_STATE_PATH", "").strip() or None
+        self._state_path = env("OAUTH_STATE_PATH") or None
         self._load_state()
 
     # --- persistence ---
@@ -74,7 +76,7 @@ class PassphraseOAuthProvider(InMemoryOAuthProvider):
         except Exception as e:  # corrupt/old file shouldn't crash startup
             import sys
 
-            print(f"[maxnergy] could not load OAuth state: {e}", file=sys.stderr)
+            print(f"[maxergy] could not load OAuth state: {e}", file=sys.stderr)
 
     def _save_state(self) -> None:
         if not self._state_path:
@@ -95,7 +97,7 @@ class PassphraseOAuthProvider(InMemoryOAuthProvider):
         except Exception as e:
             import sys
 
-            print(f"[maxnergy] could not save OAuth state: {e}", file=sys.stderr)
+            print(f"[maxergy] could not save OAuth state: {e}", file=sys.stderr)
 
     # --- mutating methods: persist after the parent updates in-memory state ---
 
@@ -145,7 +147,7 @@ def _page(token: str, error: bool = False) -> str:
     )
     return f"""<!doctype html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MAXnergy — access</title>
+<title>MAXergy — access</title>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
@@ -154,8 +156,8 @@ def _page(token: str, error: bool = False) -> str:
 display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0">
   <form method="POST" action="/gate" style="background:#1a1d24;padding:32px;border-radius:14px;
   width:320px;box-shadow:0 8px 40px rgba(0,0,0,.4);text-align:center">
-    <img src="/logo.png" alt="MAXnergy" width="64" height="64" style="margin:0 auto 8px;display:block">
-    <h2 style="margin:0 0 4px">MAXnergy</h2>
+    <img src="/logo.png" alt="MAXergy" width="64" height="64" style="margin:0 auto 8px;display:block">
+    <h2 style="margin:0 0 4px">MAXergy</h2>
     <p style="margin:0 0 18px;color:#9aa0aa;font-size:14px">Enter the access passphrase to connect.</p>
     {note}
     <input type="hidden" name="t" value="{token}">

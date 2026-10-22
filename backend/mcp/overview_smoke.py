@@ -17,10 +17,10 @@ import tempfile
 from datetime import date
 from pathlib import Path
 
-from maxnergy_mcp.model_engine import run_overview
-from maxnergy_mcp.model_schema import ModelInput
+from maxergy_mcp.model_engine import run_overview
+from maxergy_mcp.model_schema import ModelInput
 
-CANONICAL_REPO = Path("/Users/sandbox1/MAXergy")
+CANONICAL_REPO = Path(__file__).resolve().parents[2]  # MAXergy repo root (backend/mcp/..)
 TEMPLATE_INPUT = CANONICAL_REPO / "documentation" / "data" / "model_input1.json"
 
 

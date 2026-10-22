@@ -15,7 +15,7 @@ from fastmcp.server.middleware import Middleware, MiddlewareContext
 
 from .logging_setup import sanitize, summarize_output, trace_id_var
 
-log = logging.getLogger("maxnergy.tools")
+log = logging.getLogger("maxergy.tools")
 
 
 class ToolLoggingMiddleware(Middleware):

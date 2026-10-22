@@ -1,4 +1,4 @@
-"""Shared data models for the MAXnergy advisor.
+"""Shared data models for the MAXergy advisor.
 
 Everything the LLM gathers during onboarding lands in `HouseholdProfile`.
 The savings engine consumes a profile + a `Scenario` and returns a `SavingsResult`.

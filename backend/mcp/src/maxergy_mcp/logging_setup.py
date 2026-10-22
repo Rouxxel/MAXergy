@@ -1,4 +1,4 @@
-"""Central logging configuration for MAXnergy.
+"""Central logging configuration for MAXergy.
 
 Plain-text logs to stdout (Railway captures them). Level from LOG_LEVEL (default INFO;
 set DEBUG for verbose internals). A per-request trace id ties a tool call together with
@@ -36,7 +36,7 @@ def setup_logging() -> None:
     handler.setFormatter(
         logging.Formatter("[%(levelname)s] %(asctime)s %(name)s [%(trace_id)s] - %(message)s")
     )
-    root = logging.getLogger("maxnergy")
+    root = logging.getLogger("maxergy")
     root.handlers.clear()
     root.addHandler(handler)
     root.setLevel(getattr(logging, level, logging.INFO))
