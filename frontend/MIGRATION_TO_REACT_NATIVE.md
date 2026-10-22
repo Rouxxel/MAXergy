@@ -237,7 +237,7 @@ If you keep the same folder names in the Expo project, every `import` path stays
 - In RN, use `react-hook-form` or `formik` with NativeWind-styled inputs
 
 ### Benchmark Data
-- Web fetches from `/api/v1/maxergy/benchmark` endpoint
+- Web fetches from `/benchmark` endpoint
 - Same endpoint works in RN (TanStack Query handles it)
 - Fallback to hardcoded data if API fails
 

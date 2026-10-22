@@ -1,7 +1,7 @@
 @echo off
-REM MAXnergy - Development Startup Script (Windows)
+REM MAXergy - Development Startup Script (Windows)
 
-echo MAXnergy - Development Setup
+echo MAXergy - Development Setup
 echo ========================================
 
 REM Check if Python is installed

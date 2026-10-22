@@ -1,5 +1,5 @@
 #############################################################################
-### Multi-stage Dockerfile for MAXnergy
+### Multi-stage Dockerfile for MAXergy
 ### FastAPI + Uvicorn + Python 3.12
 ### Optimized for production deployment
 #############################################################################

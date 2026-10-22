@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# MAXnergy - Development Startup Script
+# MAXergy - Development Startup Script
 
-echo "MAXnergy - Development Setup"
+echo "MAXergy - Development Setup"
 echo "========================================"
 
 # Check if Python is installed
