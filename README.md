@@ -8,11 +8,14 @@ MAXergy helps homeowners understand the financial and environmental impact of en
 
 ## Architecture
 
-MAXergy consists of three main components:
+MAXergy consists of four main components:
 
 - **Backend** ([`backend/`](backend/README.md)): FastAPI-based API with baseline forecasting model, recommendation engine, and AI advisor (Gemini)
+- **MCP service** ([`backend/mcp/`](backend/mcp/README.md)): standalone FastMCP server (`maxergy-mcp`) that supports the app with roof geometry (Google Solar), PV yield (PVGIS), and conversational onboarding for LLM clients. Deployed as its own Railway service; wiring to the backend is in progress
 - **Frontend** ([`frontend/`](frontend/README.md)): TanStack Start (React 19 + Vite 7) mobile-first web application
 - **Energy Model** ([`scripts/energy_model/`](scripts/energy_model/README.md)): Production modelling package for German residential energy cost forecasting
+
+The API contract shared by all components is documented in [`documentation/app/API_CONTRACT.md`](documentation/app/API_CONTRACT.md).
 
 ### Data Flow
 
@@ -76,6 +79,7 @@ MAXergy/
 │   │   ├── models/          # Pydantic schemas
 │   │   ├── services/        # Business logic (forecasting, LLM)
 │   │   └── utils/           # Logging, rate limiting, validators
+│   ├── mcp/                 # Standalone MCP service (maxergy-mcp, own uv project + Railway config)
 │   └── main.py              # Application entry point
 ├── frontend/             # TanStack Start web application
 │   ├── src/
@@ -97,6 +101,8 @@ MAXergy/
 │   ├── evaluation_outputs/   # Backtest results and reports
 │   └── legacy/               # Superseded CLI scripts
 ├── documentation/
+│   ├── app/                  # PRD, product, architecture, API contract
+│   ├── archive/              # Superseded documents kept for history
 │   ├── data/
 │   │   ├── test_profiles/    # Benchmark household input
 │   │   └── test_outputs/     # Pre-generated model outputs
@@ -184,24 +190,37 @@ The frontend is a **mobile-first PWA shell** with mocked data, designed to be ea
 
 ## Documentation
 
+- [API Contract](documentation/app/API_CONTRACT.md) — Canonical request/response shapes and decision log
 - [Backend README](backend/README.md) — API endpoints, configuration, deployment
 - [Backend API Documentation](backend/API_DOCUMENTATION.md) — Detailed request/response examples
+- [MCP README](backend/mcp/README.md) — MCP tools, auth modes, Railway deployment
 - [Frontend README](frontend/README.md) — Tech stack, project structure, wiring backend
 - [Energy Model README](scripts/energy_model/README.md) — Modelling approach, input/output format
 - [Research README](research/README.md) — Price model backtesting, experimental work
 - [Design README](documentation/figures/design/README.md) — Dashboard specifications, data binding
-- [Task List](TASKS.md) — Development roadmap
 
 ## Development Status
 
-- ✅ Phase 1: Design and Content
-- ✅ Phase 2: Frontend Implementation
-- ✅ Phase 3: Backend Integration (Benchmark Data)
-- ✅ Phase 4: Component Library Extensions
-- ✅ Phase 5: Content Localization (Partial - German locale configured, full translation pending)
-- ✅ Phase 6: Testing and Quality Assurance (Partial - code-based tests complete, manual testing pending)
-- ✅ Phase 7: Analytics and Tracking (Infrastructure complete, provider integration pending)
-- ✅ Phase 8: Documentation
+A milestone is marked ✅ only once it works end to end and is verified.
+
+**Shipped:** UI shell (web + mobile) with mock data, landing page, FastAPI backend skeleton, production energy model package (`scripts/energy_model/`), price-model research.
+
+**Known limitations today:** `/forecast` still uses the legacy engine (`scripts/run_baseline_model.py`), which overstates savings; `/recommendation` returns 500; the frontend's live mode (`VITE_USE_MOCKS=false`) has type mismatches; the MCP service is not yet wired to the backend; the landing page benchmark recommendation is hard-coded.
+
+| Milestone | Status |
+| --------- | ------ |
+| API contract, MAXergy naming, documentation baseline | ✅ done (Railway service rename pending) |
+| Production engine (`compute_model`) behind `/forecast` | ⏳ planned |
+| Recommendation service + `/plan` | ⏳ planned |
+| MCP rebased onto the production engine | ⏳ planned |
+| MCP ↔ backend wiring + Railway two-service deploy | ⏳ planned |
+| Frontend & mobile live API alignment | ⏳ planned |
+| Assessment input quality (roof/yield pre-fill) | ⏳ planned |
+| Honest savings UX | ⏳ planned |
+| Benchmark & landing computed by the engine | ⏳ planned |
+| AI advisor grounded in the plan + MCP tools | ⏳ planned |
+| Tests, CI, guards, demo script | ⏳ planned |
+| Persistence (optional) | ⏳ planned |
 
 ## License
 

@@ -198,7 +198,7 @@ The landing page uses reusable components from `src/components/landing/`:
 
 ### Benchmark Data
 
-The landing page fetches benchmark data from the `/api/v1/maxergy/benchmark` endpoint using TanStack Query with 1-hour caching. If the API fails, it falls back to hardcoded data.
+The landing page fetches benchmark data from the `/benchmark` endpoint using TanStack Query with 1-hour caching. If the API fails, it falls back to hardcoded data.
 
 ### Analytics
 

@@ -8,13 +8,18 @@ This document describes the API endpoints for the MAXergy energy forecasting and
 http://localhost:8000
 ```
 
+Routes are mounted at the root (no `/api/v1` prefix). The canonical contract, including the
+target v2 shapes and endpoint status, is
+[`documentation/app/API_CONTRACT.md`](../documentation/app/API_CONTRACT.md). Note:
+`POST /recommendation` currently returns 500 (fix planned).
+
 ## Authentication
 
 Currently, the API does not require authentication. Rate limiting is applied to prevent abuse.
 
 ## Endpoints
 
-### POST /api/v1/maxergy/assessment
+### POST /assessment
 
 Submit a household assessment for processing.
 
@@ -88,7 +93,7 @@ Submit a household assessment for processing.
 }
 ```
 
-### POST /api/v1/maxergy/forecast
+### POST /forecast
 
 Generate a forecast based on household assessment.
 
@@ -151,7 +156,7 @@ Generate a forecast based on household assessment.
 }
 ```
 
-### POST /api/v1/maxergy/recommendation
+### POST /recommendation
 
 Generate upgrade recommendations based on forecast.
 
@@ -190,7 +195,7 @@ Generate upgrade recommendations based on forecast.
 }
 ```
 
-### POST /api/v1/maxergy/advisor/chat
+### POST /advisor/chat
 
 Chat with the AI advisor about energy upgrades.
 

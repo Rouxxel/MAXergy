@@ -25,7 +25,9 @@ backend/
 │   │   │       ├── assessment_router.py
 │   │   │       ├── forecast_router.py
 │   │   │       ├── recommendation_router.py
-│   │   │       └── advisor_router.py
+│   │   │       ├── advisor_router.py
+│   │   │       ├── benchmark_router.py
+│   │   │       └── visualization_router.py
 │   │   └── root_endpoint.py        # Root / health-check endpoint
 │   ├── core_specs/                 # Core configuration and static data
 │   │   ├── configuration/
@@ -48,6 +50,8 @@ backend/
 │       ├── limiter.py              # Shared SlowAPI limiter instance
 │       ├── request_limiter.py      # 429 handler for rate-limit exceeded
 │       └── validators.py           # Email, password, phone, token, UUID validators
+├── mcp/                            # Standalone MCP service (maxergy-mcp) — see mcp/README.md
+├── tests/                          # Backend tests (fixtures/ holds model_input1.json)
 ├── logs/                           # Log files (created automatically)
 ├── main.py                         # Application entry point
 ├── requirements.txt                # Python dependencies
@@ -184,19 +188,23 @@ languages = data_loader["languages"]
 
 ## API Endpoints
 
-The MAXergy backend provides the following endpoints:
+Routers are mounted at the root of the host (no `/api/v1` prefix — decision #13 in
+[`documentation/app/API_CONTRACT.md`](../documentation/app/API_CONTRACT.md), which is the
+canonical contract). The MAXergy backend provides the following endpoints:
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/v1/maxergy/benchmark` | Get pre-computed benchmark data for typical German household |
-| `POST` | `/api/v1/maxergy/assessment` | Submit household assessment |
-| `POST` | `/api/v1/maxergy/forecast` | Generate energy forecast |
-| `POST` | `/api/v1/maxergy/recommendation` | Get upgrade recommendations |
-| `POST` | `/api/v1/maxergy/advisor/chat` | Chat with AI advisor |
+| Method | Path | Description | Status |
+|---|---|---|---|
+| `GET` | `/` | Health check | works |
+| `GET` | `/benchmark` | Benchmark data for a typical German household | works; recommendation values hard-coded (engine-computed version planned) |
+| `POST` | `/assessment` | Submit household assessment | works (in-memory store) |
+| `POST` | `/forecast` | Generate energy forecast | works; still uses the legacy engine (switch to `scripts/energy_model` planned) |
+| `POST` | `/recommendation` | Get upgrade recommendation | **returns 500** (fix planned) |
+| `POST` | `/advisor/chat` | Chat with AI advisor | works (mock replies without `GEMINI_API_KEY`) |
+| `POST` | `/visualization/forecast-chart` | Forecast chart payload | works |
 
 ### Benchmark Endpoint
 
-The `/api/v1/maxergy/benchmark` endpoint returns pre-computed energy upgrade results for a typical German household. This data is displayed on the landing page to show users example outputs before they complete their own assessment.
+The `/benchmark` endpoint returns pre-computed energy upgrade results for a typical German household. This data is displayed on the landing page to show users example outputs before they complete their own assessment.
 
 **Response:**
 ```json
