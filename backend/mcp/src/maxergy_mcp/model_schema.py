@@ -4,7 +4,7 @@ These pydantic v2 models mirror the teammate's template JSONs exactly so the mod
 backend (this engine) and the frontend agree on field names, nesting, and nullability:
 
   - Input:  documentation/data/model_input1.json   -> `ModelInput`
-  - Output: documentation/data/model_output_1.json  -> `ModelOutput`
+  - Output: documentation/data/model_output_legacy.json  -> `ModelOutput`
 
 The engine in `model_engine.py` maps a validated `ModelInput` to a `ModelOutput`. Keep
 this module a pure data contract — no math, no I/O. Output dumps use
@@ -114,7 +114,7 @@ class ModelInput(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# OUTPUT  (mirrors model_output_1.json)
+# OUTPUT  (mirrors model_output_legacy.json)
 # ---------------------------------------------------------------------------
 
 

@@ -1,7 +1,7 @@
 """Baseline (naive) energy-savings forecast model — runs IN THIS REPO.
 
 This is a faithful in-repo port of the team's canonical modelling layer
-(`scripts/run_baseline_model.py` in the Rouxxel/MAXergy monorepo). The MCP server runs
+(`research/legacy/run_baseline_model.py`, the legacy engine). The MCP server runs
 this model directly — it does NOT call the teammate's backend — so the calculation is
 self-contained here and produces output identical to the canonical script for the same
 input. When the canonical model changes, re-sync this file (the smoke test diffs the two).
