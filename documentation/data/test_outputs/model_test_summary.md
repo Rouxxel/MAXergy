@@ -52,7 +52,7 @@ Single-person flat in Hamburg. Low electricity use (1,500 kWh), minimal gas heat
 
 - ST forecast uses `ConstantShortTermPriceModel` (prices frozen at user tariff).
 - LT projection uses `ScenarioPriceModel` (low / central / high annual trend). Central used for best-plan selection.
-- Solar kWp estimated from usable roof area (0.2 kWp/m²) when not explicitly provided.
+- Solar kWp estimated from usable roof area (6 m²/kWp) when not explicitly provided.
 - Battery defaults to 10.0 kWh when not specified.
 - Year 1 values are from `long_term_projection.central[0]`.
 - 20-yr values are from `long_term_projection.central[-1].financial_result.cumulative_net_savings_eur`.
