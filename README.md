@@ -21,12 +21,14 @@ The API contract shared by all components is documented in [`documentation/app/A
 
 ```
 User Input (Household Assessment)
+    ↓  POST /forecast
+Backend input normalizer (supported fuels, effective upgrade candidates)
     ↓
-Energy Model (scripts/energy_model/)
+Energy Model (scripts/energy_model/ — compute_model)
     ↓
-Baseline Forecast + 6 Upgrade Scenarios
+Backend model adapter → ForecastResult (baseline + up to 6 upgrade scenarios)
     ↓
-Recommendation Engine (select_best_scenario)
+Recommendation (ranking — being rebuilt as a shared service)
     ↓
 Frontend Display (Results, Comparison, AI Advisor)
 ```
@@ -141,7 +143,7 @@ The production energy model (`scripts/energy_model/`) computes:
 - **Heating**: Degree-Day method using DWD historical heating degree days
 - **PV generation**: Sized from roof area with orientation/tilt/shading corrections
 - **Battery dispatch**: 35% daytime demand fraction assumption
-- **Heat pump**: SCOP = 3.5 default, replaces boiler
+- **Heat pump**: SCOP = 3.0 default, replaces boiler
 - **EV**: Additional electricity demand from annual mileage
 - **Financing**: Fixed-rate annuity loan formula
 
@@ -168,8 +170,8 @@ The frontend is a **mobile-first PWA shell** with mocked data, designed to be ea
 ## Backend Features
 
 - **FastAPI Framework**: Modern, fast web framework with automatic OpenAPI documentation
-- **Baseline Forecasting Service**: Wraps the energy model, generates forecasts for 6 upgrade scenarios
-- **Recommendation Engine**: Selects optimal scenario based on 20-year cumulative net savings
+- **Forecasting Service**: Runs the production energy model (`compute_model`) and adapts its output to the API `ForecastResult`
+- **Recommendation Engine**: Ranks scenarios (currently broken; rebuild as a shared service planned)
 - **AI Advisor Integration**: Gemini LLM for personalized energy advice
 - **Docker Support**: Multi-stage Dockerfile and docker-compose for production deployment
 - **Rate Limiting**: Per-endpoint rate limiting with SlowAPI
@@ -203,14 +205,14 @@ The frontend is a **mobile-first PWA shell** with mocked data, designed to be ea
 
 A milestone is marked ✅ only once it works end to end and is verified.
 
-**Shipped:** UI shell (web + mobile) with mock data, landing page, FastAPI backend skeleton, production energy model package (`scripts/energy_model/`), price-model research.
+**Shipped:** UI shell (web + mobile) with mock data, landing page, FastAPI backend, production energy model package (`scripts/energy_model/`) serving `POST /forecast`, price-model research.
 
-**Known limitations today:** `/forecast` still uses the legacy engine (`scripts/run_baseline_model.py`), which overstates savings; `/recommendation` returns 500; the frontend's live mode (`VITE_USE_MOCKS=false`) has type mismatches; the MCP service is not yet wired to the backend; the landing page benchmark recommendation is hard-coded.
+**Known limitations today:** `/recommendation` returns 500; the frontend's live mode (`VITE_USE_MOCKS=false`) has type mismatches; the MCP service is not yet wired to the backend; the landing page benchmark recommendation is hard-coded.
 
 | Milestone | Status |
 | --------- | ------ |
 | API contract, MAXergy naming, documentation baseline | ✅ done (Railway service rename pending) |
-| Production engine (`compute_model`) behind `/forecast` | ⏳ planned |
+| Production engine (`compute_model`) behind `/forecast` | ✅ done |
 | Recommendation service + `/plan` | ⏳ planned |
 | MCP rebased onto the production engine | ⏳ planned |
 | MCP ↔ backend wiring + Railway two-service deploy | ⏳ planned |

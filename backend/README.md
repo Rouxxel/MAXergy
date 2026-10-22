@@ -5,8 +5,8 @@ FastAPI backend for the MAXergy energy forecasting and recommendation system.
 ## Features
 
 - **FastAPI Framework**: Modern, fast web framework for building APIs
-- **Baseline Forecasting Model**: Calculates energy costs for 6 upgrade scenarios
-- **Recommendation Engine**: Selects optimal scenario based on monthly savings
+- **Production Forecasting**: Runs the repo's energy model (`scripts/energy_model`, `compute_model`) for 6 upgrade scenarios
+- **Recommendation Engine**: Ranks scenarios (endpoint currently returns 500; rebuild planned)
 - **AI Advisor Integration**: Gemini LLM for personalized energy advice
 - **Docker Support**: Multi-stage Dockerfile and docker-compose for easy deployment
 - **Rate Limiting**: Built-in request rate limiting with SlowAPI
@@ -41,7 +41,10 @@ backend/
 │   │   └── models_example.py       # Example model patterns
 │   ├── services/                   # Business logic
 │   │   ├── forecasting/
-│   │   │   └── baseline_service.py # Baseline forecasting service
+│   │   │   ├── baseline_service.py # Forecasting service (normalizer → engine → adapter, cache)
+│   │   │   ├── engine.py           # Single import point for scripts/energy_model
+│   │   │   ├── input_normalizer.py # HouseholdAssessment → engine input (fuels, upgrade candidates)
+│   │   │   └── model_adapter.py    # Engine output → ForecastResult
 │   │   └── llm/
 │   │       ├── gemini_service.py    # Gemini AI advisor service
 │   │       └── __init__.py
@@ -197,7 +200,7 @@ canonical contract). The MAXergy backend provides the following endpoints:
 | `GET` | `/` | Health check | works |
 | `GET` | `/benchmark` | Benchmark data for a typical German household | works; recommendation values hard-coded (engine-computed version planned) |
 | `POST` | `/assessment` | Submit household assessment | works (in-memory store) |
-| `POST` | `/forecast` | Generate energy forecast | works; still uses the legacy engine (switch to `scripts/energy_model` planned) |
+| `POST` | `/forecast` | Generate energy forecast | works; production engine (`scripts/energy_model`); 422 for inputs the engine cannot model (e.g. heating fuel other than gas/oil) |
 | `POST` | `/recommendation` | Get upgrade recommendation | **returns 500** (fix planned) |
 | `POST` | `/advisor/chat` | Chat with AI advisor | works (mock replies without `GEMINI_API_KEY`) |
 | `POST` | `/visualization/forecast-chart` | Forecast chart payload | works |
@@ -241,13 +244,25 @@ See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for detailed request/response e
 
 ## Services
 
-### Baseline Forecasting Service
+### Forecasting Service
 
-Located in `src/services/forecasting/baseline_service.py`, this service:
-- Wraps the baseline forecasting model
-- Generates forecasts for 6 upgrade scenarios
-- Caches results to avoid redundant computations
-- Handles temporary file cleanup
+`src/services/forecasting/baseline_service.py` runs the production energy model
+(`scripts/energy_model`, `compute_model`) in-process:
+
+1. `input_normalizer.py` — `HouseholdAssessment` → engine input. Rejects heating fuels other
+   than gas/oil (`ValueError` → HTTP 422) and computes the effective upgrade candidates: solar
+   off when `roof.available` is false, EV charger off when there is no combustion vehicle.
+   Multi-vehicle aggregation happens inside the engine (`flatten_mobility`).
+2. `engine.py` — the only place that puts `scripts/` on `sys.path`.
+3. `model_adapter.py` — engine output → `ForecastResult`: monthly figures are averages over
+   the first 12 months, scenario electricity is net of feed-in revenue, long-term figures use
+   the central price scenario (low/high in `long_term_band`), plus `financials`,
+   `payback_month`, `assumptions_used` and `validation_warnings`. Scenarios that need a
+   disabled component are omitted.
+4. Results are cached in memory by an MD5 of the normalized engine input; engine warnings
+   are logged.
+
+Field definitions: [`documentation/app/API_CONTRACT.md`](../documentation/app/API_CONTRACT.md).
 
 ### Gemini AI Advisor Service
 
@@ -292,6 +307,10 @@ The MAXergy backend uses Pydantic models for request/response validation:
 
 ## Docker Features
 
+> **Known limitation:** the image is built from `backend/` only, so it does not contain
+> `scripts/energy_model` and `POST /forecast` fails inside the container. Building from the
+> repository root (for the Railway deployment) is planned.
+
 ### Multi-stage Build
 - **Builder stage**: Installs dependencies
 - **Production stage**: Minimal runtime image
@@ -322,9 +341,16 @@ pip freeze > requirements.txt
 ### Running Tests
 
 ```bash
-pip install pytest
-pytest src/tests/
+pip install pytest httpx
+pytest backend/tests backend/src/tests   # from the repo root
+pytest tests                             # production energy model tests (repo root)
 ```
+
+- `backend/tests/` — adapter golden tests, normalizer, service + `/forecast` endpoint (real engine).
+- `backend/src/tests/` — service unit tests with the engine mocked.
+- `backend/conftest.py` switches the working directory to `backend/` (the config loaders resolve
+  paths from there) and provides the `assessment_dict` fixture from
+  `backend/tests/fixtures/model_input1.json`.
 
 ## Deployment
 

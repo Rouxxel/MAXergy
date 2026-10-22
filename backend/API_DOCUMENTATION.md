@@ -239,4 +239,4 @@ All endpoints return standard HTTP error codes:
 ## Example Files
 
 - `backend/data/model_input_1.json`: Example assessment input
-- `backend/data/model_output_1.json`: Example forecast output
+- `documentation/data/model_output_v2.json`: Example forecast output (production engine)
