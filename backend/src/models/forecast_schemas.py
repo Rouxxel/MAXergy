@@ -1,14 +1,14 @@
 """
 Pydantic schemas for MAXergy energy forecasting model.
 
-These schemas mirror the input/output JSON structure defined in:
-- Input: documentation/data/model_input1.json
-- Output: documentation/data/model_output_1.json
+Canonical contract: documentation/app/API_CONTRACT.md
+- Input example: documentation/data/model_input1.json
+- Output example: documentation/data/model_output_v2.json
 """
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 from pydantic import BaseModel, Field
 
 
@@ -31,6 +31,10 @@ class Roof(BaseModel):
     orientation: Optional[str] = Field(None, description="Roof orientation (e.g., 'south')")
     tilt_deg: Optional[float] = Field(None, ge=0, le=90, description="Roof tilt in degrees")
     shading_factor: Optional[float] = Field(None, ge=0, le=1, description="Shading factor (0-1)")
+    specific_yield_kwh_per_kwp: Optional[float] = Field(
+        None, gt=0, le=2000,
+        description="Site-specific annual PV yield in kWh/kWp (e.g. PVGIS); null uses the regional table",
+    )
 
     model_config = {"extra": "ignore"}
 
@@ -198,9 +202,28 @@ class ScenarioShortTermForecastPoint(BaseModel):
 
 class ScenarioLongTermForecastPoint(BaseModel):
     """Single year in scenario long-term forecast."""
-    year: int = Field(..., description="Year")
-    annual_total_eur: float = Field(..., description="Annual total cost in EUR")
-    annual_saving_eur: float = Field(..., description="Annual savings compared to baseline")
+    year: int = Field(..., description="Calendar year in which the projection year starts")
+    annual_total_eur: float = Field(..., description="Annual total cost in EUR (energy + financing)")
+    annual_saving_eur: float = Field(..., description="Annual net savings compared to baseline")
+    cumulative_saving_eur: Optional[float] = Field(None, description="Cumulative net savings up to this year")
+    scenario: str = Field("central", description="Price scenario: low | central | high")
+
+
+class ScenarioFinancials(BaseModel):
+    """Investment, financing and long-run outcome of a scenario."""
+    gross_investment_eur: float = Field(..., description="Total installed cost before subsidy")
+    subsidy_eur: float = Field(..., description="Subsidy deducted from the investment")
+    financed_principal_eur: float = Field(..., description="Loan principal")
+    loan_term_months: int = Field(..., description="Loan term in months")
+    horizon_years: int = Field(..., description="Long-term projection horizon in years")
+    cumulative_net_savings_central_eur: float = Field(
+        ..., description="Cumulative net savings at the end of the horizon (central price scenario)"
+    )
+    cumulative_net_savings_low_eur: float = Field(..., description="Same, low price scenario")
+    cumulative_net_savings_high_eur: float = Field(..., description="Same, high price scenario")
+    break_even_year: Optional[int] = Field(
+        None, description="First projection year (1-based) with positive cumulative net savings (central)"
+    )
 
 
 class Scenario(BaseModel):
@@ -208,19 +231,35 @@ class Scenario(BaseModel):
     id: str = Field(..., description="Scenario ID (e.g., 'solar_only', 'pv_battery')")
     components: Components = Field(..., description="Component configuration")
     sizing: Sizing = Field(..., description="Component sizing")
-    monthly_cost_eur: ScenarioMonthlyCostEUR = Field(..., description="Monthly cost breakdown")
-    monthly_saving_eur: float = Field(..., description="Monthly savings compared to baseline")
-    monthly_saving_post_payoff_eur: Optional[float] = Field(None, description="Monthly savings after loan payoff")
-    self_consumption_ratio: float = Field(..., description="Self-consumption ratio (0-1)")
-    short_term_forecast: list[ScenarioShortTermForecastPoint] = Field(..., description="12-month forecast")
-    long_term_forecast: list[ScenarioLongTermForecastPoint] = Field(..., description="20-year forecast")
-    payback_month: Optional[int] = Field(None, description="Payback month (null if beyond loan term)")
+    monthly_cost_eur: ScenarioMonthlyCostEUR = Field(..., description="Average monthly cost breakdown over the first 12 forecast months")
+    monthly_saving_eur: float = Field(..., description="Average monthly net saving (energy reduction minus instalment) over the first 12 forecast months")
+    monthly_saving_post_payoff_eur: Optional[float] = Field(None, description="Average monthly energy cost reduction without the instalment (saving once the loan is repaid)")
+    self_consumption_ratio: float = Field(..., description="Share of PV generation used on site in year 1 (0-1)")
+    short_term_forecast: list[ScenarioShortTermForecastPoint] = Field(..., description="Monthly short-term forecast")
+    long_term_forecast: list[ScenarioLongTermForecastPoint] = Field(..., description="Annual long-term forecast (central price scenario)")
+    long_term_band: Optional[dict[str, list[ScenarioLongTermForecastPoint]]] = Field(
+        None, description="Low/high price-scenario projections for uncertainty bands"
+    )
+    payback_month: Optional[int] = Field(None, description="Month in which cumulative net savings turn positive (central); null if not within the horizon")
+    financials: Optional[ScenarioFinancials] = Field(None, description="Investment, financing and long-run outcome")
+
+
+class ModelInfo(BaseModel):
+    """Metadata of the engine that produced a forecast."""
+    name: str = Field(..., description="Model name")
+    version: str = Field(..., description="Model version")
+    engine: str = Field(..., description="Engine package (energy_model)")
 
 
 class ForecastResult(BaseModel):
     """Complete forecast result with baseline and scenarios."""
+    model: Optional[ModelInfo] = Field(None, description="Engine metadata")
+    assumptions_used: Optional[dict[str, Any]] = Field(None, description="Engine assumptions and their provenance")
+    validation_warnings: list[str] = Field(default_factory=list, description="Inputs the engine estimated or defaulted")
     baseline: Baseline = Field(..., description="Baseline costs and forecasts")
     scenarios: list[Scenario] = Field(..., description="List of upgrade scenarios")
+
+    model_config = {"protected_namespaces": ()}
 
 
 # ============================================================================
