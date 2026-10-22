@@ -72,6 +72,9 @@ async def generate_forecast(request: Request, assessment: HouseholdAssessment) -
             headers={"Cache-Control": "no-store"}
         )
 
+    except ValueError as e:
+        log_handler.warning("[forecast_router] Assessment cannot be modelled: %s", str(e))
+        raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         log_handler.error("[forecast_router] Forecast generation failed: %s", str(e))
         raise HTTPException(status_code=500, detail="Forecast generation failed")
