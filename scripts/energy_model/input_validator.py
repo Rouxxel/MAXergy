@@ -51,6 +51,80 @@ class EnergyCostCalculator:
         return litres * petrol_eur_per_litre
 
 
+SUPPORTED_VEHICLE_TYPES = ("petrol", "diesel", "electric", "phev", "hybrid")
+_VEHICLE_ALIASES = {"gas": "petrol", "gasoline": "petrol", "ev": "electric", "bev": "electric"}
+
+
+def flatten_mobility(mob: dict) -> tuple[dict, list[str]]:
+    """Convert a multi-vehicle ``vehicles[]`` section into the flat profile the model uses.
+
+    Flat input (no ``vehicles`` key) is returned unchanged.  Combustion vehicles (petrol,
+    diesel, phev, hybrid) are aggregated: mileage and fuel spend are summed, consumption is
+    mileage-weighted, and the vehicle type with the highest mileage is used.  Electric
+    vehicles are excluded — their charging is assumed to be part of household electricity
+    already.  Without a combustion vehicle the mobility profile is zero km.
+    """
+    if "vehicles" not in mob:
+        return mob, []
+
+    warns: list[str] = []
+    combustion: list[tuple[str, float, float, float | None]] = []
+    n_electric = 0
+    for v in mob.get("vehicles") or []:
+        vt_raw = v.get("vehicle_type", "petrol")
+        vt = _VEHICLE_ALIASES.get(str(vt_raw).lower(), str(vt_raw).lower())
+        if vt not in SUPPORTED_VEHICLE_TYPES:
+            raise ValueError(
+                f"mobility.vehicles[].vehicle_type '{vt_raw}' is not supported; "
+                f"must be one of {SUPPORTED_VEHICLE_TYPES}"
+            )
+        if vt == "electric":
+            n_electric += 1
+            continue
+        spend = v.get("annual_fuel_spend_eur")
+        combustion.append((
+            vt,
+            float(v.get("annual_mileage_km") or 0.0),
+            float(v.get("fuel_consumption_l_per_100km") or 0.0),
+            float(spend) if spend is not None else None,
+        ))
+
+    if n_electric:
+        warns.append(
+            f"{n_electric} electric vehicle(s) excluded from mobility costs; "
+            "charging assumed to be included in household electricity"
+        )
+    if not combustion:
+        return {
+            "vehicle_type": "petrol",
+            "annual_mileage_km": 0.0,
+            "fuel_consumption_l_per_100km": 0.0,
+            "annual_fuel_spend_eur": None,
+        }, warns
+
+    total_km = sum(km for _, km, _, _ in combustion)
+    if total_km > 0:
+        cons = sum(km * c for _, km, c, _ in combustion) / total_km
+    else:
+        cons = sum(c for _, _, c, _ in combustion) / len(combustion)
+    spends = [s for *_, s in combustion]
+    total_spend = sum(spends) if all(s is not None for s in spends) else None
+    if total_spend is None and any(s is not None for s in spends):
+        warns.append("fuel spend missing for some vehicles; using default petrol price")
+    dominant = max(combustion, key=lambda c: c[1])[0]
+    if len(combustion) > 1:
+        warns.append(
+            f"{len(combustion)} combustion vehicles aggregated into one profile "
+            f"({total_km:.0f} km/yr, {cons:.2f} l/100km, type '{dominant}')"
+        )
+    return {
+        "vehicle_type": dominant,
+        "annual_mileage_km": total_km,
+        "fuel_consumption_l_per_100km": cons,
+        "annual_fuel_spend_eur": total_spend,
+    }, warns
+
+
 @dataclass
 class ParsedInput:
     """Validated, normalised view of the JSON input with provenance tracking."""
@@ -224,14 +298,14 @@ def validate_and_parse(raw: dict) -> ParsedInput:
     prov["fuel_type"] = "user" if heat.get("fuel_type") else "default:gas"
 
     # ── Mobility ──────────────────────────────────────────────────────────────
-    _SUPPORTED_VEHICLE_TYPES = ("petrol", "diesel", "electric", "phev", "hybrid")
-    mob = raw.get("mobility", {})
+    mob, mob_warns = flatten_mobility(raw.get("mobility", {}))
+    warns.extend(mob_warns)
     vehicle_type_raw = mob.get("vehicle_type", "petrol")
     vehicle_type = str(vehicle_type_raw).lower()
-    if vehicle_type not in _SUPPORTED_VEHICLE_TYPES:
+    if vehicle_type not in SUPPORTED_VEHICLE_TYPES:
         raise ValueError(
             f"mobility.vehicle_type '{vehicle_type_raw}' is not supported; "
-            f"must be one of {_SUPPORTED_VEHICLE_TYPES}"
+            f"must be one of {SUPPORTED_VEHICLE_TYPES}"
         )
 
     mileage_raw = mob.get("annual_mileage_km")

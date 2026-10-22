@@ -44,6 +44,9 @@ class UpgradeInput:
     roof_tilt_deg: float = 30.0
     shading_factor: float = 0.0        # 0 = no shading, 1 = fully shaded
 
+    # Site-specific annual PV yield (kWh/kWp, e.g. from PVGIS). None → regional table.
+    specific_yield_kwh_per_kwp: float | None = None
+
     # Technology sizing (None → derive from assumptions / roof)
     solar_kwp: float | None = None
     battery_kwh: float | None = None   # usable capacity

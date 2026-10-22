@@ -41,7 +41,7 @@ from energy_model.setup_models import (
     MonthlyUpgradeRecord,
     UpgradeInput,
 )
-from energy_model.solar import feed_in_tariff, resolve_kwp
+from energy_model.solar import feed_in_tariff, regional_yield, resolve_kwp
 from energy_model.upgrade_model import SCENARIO_FLAGS, UpgradeEnergyModel
 
 
@@ -325,6 +325,10 @@ class ScenarioOrchestrator:
                 "ev_charging_efficiency": upgrade.ev_assumptions.charging_efficiency,
                 "ev_home_charging_share": upgrade.ev_assumptions.home_charging_share,
                 "pv_annual_degradation_pct": upgrade.solar_assumptions.annual_degradation_pct,
+                "pv_specific_yield_kwh_per_kwp": regional_yield(inp.postcode, upgrade.solar_assumptions),
+                "pv_yield_source": (
+                    "site" if upgrade.specific_yield_kwh_per_kwp is not None else "regional_table"
+                ),
                 "daytime_demand_fraction": 0.35,
                 "roof_orientation": upgrade.roof_orientation,
                 "roof_tilt_deg": upgrade.roof_tilt_deg,
@@ -336,7 +340,7 @@ class ScenarioOrchestrator:
                     if not v.startswith("user")
                 ],
             },
-            "validation_warnings": upgrade.warnings_list,
+            "validation_warnings": inp.warnings_list + upgrade.warnings_list,
             "baseline": {
                 "short_term_forecast": baseline_st,
                 "long_term_projection": baseline_lt,
@@ -364,6 +368,25 @@ class ScenarioOrchestrator:
 
         prov = dict(upgrade.provenance)
         warns = list(upgrade.warnings_list)
+
+        if upgrade.specific_yield_kwh_per_kwp is not None:
+            site_yield = float(upgrade.specific_yield_kwh_per_kwp)
+            if site_yield <= 0:
+                raise ValueError(
+                    f"household.roof.specific_yield_kwh_per_kwp must be positive, got {site_yield}"
+                )
+            # An empty regional table makes every postcode resolve to the site yield.
+            upgrade = replace(
+                upgrade,
+                solar_assumptions=replace(
+                    upgrade.solar_assumptions,
+                    regional_yield_kwh_per_kwp={},
+                    default_yield_kwh_per_kwp=site_yield,
+                ),
+            )
+            prov["pv_specific_yield_kwh_per_kwp"] = "user:site-specific yield"
+        else:
+            prov["pv_specific_yield_kwh_per_kwp"] = "default:regional PVGIS table by postcode"
 
         if upgrade.solar_kwp is not None:
             kwp = float(upgrade.solar_kwp)

@@ -98,6 +98,7 @@ def _parse_upgrade_input(raw: dict) -> UpgradeInput:
     _opt_str(raw, "roof_orientation")
     _opt_float(raw, "roof_tilt_deg")
     _opt_float(raw, "shading_factor")
+    _opt_float(raw, "specific_yield_kwh_per_kwp")
     _opt_float(raw, "ev_kwh_per_100km")
 
     return UpgradeInput(**kwargs)
@@ -121,6 +122,11 @@ def _parse_upgrade_input_from_full(raw_input: dict) -> UpgradeInput:
         upgrade_raw["roof_tilt_deg"] = roof["tilt_deg"]
     if roof.get("shading_factor") is not None and "shading_factor" not in upgrade_raw:
         upgrade_raw["shading_factor"] = roof["shading_factor"]
+    if (
+        roof.get("specific_yield_kwh_per_kwp") is not None
+        and "specific_yield_kwh_per_kwp" not in upgrade_raw
+    ):
+        upgrade_raw["specific_yield_kwh_per_kwp"] = roof["specific_yield_kwh_per_kwp"]
 
     # Legacy: upgrade_candidates → explicit kWp / kWh
     uc = raw_input.get("upgrade_candidates", {})

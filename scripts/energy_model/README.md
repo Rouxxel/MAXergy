@@ -17,6 +17,10 @@ Net savings formula:
 
 where `energy_cost_reduction = baseline_total_cost − upgraded_total_cost`.
 
+This is the only engine used by the backend API: `POST /forecast` runs
+`compute_model` through `backend/src/services/forecasting/` (normalizer → engine → adapter) and
+returns the API `ForecastResult` described in `documentation/app/API_CONTRACT.md`.
+
 ---
 
 ## Upgrade Scenarios
@@ -98,8 +102,16 @@ All fields are at the top level of a JSON object.
 |---|---|---|---|
 | `location` | `postcode` | string | German postcode (e.g. `"10115"`) |
 | `heating` | `annual_consumption` or `annual_spend_eur` | number | Gas kWh or oil litres consumed per year; or annual spend in EUR |
-| `mobility` | `annual_mileage_km` | number | Annual vehicle kilometres |
-| `mobility` | `fuel_consumption_l_per_100km` | number | Litres per 100 km |
+| `mobility` | `annual_mileage_km` | number | Annual vehicle kilometres (flat form) |
+| `mobility` | `fuel_consumption_l_per_100km` | number | Litres per 100 km (flat form) |
+
+`mobility` may instead be given as a multi-vehicle list (the API shape,
+`{"vehicle_count": n, "vehicles": [{vehicle_type, annual_mileage_km, fuel_consumption_l_per_100km, annual_fuel_spend_eur}]}`).
+It is flattened by `input_validator.flatten_mobility`: combustion vehicles are aggregated
+(mileage and spend summed, consumption mileage-weighted, type of the highest-mileage vehicle);
+electric vehicles are excluded because their charging is assumed to be in household electricity;
+with no combustion vehicle the mobility profile is 0 km. Aliases: `gas` → `petrol`, `ev` → `electric`.
+Each aggregation is reported in `validation_warnings`.
 
 ### Optional — with defaults
 
@@ -115,6 +127,7 @@ All fields are at the top level of a JSON object.
 | `household.roof` | `orientation` | `"south"` | `"south"` / `"east"` / `"west"` / `"north"` |
 | `household.roof` | `tilt_deg` | `30` | |
 | `household.roof` | `shading_factor` | `0.0` | 0 = no shading, 1 = full shade |
+| `household.roof` | `specific_yield_kwh_per_kwp` | `null` | Site-specific annual PV yield (kWh/kWp, e.g. PVGIS). Replaces the regional table; must be > 0 |
 | `heating` | `fuel_type` | `"gas"` | `"gas"` or `"oil"` |
 | `mobility` | `vehicle_type` | `"petrol"` | `"petrol"` / `"diesel"` / `"electric"` / `"phev"` / `"hybrid"` |
 | `mobility` | `annual_fuel_spend_eur` | `null` | Used to derive effective fuel price if provided |
@@ -135,7 +148,8 @@ The following raise `ValueError` with a field-specific message:
 - Negative `household.electricity.grundpreis_eur_per_month`
 - Malformed `household.electricity.contract_end_date` (must be ISO-8601)
 - Unsupported `heating.fuel_type` (must be `"gas"` or `"oil"`)
-- Unsupported `mobility.vehicle_type`
+- Unsupported `mobility.vehicle_type` (also inside `mobility.vehicles[]`)
+- Non-positive `household.roof.specific_yield_kwh_per_kwp`
 - `financing.loan_term_years < 1`
 - Negative `financing.annual_rate_pct`
 - `forecast_horizon.short_term_months < 1`
@@ -242,7 +256,7 @@ Monthly heating load from Degree-Day method using DWD historical heating degree 
 
 ### PV generation
 
-System sized from usable roof area: `kWp = area_m2 × 0.2 kWp/m²`. Monthly output uses orientation × tilt × shading correction on German irradiance profile. PV degradation: 0.5%/year.
+System sized from usable roof area: `kWp = area_m2 / 6 m²/kWp`. Annual specific yield comes from a regional PVGIS table by first postcode digit (950–1150 kWh/kWp), or from `household.roof.specific_yield_kwh_per_kwp` when provided; `assumptions_used.pv_specific_yield_kwh_per_kwp` and `pv_yield_source` (`regional_table` | `site`) report which was used. Monthly output uses orientation × tilt × shading correction on German irradiance profile. PV degradation: 0.5%/year.
 
 ### Battery dispatch
 
@@ -259,7 +273,7 @@ System sized from usable roof area: `kWp = area_m2 × 0.2 kWp/m²`. Monthly outp
 ### Heat pump
 
 `hp_electricity_kwh = (baseline_heating_kwh × existing_efficiency) / SCOP`  
-Default SCOP = 3.5. Heat pump replaces boiler; electricity demand increases, gas/oil demand falls to zero.
+Default SCOP = 3.0, existing boiler efficiency 0.85. Heat pump replaces boiler; electricity demand increases, gas/oil demand falls to zero.
 
 ### EV
 
@@ -297,7 +311,7 @@ When using this model output with an LLM agent:
 
 1. **Do not recalculate.** Pass the entire `result` dict to the LLM. All values are pre-computed and self-consistent.
 2. **Use `price_models` to explain methodology.** The `selection_basis` field explains why constant short-term prices were chosen.
-3. **Use `validation_warnings` to flag inputs.** Any defaulted or estimated inputs are listed there.
+3. **Use `validation_warnings` to flag inputs.** Any defaulted, estimated, or aggregated inputs (e.g. multiple vehicles) are listed there.
 4. **Prefer `long_term_projection.central`** for single-number summaries. Use `low`/`high` to characterise uncertainty.
 5. **Quote `assumptions_used`** when the user asks which system size was modelled.
 6. **Net savings = `financial_result.cumulative_net_savings_eur`** at the final year of the long-term projection. Positive = profitable.

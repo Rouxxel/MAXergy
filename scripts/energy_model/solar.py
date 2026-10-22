@@ -31,7 +31,7 @@ def resolve_kwp(
     )
 
 
-def _regional_yield(postcode: str, assumptions: SolarAssumptions) -> float:
+def regional_yield(postcode: str, assumptions: SolarAssumptions) -> float:
     """Return annual specific yield (kWh/kWp) for the postcode region."""
     prefix = postcode[:1] if postcode else ""
     return assumptions.regional_yield_kwh_per_kwp.get(
@@ -102,7 +102,7 @@ def monthly_pv_generation(
     if kwp <= 0:
         return 0.0
 
-    annual_yield = _regional_yield(postcode, assumptions)
+    annual_yield = regional_yield(postcode, assumptions)
     orient_f = _orientation_factor(orientation, assumptions)
     tilt_f = _tilt_factor(tilt_deg, assumptions)
     shade_f = 1.0 - max(0.0, min(1.0, shading_factor))
