@@ -1,11 +1,11 @@
 """
-Visualize baseline vs scenario forecasts from model_output_1.json.
+Visualize baseline vs scenario forecasts from model_output_legacy.json.
 Produces a single 2-panel PNG: short-term (12 months) on the left,
 long-term (20 years) on the right.
 
 Usage:
     python scripts/visualize_forecast.py
-    # reads  documentation/data/model_output_1.json
+    # reads  documentation/data/model_output_legacy.json
     # writes documentation/images/forecast_comparison.png
 """
 
@@ -19,7 +19,7 @@ import matplotlib.ticker as mticker
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 REPO_ROOT = Path(__file__).parent.parent
-OUTPUT_JSON = REPO_ROOT / "documentation" / "data" / "model_output_1.json"
+OUTPUT_JSON = REPO_ROOT / "documentation" / "data" / "model_output_legacy.json"
 IMAGE_OUT = REPO_ROOT / "documentation" / "images" / "forecast_comparison.png"
 
 # ── Style constants ────────────────────────────────────────────────────────────

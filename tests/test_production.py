@@ -827,3 +827,81 @@ def test_validate_financing_passes(out_a):
     from energy_model.serializer import validate_financing_output
     errors = validate_financing_output(out_a)
     assert not errors, f"validate_financing_output errors: {errors}"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MULTI-VEHICLE MOBILITY + SITE-SPECIFIC PV YIELD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _with_vehicles(vehicles: list[dict]) -> dict:
+    case = copy.deepcopy(CASE_A)
+    case["mobility"] = {"vehicle_count": len(vehicles), "vehicles": vehicles}
+    return case
+
+
+def test_vehicles_single_matches_flat():
+    flat = compute_model(copy.deepcopy(CASE_A))
+    m = CASE_A["mobility"]
+    multi = compute_model(_with_vehicles([dict(m)]))
+    assert (
+        multi["baseline"]["short_term_forecast"][0]["cost_eur"]
+        == flat["baseline"]["short_term_forecast"][0]["cost_eur"]
+    )
+
+
+def test_vehicles_aggregated():
+    from energy_model.input_validator import flatten_mobility
+
+    flat, warns = flatten_mobility({"vehicles": [
+        {"vehicle_type": "gas", "annual_mileage_km": 10000, "fuel_consumption_l_per_100km": 6.0,
+         "annual_fuel_spend_eur": 900},
+        {"vehicle_type": "diesel", "annual_mileage_km": 30000, "fuel_consumption_l_per_100km": 5.0,
+         "annual_fuel_spend_eur": 2100},
+        {"vehicle_type": "ev", "annual_mileage_km": 8000},
+    ]})
+    assert flat["vehicle_type"] == "diesel"
+    assert flat["annual_mileage_km"] == 40000
+    assert flat["fuel_consumption_l_per_100km"] == pytest.approx(5.25)
+    assert flat["annual_fuel_spend_eur"] == 3000
+    assert any("aggregated" in w for w in warns)
+    assert any("electric" in w for w in warns)
+
+
+def test_vehicles_none_gives_zero_mobility():
+    out = compute_model(_with_vehicles([]))
+    assert out["baseline"]["short_term_forecast"][0]["cost_eur"]["mobility"] == 0.0
+
+
+def test_vehicles_unknown_type_rejected():
+    with pytest.raises(ValueError, match="vehicle_type"):
+        compute_model(_with_vehicles([{"vehicle_type": "horse", "annual_mileage_km": 100}]))
+
+
+def test_input_warnings_reported():
+    out = compute_model(_with_vehicles([{"vehicle_type": "ev", "annual_mileage_km": 8000}]))
+    assert any("electric vehicle" in w for w in out["validation_warnings"])
+
+
+def test_site_specific_yield_overrides_regional_table():
+    base = compute_model(copy.deepcopy(CASE_A))
+    assert base["assumptions_used"]["pv_yield_source"] == "regional_table"
+    assert base["assumptions_used"]["pv_specific_yield_kwh_per_kwp"] == 950.0  # PLZ 1xxxx
+
+    case = copy.deepcopy(CASE_A)
+    case["household"]["roof"]["specific_yield_kwh_per_kwp"] = 1140.0
+    site = compute_model(case)
+    assert site["assumptions_used"]["pv_yield_source"] == "site"
+    assert site["assumptions_used"]["pv_specific_yield_kwh_per_kwp"] == 1140.0
+
+    def gen(out):
+        return out["upgrade_scenarios"]["solar_only"]["long_term_projection"]["central"][0][
+            "energy_flows"]["pv_generation_kwh"]
+
+    assert gen(site) / gen(base) == pytest.approx(1140.0 / 950.0, rel=1e-3)
+
+
+def test_site_specific_yield_must_be_positive():
+    case = copy.deepcopy(CASE_A)
+    case["household"]["roof"]["specific_yield_kwh_per_kwp"] = 0
+    with pytest.raises(ValueError, match="specific_yield"):
+        compute_model(case)
