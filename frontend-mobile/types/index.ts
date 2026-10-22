@@ -1,4 +1,4 @@
-// Types matching backend Pydantic schemas from model_input1.json and model_output_1.json
+// Types matching backend Pydantic schemas from documentation/app/API_CONTRACT.md (model_input1.json / model_output_v2.json)
 
 export interface Location {
   postcode: string;
