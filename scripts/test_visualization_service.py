@@ -20,7 +20,7 @@ from src.models.forecast_schemas import ForecastResult
 
 def test_visualization_service():
     """Test the visualization service with example forecast data."""
-    output_path = Path(__file__).parent.parent / "documentation" / "data" / "model_output_1.json"
+    output_path = Path(__file__).parent.parent / "documentation" / "data" / "model_output_v2.json"
     
     with output_path.open() as f:
         output_data = json.load(f)
@@ -46,7 +46,7 @@ def test_visualization_service():
 
 def test_svg_format():
     """Test SVG format generation."""
-    output_path = Path(__file__).parent.parent / "documentation" / "data" / "model_output_1.json"
+    output_path = Path(__file__).parent.parent / "documentation" / "data" / "model_output_v2.json"
     
     with output_path.open() as f:
         output_data = json.load(f)
@@ -69,7 +69,7 @@ def test_svg_format():
 
 def test_visualization_cache():
     """Test the caching functionality of the visualization service."""
-    output_path = Path(__file__).parent.parent / "documentation" / "data" / "model_output_1.json"
+    output_path = Path(__file__).parent.parent / "documentation" / "data" / "model_output_v2.json"
     
     with output_path.open() as f:
         output_data = json.load(f)
@@ -96,7 +96,7 @@ def test_visualization_cache():
 
 def test_cache_key_generation():
     """Test that different forecasts generate different cache keys."""
-    output_path = Path(__file__).parent.parent / "documentation" / "data" / "model_output_1.json"
+    output_path = Path(__file__).parent.parent / "documentation" / "data" / "model_output_v2.json"
     
     with output_path.open() as f:
         output_data = json.load(f)

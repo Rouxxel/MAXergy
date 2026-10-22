@@ -41,8 +41,8 @@ def test_input_schema():
 
 
 def test_output_schema():
-    """Test that model_output_1.json matches ForecastResult schema."""
-    output_path = Path(__file__).parent.parent / "documentation" / "data" / "model_output_1.json"
+    """Test that model_output_v2.json matches ForecastResult schema."""
+    output_path = Path(__file__).parent.parent / "documentation" / "data" / "model_output_v2.json"
     
     with output_path.open() as f:
         output_data = json.load(f)

@@ -35,6 +35,8 @@ def test_forecasting_service():
     forecast = service.generate_forecast(assessment, use_cache=False)
     
     # Validate results
+    assert forecast.model is not None and forecast.model.engine == "energy_model", \
+        "Forecast must come from the production engine (scripts/energy_model)"
     assert forecast.baseline is not None, "Baseline should not be None"
     assert len(forecast.scenarios) == 6, f"Expected 6 scenarios, got {len(forecast.scenarios)}"
     
@@ -55,6 +57,11 @@ def test_forecasting_service():
     for scenario in forecast.scenarios:
         assert len(scenario.short_term_forecast) == 12, f"{scenario.id} should have 12 months forecast"
         assert len(scenario.long_term_forecast) == 20, f"{scenario.id} should have 20 years forecast"
+        assert scenario.financials is not None, f"{scenario.id} should include financials"
+
+    full = next(s for s in forecast.scenarios if s.id == "full_upgrade")
+    assert full.monthly_saving_eur < 0 < full.monthly_saving_post_payoff_eur, \
+        "Average household: negative net saving during the loan, positive after payoff"
     
     print("✓ Forecasting service test passed")
     print(f"  Baseline monthly total: €{baseline_total:.2f}")
