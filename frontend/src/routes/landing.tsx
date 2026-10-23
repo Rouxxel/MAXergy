@@ -14,10 +14,23 @@ import {
   trackBenchmarkLoad,
   trackFAQExpand,
 } from "@/services/analytics";
-import cumulativeNetSavings from "@/assets/cumulative_net_savings.png";
 import averageGermanHousehold from "@/assets/average_german_household_comparison.png";
 import highBenefitHousehold from "@/assets/high_benefit_household_comparison.png";
 import lowBenefitHousehold from "@/assets/low_benefit_household_comparison.png";
+import {
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import benchmarkFallback from "@/services/fixtures/benchmark.json";
+import { euro, signedEuro } from "@/services/savings";
+import { validateBenchmarkData } from "@/services/validation";
 
 export const Route = createFileRoute("/landing")({
   head: () => ({
@@ -127,30 +140,9 @@ function LandingPage() {
   const featuresAnimation = useScrollAnimation();
   const faqAnimation = useScrollAnimation();
 
-  // Fallback data if API fails
-  const fallbackData = {
-    household: {
-      location: "Cologne (50667)",
-      occupants: 3,
-      annual_electricity_kwh: 3500,
-      heating_type: "gas",
-      heating_annual_kwh: 14000,
-      vehicle_type: "petrol",
-      annual_mileage_km: 12000,
-      roof_area_m2: 35,
-      roof_orientation: "south",
-      roof_tilt_deg: 32,
-    },
-    recommendation: {
-      scenario: "full_upgrade",
-      break_even_year: 8,
-      monthly_instalment_eur: 209,
-      cumulative_savings_eur: 24828,
-      description:
-        "Solar panels + battery storage + heat pump + EV charger. Highest projected 20-year cumulative net savings under the central price scenario.",
-    },
-  };
-
+  // If the API is unavailable, show the last recorded engine run (same shape, with its
+  // forecast start month) instead of hand-written numbers.
+  const fallbackData = validateBenchmarkData(benchmarkFallback);
   const data = benchmarkData || fallbackData;
 
   return (
@@ -361,9 +353,16 @@ function LandingPage() {
               Typical German household benchmark
             </div>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              A typical German household could save around €
-              {data.recommendation.cumulative_savings_eur.toLocaleString("de-DE")} over 20 years
+              A typical German household could save around{" "}
+              {euro(data.recommendation.cumulative_savings_eur)} over {data.projection_years} years
             </h2>
+            <p className="text-base font-medium">
+              {data.recommendation.monthly_saving_eur >= 0
+                ? `Saves ${euro(data.recommendation.monthly_saving_eur)}/month from the start (loan included)`
+                : `During financing: ${signedEuro(data.recommendation.monthly_saving_eur)}/month`}
+              {" · "}After payoff: {signedEuro(data.recommendation.monthly_saving_post_payoff_eur)}
+              /month
+            </p>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               This estimate is based on a representative {data.household.occupants}-person household
               in {data.household.location.split(",")[0]} with {data.household.heating_type} heating,
@@ -417,21 +416,32 @@ function LandingPage() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground">{data.recommendation.description}</p>
+            <p className="text-sm text-muted-foreground">{data.recommendation.rationale}</p>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">Break-even</div>
-                <div className="text-2xl font-bold">Year {data.recommendation.break_even_year}</div>
+                <div className="text-2xl font-bold">
+                  {data.recommendation.break_even_year
+                    ? `Year ${data.recommendation.break_even_year}`
+                    : "Not reached"}
+                </div>
               </div>
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">Monthly instalment</div>
                 <div className="text-2xl font-bold">
-                  €{data.recommendation.monthly_instalment_eur}
+                  {euro(data.recommendation.monthly_instalment_eur)}
                 </div>
               </div>
               <div className="space-y-1">
-                <div className="text-sm text-muted-foreground">20-year savings</div>
+                <div className="text-sm text-muted-foreground">
+                  {data.projection_years}-year net savings
+                </div>
                 <div className="text-2xl font-bold text-primary">
-                  €{data.recommendation.cumulative_savings_eur.toLocaleString("de-DE")}
+                  {signedEuro(data.recommendation.cumulative_savings_eur)}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {signedEuro(data.recommendation.cumulative_savings_low_eur)} to{" "}
+                  {signedEuro(data.recommendation.cumulative_savings_high_eur)} (low/high prices)
                 </div>
               </div>
             </div>
@@ -439,17 +449,63 @@ function LandingPage() {
 
           {/* Cumulative Savings Chart */}
           <div className="rounded-lg border border-border bg-card p-6 space-y-4">
-            <h3 className="text-lg font-semibold">Cumulative Net Savings Over 20 Years</h3>
-            <div className="flex justify-center">
-              <img
-                src={cumulativeNetSavings}
-                alt="Cumulative net savings chart showing baseline vs recommended scenario over 20 years"
-                className="max-w-full h-auto rounded-lg"
-              />
+            <h3 className="text-lg font-semibold">
+              Cumulative Net Savings Over {data.projection_years} Years
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={data.cumulative_series.map((p) => ({
+                    year: p.year,
+                    central: p.central,
+                    range: [p.low, p.high],
+                  }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v: number) => `€${Math.round(v / 1000)}k`}
+                  />
+                  <Tooltip
+                    formatter={(v: number | number[]) =>
+                      Array.isArray(v)
+                        ? `${signedEuro(v[0])} to ${signedEuro(v[1])}`
+                        : signedEuro(v)
+                    }
+                    contentStyle={{ backgroundColor: "#111827", borderRadius: "8px" }}
+                  />
+                  <ReferenceLine y={0} stroke="#94a3b8" />
+                  <Area
+                    dataKey="range"
+                    name="Low–high prices"
+                    stroke="none"
+                    fill="#B8FF5A"
+                    fillOpacity={0.15}
+                  />
+                  <Line
+                    dataKey="central"
+                    name="Central prices"
+                    stroke="#B8FF5A"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Recommended plan vs. today, loan instalments included. Computed by the MAXergy engine
+              (model v{data.model_version}) for a forecast starting{" "}
+              {data.forecast_start ?? "next month"}; the shaded band shows low and high energy-price
+              scenarios.
+            </p>
           </div>
 
-          {/* Household Comparison Charts */}
+          {/* Household Comparison Charts (reference run of the three documented profiles) */}
+          <p className="text-xs text-muted-foreground">
+            Reference run of three example households (forecast starting July 2026); see
+            documentation/data/test_outputs/model_test_summary.md.
+          </p>
           <div className="grid gap-6 md:grid-cols-3">
             <div className="rounded-lg border border-border bg-card p-4 space-y-3">
               <h4 className="text-sm font-semibold text-center">Average German Household</h4>
