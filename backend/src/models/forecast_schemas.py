@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from enum import Enum
 from typing import Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # ============================================================================
@@ -293,6 +293,51 @@ class PlanResponse(BaseModel):
     """Forecast and recommendation computed from one engine run."""
     forecast: ForecastResult = Field(..., description="Forecast result")
     recommendation: Recommendation = Field(..., description="Recommendation derived from the forecast")
+
+
+# ============================================================================
+# LOCATION ENRICHMENT SCHEMAS
+# ============================================================================
+
+class EnrichmentRequest(BaseModel):
+    """Address or postcode to enrich with roof geometry and site PV yield."""
+    postcode: Optional[str] = Field(None, min_length=3, max_length=10, description="German postcode")
+    address: Optional[str] = Field(None, min_length=3, max_length=200, description="Street address (more precise than a postcode)")
+    country: str = Field("DE", pattern="^DE$", description="Country code (only 'DE' is supported)")
+
+    model_config = {"extra": "ignore"}
+
+    @model_validator(mode="after")
+    def _needs_location(self) -> "EnrichmentRequest":
+        if not (self.postcode or self.address):
+            raise ValueError("postcode or address is required")
+        return self
+
+
+class EnrichmentRoof(BaseModel):
+    """Roof proposal for household.roof, from the Google Solar API."""
+    usable_area_m2: Optional[float] = Field(None, description="Installable array area in m²")
+    tilt_deg: Optional[float] = Field(None, description="Tilt of the main roof plane")
+    azimuth_deg: Optional[float] = Field(None, description="Azimuth of the main roof plane (0=N, 90=E, 180=S, 270=W)")
+    orientation: Optional[str] = Field(None, description="Engine orientation: south, south_east, east, north_east, north, north_west, west, south_west")
+    max_array_kwp: Optional[float] = Field(None, description="Largest installable PV system")
+    low_confidence: bool = Field(False, description="True when the roof scan likely found a small adjacent building")
+
+
+class EnrichmentSource(BaseModel):
+    """Where each enrichment value came from."""
+    roof: str = Field(..., description="google_solar | unavailable")
+    pv_yield: str = Field(..., description="pvgis | unavailable (engine uses its regional table)")
+
+
+class EnrichmentResponse(BaseModel):
+    """Location, roof proposal and site PV yield for pre-filling the assessment."""
+    lat: float = Field(..., description="Latitude")
+    lon: float = Field(..., description="Longitude")
+    roof: Optional[EnrichmentRoof] = Field(None, description="Roof proposal (null when unavailable)")
+    specific_yield_kwh_per_kwp: Optional[float] = Field(None, description="Site PV yield for household.roof.specific_yield_kwh_per_kwp")
+    source: EnrichmentSource = Field(..., description="Data sources")
+    warnings: list[str] = Field(default_factory=list, description="Lookups that failed and fell back")
 
 
 class AssessmentResponse(BaseModel):
