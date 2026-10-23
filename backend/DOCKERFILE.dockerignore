@@ -1,0 +1,26 @@
+# Ignore rules for backend/DOCKERFILE (build context = repository root).
+# Everything is excluded except what the API image needs.
+*
+!backend/
+!scripts/
+!data/
+
+# Not part of the API image
+backend/mcp
+backend/logs
+backend/tests
+backend/src/tests
+backend/conftest.py
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/venv
+backend/.venv
+scripts/evaluation
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+backend/DOCKERFILE
+backend/DOCKERFILE.dockerignore
+backend/docker-compose.yml
+**/*.md

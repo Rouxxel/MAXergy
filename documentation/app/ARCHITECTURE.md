@@ -11,6 +11,7 @@
                   |                                        |
         FastAPI backend (maxergy-api)  <--- POST /plan ---  MCP service (maxergy-mcp)
                   |                    <- GET /assumptions   |  Google Geocoding / Solar,
+                  |  --- /location/enrich: geocode, roof, PVGIS --->  |
      +------------+-------------+                            |  PVGIS, onboarding script
      |            |             |
  Forecasting  Recommendation  Gemini Advisor
@@ -22,8 +23,9 @@
 ```
 
 The MCP service is a separate deployable that supports the app: it never computes savings,
-it calls the backend. Planned: the backend calls the MCP's enrichment tools (geocode, roof,
-PVGIS) for the assessment pre-fill and the advisor.
+it calls the backend. The backend calls the MCP's enrichment tools (geocode, roof, PVGIS) for
+`POST /location/enrich` (assessment pre-fill). Both run on Railway in one project and talk over
+private networking with service tokens (`documentation/app/DEPLOYMENT.md`).
 
 ## Frontend
 
@@ -111,6 +113,7 @@ Full contract: `documentation/app/API_CONTRACT.md`.
 - POST /recommendation
 - POST /plan
 - GET /assumptions
+- POST /location/enrich
 - GET /benchmark
 - POST /advisor/chat
 

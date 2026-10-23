@@ -14,7 +14,9 @@ target v2 shapes and endpoint status, is
 
 ## Authentication
 
-Currently, the API does not require authentication. Rate limiting is applied to prevent abuse.
+Public clients (web, mobile) need no credentials. Internal services (the MAXergy MCP) send
+`Authorization: Bearer $MAXERGY_SERVICE_TOKEN` on `/plan`, `/forecast`, `/recommendation` and
+`/assumptions`: a valid token uses the separate service rate limit, a wrong token returns 401.
 
 ## Endpoints
 
@@ -162,6 +164,22 @@ the supported inputs). Cacheable for one hour; used by the MCP suggestion tools.
 { "tariff": { "arbeitspreis_eur_per_kwh": 0.32, "grundpreis_eur_per_month": 12.5, "...": "..." }, "solar": { "m2_per_kwp": 6.0, "...": "..." }, "supported": { "heating_fuels": ["gas", "oil"], "...": "..." } }
 ```
 
+### POST /location/enrich
+
+Coordinates, a roof proposal and the site PV yield for a German postcode or address, looked up
+through the MCP service (Google Geocoding, Google Solar, PVGIS). Used to pre-fill
+`household.roof`. 503 when the MCP is disabled or unreachable; 422 when the location cannot be
+geocoded. Shape: `documentation/app/API_CONTRACT.md` §9.
+
+```bash
+curl -X POST http://localhost:8000/location/enrich -H "Content-Type: application/json" \
+  -d '{"postcode": "50667"}'
+```
+
+```json
+{ "lat": 50.94, "lon": 6.96, "roof": { "usable_area_m2": 38.0, "tilt_deg": 35.0, "azimuth_deg": 170.0, "orientation": "south", "max_array_kwp": 7.2, "low_confidence": false }, "specific_yield_kwh_per_kwp": 1012.0, "source": { "roof": "google_solar", "pv_yield": "pvgis" }, "warnings": [] }
+```
+
 ### POST /advisor/chat
 
 Chat with the AI advisor about energy upgrades.
@@ -196,8 +214,12 @@ Per-endpoint limits from `src/core_specs/configuration/config_file.json`:
 - Recommendation: 5 requests per minute
 - Plan: 5 requests per minute
 - Assumptions: 30 requests per minute
+- Location enrich: 10 requests per minute
 - Advisor: 10 requests per minute
 - Benchmark: 25 requests per minute
+
+Limits apply per client IP; requests with a valid service token share a separate limit of 300
+per minute (`service_request_limit`). Behind a proxy (Railway) set `FORWARDED_ALLOW_IPS=*`.
 
 ## Error Responses
 

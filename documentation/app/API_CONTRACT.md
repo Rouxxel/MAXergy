@@ -25,7 +25,7 @@ Routers are mounted at the **root** of the API host (decision #13):
 | `POST` | `/plan` | `HouseholdAssessment` (+ `?metric=`) | `PlanResponse` | **v2** |
 | `GET` | `/benchmark` | – | `BenchmarkData` | v1 (partly hard-coded) → computed from the engine (planned) |
 | `GET` | `/assumptions` | – | `Assumptions` | **v2** |
-| `POST` | `/location/enrich` | `EnrichmentRequest` | `EnrichmentResponse` | *(v2, planned)* |
+| `POST` | `/location/enrich` | `EnrichmentRequest` | `EnrichmentResponse` | **v2** (via the MCP; 503 when disabled) |
 | `POST` | `/advisor/chat` | `AdvisorChatRequest` | `AdvisorChatResponse` | v1 |
 | `POST` | `/visualization/forecast-chart` | `HouseholdAssessment` | chart payload | v1 |
 
@@ -304,22 +304,35 @@ Mocks must return this exact shape (not `{ "reply": ... }`).
 
 `recommendation.*` is hard-coded today; it will be computed with the same logic as `/plan` (planned).
 
-## 9. Enrichment *(v2, planned)*
+## 9. Enrichment (`POST /location/enrich`)
 
-`POST /location/enrich` request: `{ "postcode": "50667", "address": null, "country": "DE" }`
+Looks up coordinates, a roof proposal and the site PV yield through the MCP service (Google
+Geocoding, Google Solar, PVGIS at 1 kWp), to pre-fill `household.roof` and
+`household.roof.specific_yield_kwh_per_kwp`.
 
-Response:
+Request (`EnrichmentRequest`; `postcode` and/or `address` required, `country` must be `"DE"`):
+`{ "postcode": "50667", "address": null, "country": "DE" }`
+
+Response (`EnrichmentResponse`):
 
 ```json
 {
-  "lat": 50.94, "lon": 6.95,
-  "roof": { "usable_area_m2": 38.0, "tilt_deg": 35, "orientation": "south", "max_array_kwp": 7.6, "low_confidence": false },
-  "specific_yield_kwh_per_kwp": 975.0,
-  "source": { "roof": "google_solar", "yield": "pvgis" }
+  "lat": 50.94, "lon": 6.96,
+  "roof": { "usable_area_m2": 38.0, "tilt_deg": 35.0, "azimuth_deg": 170.0, "orientation": "south", "max_array_kwp": 7.2, "low_confidence": false },
+  "specific_yield_kwh_per_kwp": 1012.0,
+  "source": { "roof": "google_solar", "pv_yield": "pvgis" },
+  "warnings": []
 }
 ```
 
-`source.roof`: `google_solar` | `area_estimate` | `unavailable`. `source.yield`: `pvgis` | `regional_table`.
+| Field | Definition |
+| ----- | ---------- |
+| `roof` | From the largest roof segment; `null` when the roof scan fails (`source.roof = "unavailable"`, reason in `warnings`). `orientation` uses the engine's eight names (`south`, `south_east`, …). |
+| `specific_yield_kwh_per_kwp` | PVGIS yield for 1 kWp at the roof's tilt/azimuth (30°/south if no roof); `null` when PVGIS fails (`source.pv_yield = "unavailable"`; the engine then uses its regional table). |
+| `low_confidence` | The roof scan probably found a small adjacent building; ask the user to confirm the size. |
+
+Errors: 422 for an invalid request or a location that cannot be geocoded; 503 when the MCP is
+disabled (`MCP_ENABLED`), unreachable, rejects the backend's token, or has no Google key.
 
 ## 10. Assumptions (`GET /assumptions`)
 
@@ -381,9 +394,10 @@ relayed as tool errors with the backend's `detail`.
 | ------ | ---- | ---- |
 | 422 | `{ "detail": [ ...field errors ] }` (development) / `{ "detail": "Invalid request." }` (production) | Schema validation failure |
 | 422 | `{ "detail": "<engine message>" }` e.g. `"heating.fuel_type 'pellets' is not supported; supported fuels: gas, oil"` | Valid assessment the engine cannot model (`/forecast`) |
-| 429 | rate-limit message | SlowAPI limit exceeded |
+| 401 | `{ "detail": "Invalid service token" }` | `Authorization: Bearer` present but not the configured `MAXERGY_SERVICE_TOKEN` (`/plan`, `/forecast`, `/recommendation`, `/assumptions`) |
+| 429 | rate-limit message | Per-endpoint limit exceeded (per client IP; service-token callers share a separate `service_request_limit`) |
 | 500 | `{ "detail": "Forecast generation failed" }` / `"Internal server error."` | Engine or unexpected failure |
-| 503 | `{ "detail": "<service> unavailable" }` | *(v2)* MCP enrichment disabled/unreachable, Gemini key missing |
+| 503 | `{ "detail": "Location enrichment unavailable: <reason>" }` | `/location/enrich` when the MCP is disabled, unreachable or misconfigured |
 
 ---
 

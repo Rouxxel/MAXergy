@@ -11,7 +11,7 @@ MAXergy helps homeowners understand the financial and environmental impact of en
 MAXergy consists of four main components:
 
 - **Backend** ([`backend/`](backend/README.md)): FastAPI-based API with baseline forecasting model, recommendation engine, and AI advisor (Gemini)
-- **MCP service** ([`backend/mcp/`](backend/mcp/README.md)): standalone FastMCP server (`maxergy-mcp`) that supports the app with roof geometry (Google Solar), PV yield (PVGIS), and conversational onboarding for LLM clients. Its savings tools return the backend's `POST /plan` results (production engine), so app and LLM clients see the same numbers. Deployed as its own Railway service; backend → MCP wiring is planned
+- **MCP service** ([`backend/mcp/`](backend/mcp/README.md)): standalone FastMCP server (`maxergy-mcp`) that supports the app with roof geometry (Google Solar), PV yield (PVGIS), and conversational onboarding for LLM clients. Its savings tools return the backend's `POST /plan` results (production engine), so app and LLM clients see the same numbers. The backend calls its enrichment tools (geocoding, roof, PVGIS) for `POST /location/enrich`. Both run on Railway as `maxergy-api` + `maxergy-mcp` ([`documentation/app/DEPLOYMENT.md`](documentation/app/DEPLOYMENT.md))
 - **Frontend** ([`frontend/`](frontend/README.md)): TanStack Start (React 19 + Vite 7) mobile-first web application
 - **Energy Model** ([`scripts/energy_model/`](scripts/energy_model/README.md)): Production modelling package for German residential energy cost forecasting
 
@@ -193,6 +193,7 @@ The frontend is a **mobile-first PWA shell** with mocked data, designed to be ea
 ## Documentation
 
 - [API Contract](documentation/app/API_CONTRACT.md) — Canonical request/response shapes and decision log
+- [Deployment](documentation/app/DEPLOYMENT.md) — Railway project (two services), variables, smoke test, token rotation
 - [Backend README](backend/README.md) — API endpoints, configuration, deployment
 - [Backend API Documentation](backend/API_DOCUMENTATION.md) — Detailed request/response examples
 - [MCP README](backend/mcp/README.md) — MCP tools, auth modes, Railway deployment
@@ -205,9 +206,9 @@ The frontend is a **mobile-first PWA shell** with mocked data, designed to be ea
 
 A milestone is marked ✅ only once it works end to end and is verified.
 
-**Shipped:** UI shell (web + mobile) with mock data, landing page, FastAPI backend, production energy model package (`scripts/energy_model/`) serving `POST /forecast`, recommendation service (`/recommendation`, `/plan`), engine defaults (`/assumptions`), MCP service on the production engine (via `/plan`), price-model research.
+**Shipped:** UI shell (web + mobile) with mock data, landing page, FastAPI backend, production energy model package (`scripts/energy_model/`) serving `POST /forecast`, recommendation service (`/recommendation`, `/plan`), engine defaults (`/assumptions`), MCP service on the production engine (via `/plan`), location enrichment via the MCP (`/location/enrich`), service-token auth between the services, Railway two-service config (`.railway/railway.ts`), price-model research.
 
-**Known limitations today:** the frontend's live mode (`VITE_USE_MOCKS=false`) has type mismatches; the backend does not yet call the MCP (enrichment) and the two-service Railway deploy is pending; the landing page benchmark recommendation is hard-coded.
+**Known limitations today:** the frontend's live mode (`VITE_USE_MOCKS=false`) has type mismatches; the two-service Railway config is written but not yet applied/verified on Railway (owner action, see `documentation/app/DEPLOYMENT.md`); the assessment UI does not use `/location/enrich` yet; the landing page benchmark recommendation is hard-coded.
 
 | Milestone | Status |
 | --------- | ------ |
@@ -215,7 +216,7 @@ A milestone is marked ✅ only once it works end to end and is verified.
 | Production engine (`compute_model`) behind `/forecast` | ✅ done |
 | Recommendation service + `/plan` | ✅ done |
 | MCP rebased onto the production engine | ✅ done |
-| MCP ↔ backend wiring + Railway two-service deploy | ⏳ planned |
+| MCP ↔ backend wiring + Railway two-service deploy | ✅ done in code (Railway apply + staging smoke pending) |
 | Frontend & mobile live API alignment | ⏳ planned |
 | Assessment input quality (roof/yield pre-fill) | ⏳ planned |
 | Honest savings UX | ⏳ planned |

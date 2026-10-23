@@ -3,15 +3,16 @@ version: "3.9"
 services:
   api:
     build: 
-      context: .
-      dockerfile: DOCKERFILE
+      # Build from the repository root: the API needs scripts/ (engine) and data/.
+      context: ..
+      dockerfile: backend/DOCKERFILE
     container_name: maxergy_backend
     env_file: .env
     ports:
       - "${SERVER_PORT:-8000}:8000"
     restart: unless-stopped
     volumes:
-      - ./logs:/app/logs  # Persist logs
+      - ./logs:/app/backend/logs  # Persist logs
     environment:
       - PYTHONUNBUFFERED=1
     healthcheck:
@@ -22,7 +23,7 @@ services:
       start_period: 40s
     # Uncomment below for development with live reload
     # volumes:
-    #   - .:/app
+    #   - .:/app/backend
     # command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   # Optional services - uncomment as needed

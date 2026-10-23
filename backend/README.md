@@ -27,6 +27,7 @@ backend/
 │   │   │       ├── recommendation_router.py
 │   │   │       ├── plan_router.py
 │   │   │       ├── assumptions_router.py
+│   │   │       ├── location_router.py   # POST /location/enrich (via the MCP)
 │   │   │       ├── advisor_router.py
 │   │   │       ├── benchmark_router.py
 │   │   │       └── visualization_router.py
@@ -42,6 +43,9 @@ backend/
 │   │   ├── forecast_schemas.py     # Forecast and assessment schemas
 │   │   └── models_example.py       # Example model patterns
 │   ├── services/                   # Business logic
+│   │   ├── mcp/
+│   │   │   ├── mcp_client.py       # JSON-RPC client for the MCP enrichment tools (allow-list)
+│   │   │   └── enrichment_service.py # geocode → roof → PVGIS for /location/enrich
 │   │   ├── recommendation/
 │   │   │   └── recommendation_service.py # Shared ranking + rationale
 │   │   ├── forecasting/
@@ -55,7 +59,8 @@ backend/
 │   │       └── __init__.py
 │   └── utils/
 │       ├── custom_logger.py        # Logging configuration (log_handler)
-│       ├── limiter.py              # Shared SlowAPI limiter instance
+│       ├── limiter.py              # Shared SlowAPI limiter (per IP / service identity)
+│       ├── service_auth.py         # MAXERGY_SERVICE_TOKEN check for internal callers
 │       ├── request_limiter.py      # 429 handler for rate-limit exceeded
 │       └── validators.py           # Email, password, phone, token, UUID validators
 ├── mcp/                            # Standalone MCP service (maxergy-mcp), calls /plan and /assumptions — see mcp/README.md
@@ -64,10 +69,10 @@ backend/
 ├── main.py                         # Application entry point
 ├── requirements.txt                # Python dependencies
 ├── start.sh / start.bat            # Dev setup and launch scripts
-├── DOCKERFILE                      # Docker build configuration
+├── DOCKERFILE                      # Docker build (context = repo root: needs scripts/ and data/)
+├── DOCKERFILE.dockerignore         # Ignore rules for that build
 ├── docker-compose.yml              # Docker compose configuration
 ├── .env / .env.example             # Environment variables
-├── .dockerignore
 ├── .gitignore
 ├── .pylintrc
 ├── API_DOCUMENTATION.md            # API endpoint documentation
@@ -107,14 +112,14 @@ backend/
 
 ```bash
 cd backend
-docker-compose up --build
+docker compose up --build
 ```
 
-Or manually:
+Or manually, from the **repository root** (the image needs `scripts/` and `data/`):
 
 ```bash
-docker build -t maxergy-backend .
-docker run -p 8000:8000 --env-file .env maxergy-backend
+docker build -f backend/DOCKERFILE -t maxergy-backend .
+docker run -p 8000:8000 --env-file backend/.env maxergy-backend
 ```
 
 ## Configuration
@@ -138,7 +143,22 @@ LOG_LEVEL=info
 API_TITLE=MAXergy API
 API_VERSION=1.0.0
 API_DESCRIPTION=Energy forecasting and recommendation API
+
+# Railway / proxies (PORT overrides SERVER_PORT; trust the proxy's X-Forwarded-For)
+PORT=8000
+FORWARDED_ALLOW_IPS=*
+
+# Service-to-service auth (token the MCP sends; wrong token -> 401)
+MAXERGY_SERVICE_TOKEN=...
+
+# MCP enrichment for POST /location/enrich
+MCP_ENABLED=true
+MCP_BASE_URL=http://localhost:8080
+MAXERGY_MCP_TOKEN=...
 ```
+
+The full variable list per Railway service is in
+[`documentation/app/DEPLOYMENT.md`](../documentation/app/DEPLOYMENT.md).
 
 ### JSON Configuration (`config_file.json` + `config_loader`)
 
@@ -209,6 +229,7 @@ canonical contract). The MAXergy backend provides the following endpoints:
 | `POST` | `/recommendation` | Ranked scenarios + rationale (`?metric=cumulative_central\|monthly_net`) | works; shared recommendation service, reuses the cached forecast |
 | `POST` | `/plan` | Forecast + recommendation from one engine run | works; preferred by frontends and the MCP |
 | `GET` | `/assumptions` | Engine default assumptions (tariff, solar, battery, heat pump, EV, capex, financing, supported inputs) | works; used by the MCP suggestion tools |
+| `POST` | `/location/enrich` | Coordinates, roof proposal and site PV yield for a postcode/address | works via the MCP service; 503 when `MCP_ENABLED=false` or the MCP is unreachable |
 | `POST` | `/advisor/chat` | Chat with AI advisor | works (mock replies without `GEMINI_API_KEY`) |
 | `POST` | `/visualization/forecast-chart` | Forecast chart payload | works |
 
@@ -285,6 +306,30 @@ is the single ranking function (used by `/recommendation` and `/plan`):
   cumulative central/low/high, break-even year) and explains negative savings during the loan.
 - No scenarios (e.g. no usable roof) → `selected_scenario_id: null` with an explanatory rationale.
 
+### MCP Client and Location Enrichment
+
+`src/services/mcp/mcp_client.py` calls the MAXergy MCP service (`backend/mcp`) with a single
+JSON-RPC `tools/call` POST to `MCP_BASE_URL/mcp` (the MCP runs stateless JSON HTTP, so no MCP
+client library is needed), bearer `MAXERGY_MCP_TOKEN`, 10 s timeout (`config_file.json` → `mcp`).
+Only enrichment tools are allow-listed (`geocode_address`, `get_roof_geometry`,
+`estimate_pv_production`, `estimate_roof_capacity_from_area`, `estimate_heating_spend`,
+`suggest_battery_kwh`, `suggest_electricity_price`); the MCP's savings tools call this API, so
+they are blocked to rule out loops.
+
+`src/services/mcp/enrichment_service.py` runs geocode → roof geometry → PVGIS (1 kWp) for
+`POST /location/enrich`. Roof or yield failures degrade to `null` with a warning; a failed
+geocode is 422; a disabled/unreachable MCP is 503. `MCP_ENABLED=false` leaves every other
+endpoint working.
+
+### Service Authentication and Rate Limits
+
+`/plan`, `/forecast`, `/recommendation` and `/assumptions` accept an optional
+`Authorization: Bearer $MAXERGY_SERVICE_TOKEN` (`src/utils/service_auth.py`). A valid token puts
+the caller in the shared "service" rate-limit bucket (`config_file.json` →
+`service_request_limit`, 300/min); a wrong token is rejected with 401; anonymous requests are
+limited per client IP. On Railway set `FORWARDED_ALLOW_IPS=*` so the client IP comes from the
+proxy's `X-Forwarded-For`.
+
 ### Gemini AI Advisor Service
 
 Located in `src/services/llm/gemini_service.py`, this service:
@@ -307,7 +352,8 @@ The MAXergy backend uses Pydantic models for request/response validation:
 | Module | When to use |
 |---|---|
 | `custom_logger.py` | `log_handler` — use everywhere instead of `print` |
-| `limiter.py` | Shared `limiter` instance; decorate routes with `@limiter.limit(...)` |
+| `limiter.py` | Shared `limiter`; decorate routes with `@limiter.limit(endpoint_limit("<config key>"))` (converts `"m"` → `"minute"`; per-IP or service bucket) |
+| `service_auth.py` | `verify_service_token` router dependency and `is_service_request` |
 | `request_limiter.py` | Registered in `main.py` as the global 429 handler |
 | `validators.py` | Email, password, phone, token, UUID validators |
 
@@ -328,9 +374,10 @@ The MAXergy backend uses Pydantic models for request/response validation:
 
 ## Docker Features
 
-> **Known limitation:** the image is built from `backend/` only, so it does not contain
-> `scripts/energy_model` and `POST /forecast` fails inside the container. Building from the
-> repository root (for the Railway deployment) is planned.
+The build context is the **repository root**: the image contains `backend/` (without `mcp/`
+and tests), `scripts/` (production engine) and `data/` (BDEW load profile, DWD climate normals).
+Ignore rules: `backend/DOCKERFILE.dockerignore`. `PORT` and `HOST` env vars override the
+configured port and host.
 
 ### Multi-stage Build
 - **Builder stage**: Installs dependencies
@@ -368,19 +415,21 @@ pytest tests                             # production energy model tests (repo r
 ```
 
 - `backend/tests/` — adapter golden tests, normalizer, recommendation service, assumptions, service
-  and the `/forecast`, `/recommendation`, `/plan`, `/assumptions` endpoints (real engine).
+  and the `/forecast`, `/recommendation`, `/plan`, `/assumptions` endpoints (real engine); MCP
+  client and `/location/enrich` (fake MCP); service-token auth and rate limits.
 - `backend/src/tests/` — service unit tests with the engine mocked.
 - `backend/conftest.py` switches the working directory to `backend/` (the config loaders resolve
-  paths from there) and provides the `assessment_dict` fixture from
-  `backend/tests/fixtures/model_input1.json`.
+  paths from there), resets the rate limiter before every test, and provides the
+  `assessment_dict` fixture from `backend/tests/fixtures/model_input1.json`.
 
 ## Deployment
 
-1. Update environment variables for production.
-2. Build: `docker build -t maxergy-backend:latest .`
-3. Deploy: `docker-compose up -d`
+Production runs on Railway as the `maxergy-api` service next to `maxergy-mcp`, defined in
+[`.railway/railway.ts`](../.railway/railway.ts). Setup, variables, smoke test and token
+rotation: [`documentation/app/DEPLOYMENT.md`](../documentation/app/DEPLOYMENT.md).
 
-Compatible with AWS ECS/Fargate, Google Cloud Run, Azure Container Instances, Heroku, DigitalOcean App Platform, and similar.
+The image (`docker build -f backend/DOCKERFILE .` from the repo root) also runs on other container
+platforms.
 
 ## API Documentation
 
