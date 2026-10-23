@@ -1,0 +1,104 @@
+{
+  "tariff": {
+    "arbeitspreis_eur_per_kwh": 0.32,
+    "grundpreis_eur_per_month": 12.5,
+    "gas_eur_per_kwh": 0.1,
+    "oil_eur_per_litre": 1.05,
+    "petrol_eur_per_litre": 1.75
+  },
+  "consumption": {
+    "electricity_kwh_per_person_per_year": 1500.0,
+    "oil_kwh_per_litre": 10.0
+  },
+  "solar": {
+    "m2_per_kwp": 6.0,
+    "regional_yield_kwh_per_kwp": {
+      "0": 1000.0,
+      "1": 950.0,
+      "2": 950.0,
+      "3": 990.0,
+      "4": 1030.0,
+      "5": 1060.0,
+      "6": 1080.0,
+      "7": 1100.0,
+      "8": 1150.0,
+      "9": 1120.0
+    },
+    "default_yield_kwh_per_kwp": 1000.0,
+    "annual_degradation_pct": 0.5,
+    "feed_in_tariff_eur_per_kwh": {
+      "up_to_10_kwp": 0.082,
+      "10_to_40_kwp": 0.071,
+      "above_40_kwp": 0.058
+    }
+  },
+  "battery": {
+    "default_usable_kwh": 10.0,
+    "round_trip_efficiency": 0.9025
+  },
+  "heat_pump": {
+    "scop": 3.0,
+    "existing_heating_efficiency": 0.85
+  },
+  "ev": {
+    "kwh_per_100km": 18.0,
+    "charging_efficiency": 0.92,
+    "home_charging_share": 0.8
+  },
+  "investment_costs": {
+    "pv_eur_per_kwp": 1400.0,
+    "battery_eur_per_kwh": 600.0,
+    "heat_pump_eur_fixed": 12000.0,
+    "ev_charger_eur_fixed": 1200.0
+  },
+  "financing": {
+    "loan_term_years": 15,
+    "loan_rate_pct": 4.5
+  },
+  "long_term_price_growth": {
+    "electricity": {
+      "low": 0.01,
+      "central": 0.03,
+      "high": 0.05
+    },
+    "gas": {
+      "low": 0.01,
+      "central": 0.04,
+      "high": 0.07
+    },
+    "oil": {
+      "low": 0.01,
+      "central": 0.04,
+      "high": 0.07
+    },
+    "petrol": {
+      "low": 0.01,
+      "central": 0.03,
+      "high": 0.05
+    },
+    "fixed_charge": {
+      "low": 0.005,
+      "central": 0.02,
+      "high": 0.03
+    }
+  },
+  "supported": {
+    "country": [
+      "DE"
+    ],
+    "heating_fuels": [
+      "gas",
+      "oil"
+    ],
+    "vehicle_types": [
+      "petrol",
+      "diesel",
+      "electric",
+      "phev",
+      "hybrid"
+    ],
+    "building_types": [
+      "residential"
+    ]
+  }
+}
