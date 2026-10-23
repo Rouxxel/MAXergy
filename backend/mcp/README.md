@@ -5,53 +5,93 @@ and later the MAXergy web advisor) the tools to run the household onboarding con
 present a **credible monthly-saving figure** for a full home-energy upgrade
 (solar · battery · heat pump · EV).
 
-> **Status: being integrated into MAXergy.**
-> - Done: renamed from "MAXnergy" to MAXergy (package `maxergy_mcp`, command `maxergy-mcp`,
->   env prefix `MAXERGY_`).
-> - **Today the savings numbers are NOT from the production engine.** `energy_savings_overview`
->   runs `model_engine.py`, a copy of the legacy `research/legacy/run_baseline_model.py`, which
->   overstates savings. The other savings tools use a separate heuristic engine (`savings.py`).
-> - Planned: savings tools become thin clients of the backend `POST /plan` (production
->   `scripts/energy_model`), the schema is generated from the backend OpenAPI, and all
->   instructions come from one module.
-> - Planned: deployed as its own Railway service and wired to the backend (`maxergy-api`).
+**Every savings number comes from the MAXergy backend** (`POST /plan`, production engine
+`scripts/energy_model`). The MCP never computes savings itself, so claude.ai users and app users
+see exactly the same figures and the same recommendation.
+
+> **Status:** savings tools run on the backend's production engine; the tool input schema is
+> generated from the backend; all instructions come from one module. **Planned:** deployment as
+> its own Railway service wired to the backend over private networking, with service-to-service
+> auth (the backend currently rate-limits `/plan` to 5 requests/minute per IP).
 
 ## Role in the MAXergy architecture
 
 - Runs as a **standalone service** (separate process and Railway deploy), not inside FastAPI.
 - Provides what the backend cannot: Google Geocoding, Google Solar roof geometry, PVGIS yield,
   and the conversational onboarding script.
-- Target: it never computes savings itself; it calls the backend.
-- Target: the backend calls its enrichment tools (geocode, roof, PVGIS) for the web
-  assessment pre-fill and the advisor.
+- Calls the backend for savings (`POST /plan`) and engine defaults (`GET /assumptions`, cached
+  for an hour).
+- Planned: the backend calls the enrichment tools (geocode, roof, PVGIS) for the web assessment
+  pre-fill and the advisor.
 
-## Tools (current)
+## Tools
 
 | Tool | Source | What it gives |
 |------|--------|---------------|
-| `start_advisor` | local | onboarding script; call first |
+| `start_advisor` | `instructions.py` | onboarding script; call first |
 | `geocode_address` | Google Geocoding | address → lat/lon |
-| `get_roof_geometry` | Google Solar API | roof planes (tilt, azimuth, area), `max_array_kwp`, `low_confidence` |
-| `estimate_roof_capacity_from_area` | local heuristic | roof ceiling from floor area when the Solar API result is low-confidence |
-| `estimate_pv_production` | PVGIS (keyless, EU) | annual + monthly kWh for a given system |
-| `estimate_heating_spend`, `suggest_battery_kwh`, `suggest_electricity_price` | local benchmarks | values to propose to the user for confirmation |
-| `model_savings`, `compare_scenarios`, `project_savings`, `recommend_upsell` | `savings.py` heuristic engine | per-scenario savings, ranking, chart series, next step (to be replaced by `POST /plan`) |
-| `energy_savings_overview` | `model_engine.py` (legacy-engine copy) | baseline + 6-scenario ladder + forecasts (to move to `POST /plan`) |
+| `get_roof_geometry` | Google Solar API | roof planes (tilt, azimuth, area), `max_array_area_m2`, `max_array_kwp`, `low_confidence` |
+| `estimate_roof_capacity_from_area` | heuristic + engine `m2_per_kwp` | usable roof area and PV ceiling from floor area (fallback) |
+| `estimate_pv_production` | PVGIS (keyless, EU) | annual + monthly kWh; with `kwp=1` the site `specific_yield_kwh_per_kwp` for `household.roof` |
+| `default_assumptions` | backend `GET /assumptions` | engine defaults (tariff, solar, battery, heat pump, EV, capex, financing, supported inputs) |
+| `suggest_electricity_price` | backend defaults | default tariff and implied annual kWh from a monthly bill |
+| `estimate_heating_spend` | heating-demand benchmark + backend fuel prices | gas/oil consumption and spend from living area |
+| `suggest_battery_kwh` | heuristic + engine default | battery size to propose |
+| **`energy_savings_overview`** | backend `POST /plan` | **the headline**: `{forecast, recommendation}` verbatim from the backend |
+| `compare_scenarios` | backend `POST /plan` | all options with monthly figures and headline, in the backend's ranking order |
+| `project_savings` | backend `POST /plan` | cumulative net savings per option per year, for a line chart |
+| `next_best_upgrade` | backend `POST /plan` | what each extra component adds (or the best step from `current_scenario_id`) |
+| `recommend_upsell` | — | deprecated alias of `next_best_upgrade` (will be removed) |
+| `model_savings` | — | deprecated; points to `energy_savings_overview` (will be removed) |
 
-The prompt `maxergy_advisor` returns the same onboarding script as `start_advisor`.
+The savings tools take a `HouseholdAssessment` (same shape as the app,
+[`documentation/app/API_CONTRACT.md`](../../documentation/app/API_CONTRACT.md) §2) and optional
+`metric` (`cumulative_central` default, or `monthly_net`). The prompt `maxergy_advisor` returns
+the same onboarding script as `start_advisor`. Only residential German homes with gas or oil
+heating are supported (the engine's scope); other inputs get a clear "not supported yet" answer.
+
+## Single sources
+
+| What | Source | Derived file (generated, do not edit) |
+|------|--------|----------------------------------------|
+| Tool input/response schema | `backend/src/models/forecast_schemas.py` | `src/maxergy_mcp/contract.py` via `scripts/gen_contract.py` |
+| Server instructions + onboarding script | `src/maxergy_mcp/instructions.py` | `PROMPT.md` via `scripts/gen_prompt.py` |
+
+```bash
+uv run python scripts/gen_contract.py   # after changing the backend schemas
+uv run python scripts/gen_prompt.py     # after changing instructions.py
+```
+
+Both scripts accept `--check`, and the tests fail if either file is out of date.
 
 ## Run locally
 
 ```bash
 cd backend/mcp
-uv sync
-cp .env.example .env        # optional: GOOGLE_MAPS_API_KEY (Solar + Geocoding enabled)
+uv sync                     # includes the dev group (pytest, datamodel-code-generator)
+cp .env.example .env        # MAXERGY_API_BASE_URL, optional GOOGLE_MAPS_API_KEY
 uv run maxergy-mcp          # stdio MCP server
-uv run python overview_smoke.py   # offline smoke test (parity with research/legacy/run_baseline_model.py)
+uv run pytest tests         # offline tests (backend mocked with recorded responses)
 ```
 
-PVGIS and the local engines need **no key**; only `geocode_address` and `get_roof_geometry`
-use Google. Without a key, pass tilt/azimuth to `estimate_pv_production` directly.
+The savings tools need the backend running (`MAXERGY_API_BASE_URL`, default
+`http://localhost:8000`; start it with `python main.py` in `backend/`). PVGIS needs no key; only
+`geocode_address` and `get_roof_geometry` use Google.
+
+The test fixtures `tests/fixtures/plan_model_input1.json` and `tests/fixtures/assumptions.json`
+are responses recorded from the backend for `model_input1.json`. Re-record them when the backend
+contract changes (POST the fixture input to `/plan`, GET `/assumptions`, save the JSON).
+
+## Configuration
+
+| Variable | Purpose |
+|----------|---------|
+| `MAXERGY_API_BASE_URL` | Backend base URL (default `http://localhost:8000`) |
+| `MAXERGY_SERVICE_TOKEN` | Bearer token sent to the backend (service-to-service auth; enforced by the backend once deployed) |
+| `GOOGLE_MAPS_API_KEY` | Google Solar + Geocoding |
+| `MAXERGY_AUTH_MODE` and related | Inbound auth, see below |
+| `LOG_LEVEL` | `INFO` (default) or `DEBUG` |
+| `MCP_TRANSPORT` | `stdio` / `http` override |
 
 ## Transport & auth
 
@@ -82,38 +122,39 @@ oauth : unauthenticated -> 401 with WWW-Authenticate pointing at
 ## Logging
 
 Plain-text logs to stdout (Railway captures them). `LOG_LEVEL=INFO` (default) or `DEBUG`.
-Every line carries a per-request **trace id**; API keys are never logged and secret-looking
-arguments are masked to `***`.
+Every line carries a per-request **trace id** (also sent to the backend as `X-Trace-Id`); API
+keys are never logged and secret-looking arguments are masked to `***`.
 
 - `maxergy.tools` — one `→` (entry, sanitized args) and one `←` (exit: ok/ERROR, duration,
   output shape) per tool call, via `ToolLoggingMiddleware`.
+- `maxergy.api` — each backend call: method, path, HTTP status, latency, retries.
 - `maxergy.providers` — each Google Geocoding / Solar API and PVGIS call: HTTP status, latency,
   key params (never the key), response shape, rough cost estimate, fallback decisions.
-- `maxergy.model` — overview computations.
 
 ```
-[INFO] ... maxergy.tools     [8cd59828] - → estimate_pv_production args={'lat': 48.137, 'kwp': 6, ...}
-[INFO] ... maxergy.providers [8cd59828] - pvgis http=200 458ms kwp=6.0 tilt=35 az=180 -> annual=6451kWh yield=1075 (keyless)
+[INFO] ... maxergy.tools     [8cd59828] - → estimate_pv_production args={'lat': 48.137, 'kwp': 1, ...}
+[INFO] ... maxergy.providers [8cd59828] - pvgis http=200 458ms kwp=1.0 tilt=35 az=180 -> annual=1075kWh yield=1075 (keyless)
 [INFO] ... maxergy.tools     [8cd59828] - ← estimate_pv_production ok 460ms out=dict(keys=[annual_kwh, monthly_kwh, ...])
 ```
 
 ## Deploy to Railway
 
 The service deploys from this directory (`backend/mcp`) with Railpack (`railway.toml`,
-start command `uv run maxergy-mcp`). Railway injects `PORT`, so the server comes up on HTTP at
-`https://<service-domain>/mcp`.
+start command `uv run --no-dev maxergy-mcp`). Railway injects `PORT`, so the server comes up on
+HTTP at `https://<service-domain>/mcp`.
 
 ```bash
 cd backend/mcp
 railway link                 # project "maxergy", service "maxergy-mcp"
 railway variables --set GOOGLE_MAPS_API_KEY=... \
+                  --set MAXERGY_API_BASE_URL=https://<maxergy-api-domain> \
                   --set MAXERGY_API_TOKEN=$(python -c "import secrets;print(secrets.token_urlsafe(32))")
 railway up
 ```
 
 In the Railway dashboard set the service **root directory** to `backend/mcp`. The full
-two-service layout (`maxergy-api` + `maxergy-mcp`, private networking, service tokens) is
-will be documented in `documentation/app/DEPLOYMENT.md`.
+two-service layout (`maxergy-api` + `maxergy-mcp`, private networking, service tokens) will be
+documented in `documentation/app/DEPLOYMENT.md`.
 
 ### Register with an MCP client
 
@@ -124,7 +165,7 @@ Local (stdio):
     "maxergy": {
       "command": "uv",
       "args": ["run", "--directory", "<path-to-repo>/backend/mcp", "maxergy-mcp"],
-      "env": { "GOOGLE_MAPS_API_KEY": "..." }
+      "env": { "MAXERGY_API_BASE_URL": "http://localhost:8000", "GOOGLE_MAPS_API_KEY": "..." }
     }
   }
 }
@@ -135,15 +176,3 @@ Remote (Railway, bearer) in Claude Code:
 claude mcp add --transport http maxergy https://<service-domain>/mcp \
   --header "Authorization: Bearer <MAXERGY_API_TOKEN>"
 ```
-
-## Modeling notes (current, to be replaced)
-
-- `model_schema.py` copies the **v1** (legacy) API shape — see
-  [`documentation/app/API_CONTRACT.md`](../../documentation/app/API_CONTRACT.md) §3.2.
-- `model_engine.py` reproduces `research/legacy/run_baseline_model.py` exactly (`overview_smoke.py`
-  checks parity). For `documentation/data/model_input1.json` it reports e.g. `full_upgrade`
-  +€87/month and `pv_ev` +€127/month, while the production engine shows negative first-year net
-  savings for an average household (`documentation/data/test_outputs/model_test_summary.md`).
-- `savings.py` / `suggestions.py` use their own constants (e.g. €0.35/kWh, feed-in €0.08/kWh,
-  COP 3.3) that differ from the production engine (€0.32/kWh, EEG tiers 0.082/0.071/0.058,
-  SCOP 3.5). They are planned to come from the backend `GET /assumptions`.
