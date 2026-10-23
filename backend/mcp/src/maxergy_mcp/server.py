@@ -1,15 +1,16 @@
 """MAXergy MCP server.
 
-The client LLM runs the onboarding conversation and holds the HouseholdProfile.
-These tools are the calculators it can't do reliably in-context: roof geometry,
-irradiance, production, and the per-scenario monthly-saving math.
+Supports the MAXergy app: the client LLM runs the household onboarding conversation (script in
+`instructions.py`) and these tools provide what it cannot do reliably in-context — roof
+geometry (Google Solar), PV yield (PVGIS), proposals for unknown inputs, and the savings
+overview. Every savings number comes from the MAXergy backend (`POST /plan`, production
+engine); this server never computes savings itself.
 
 Typical flow:
-  1. geocode_address  -> lat/lon
-  2. get_roof_geometry -> existing tilt/azimuth + installable ceiling (upsell room)
-  3. estimate_pv_production -> annual kWh for a given system
-  4. compare_scenarios -> ranks the upgrade ladder by monthly saving
-  5. recommend_upsell -> the single strongest next step, framed for a proposal
+  1. start_advisor            -> onboarding script (ask one question at a time)
+  2. geocode_address / get_roof_geometry / estimate_pv_production -> roof + site PV yield
+  3. energy_savings_overview  -> forecast + recommendation from the backend
+  4. compare_scenarios / project_savings / next_best_upgrade -> views of the same plan
 """
 
 from __future__ import annotations
@@ -111,13 +112,14 @@ def _build_auth():
     return _bearer_auth()
 
 
+from fastmcp.exceptions import ToolError
+
 from . import providers, suggestions
+from .api_client import BackendError, get_api
+from .contract import HouseholdAssessment, PlanResponse, RecommendationMetric
+from .instructions import ONBOARDING_SCRIPT, SERVER_INSTRUCTIONS
 from .logging_middleware import ToolLoggingMiddleware
 from .logging_setup import setup_logging
-from .model_engine import run_overview
-from .model_schema import ModelInput
-from .models import HouseholdProfile, Scenario
-from .savings import evaluate_scenario
 
 setup_logging()
 
@@ -125,15 +127,7 @@ _auth = _build_auth()
 
 mcp = FastMCP(
     name="maxergy-advisor",
-    instructions=(
-        "MAXergy is a household energy-transition advisor. When the user wants to use "
-        "MAXergy (or asks about home-energy savings), FIRST call the `start_advisor` "
-        "tool and follow the onboarding script it returns: ask the household questions "
-        "ONE AT A TIME like a form, wait for each answer, and never dump the whole "
-        "questionnaire at once. After collecting the inputs, call `compare_scenarios` and "
-        "`recommend_upsell`, then present the result led by €/month saved (and, when the "
-        "financing installment outweighs savings early, say so honestly)."
-    ),
+    instructions=SERVER_INSTRUCTIONS,
     auth=_auth,
 )
 mcp.add_middleware(ToolLoggingMiddleware())
@@ -198,58 +192,91 @@ if _public_base_url() and env("AUTH_MODE", "bearer").lower() in {
         )
 
 
-ONBOARDING_SCRIPT = """You are running the MAXergy home-energy onboarding. Conduct it like a
-friendly form: ask ONE question at a time, wait for the answer, then ask the next. Do NOT
-list all questions at once. If the user doesn't know a value, apply the stated default,
-say which default you used, and move on. Keep each question to one short sentence.
+def _assumptions() -> dict:
+    try:
+        return get_api().assumptions()
+    except BackendError as e:
+        raise ToolError(str(e)) from e
 
-MAXergy serves both private homes and commercial buildings with ONE flow — a home is just
-the default building type. Set the profile's `building_type` from the user's answer
-(home | office | retail | warehouse | hotel | school); it drives the heating benchmark and,
-importantly, how much solar is self-consumed (daytime businesses self-consume far more than
-evening-heavy homes). For a large/commercial building, add the honest caveat that heating and
-tariff figures are benchmark estimates, good for a first read, not a substitute for an audit.
 
-Ask in this order:
-1. Address — street, postcode, city. (Used for roof geometry + sun/irradiance.)
-2. Building — is this a home or a business? If a business, what type (office, retail,
-   warehouse, hotel, school)? Set `building_type` accordingly (default "home").
-3. Heating — gas, oil, heat pump, district, or electric? Then ask the floor area in m².
-   Call `estimate_heating_spend` with the building_type and PROPOSE the figure to confirm —
-   e.g. "For a ~{m2} m² {building} on gas, that's roughly €{spend}/year on heating. Sound
-   about right, or do you have a bill handy?" Use their actual number if they give one.
-4. Cars — how many vehicles (a fleet is fine), and for each: electric or petrol/diesel, and
-   roughly how many km per year? (Default 13,000 km/yr if unsure.)
-5. Existing solar — first call `geocode_address` then `get_roof_geometry`. It returns
-   `suggested_system_kwp`, `max_array_kwp`, and `low_confidence`. If `low_confidence` is true
-   (the Solar API likely found a small adjacent building — common for large/industrial sites),
-   DON'T trust the tiny ceiling: call `estimate_roof_capacity_from_area` with the floor area
-   from step 3 and use that instead, telling the user the automatic roof scan looked off so
-   you estimated from the building size. Then ask whether they have panels and propose the
-   number — e.g. "Your roof could fit about {max} kWp; a typical install is ~{suggested} kWp.
-   Does that match, or do you know the exact size?" No API reads the installed size — refine it.
-6. Solar financing — if financed, monthly installment and months left? (Skip if owned/none.)
-7. Battery — installed? If yes, ask capacity in kWh. If NOT, call `suggest_battery_kwh` and
-   mention what size would suit them — framed as upsell info, not a required answer.
-8. Electricity — ask their monthly electricity spend in euros. Then call
-   `suggest_electricity_price` with the building_type and PROPOSE the per-kWh price to confirm
-   — e.g. "For a business like yours I'd assume about €0.20/kWh, which works out to ~{kwh}
-   kWh/year. Does that price sound right, or do you know your contract rate?" Set the
-   confirmed price on the profile (it determines the implied annual kWh, which matters a lot).
-9. Feed-in tariff — what do you get paid per kWh exported? (Default €0.08/kWh if unsure.)
-10. (Commercial only) Peak demand charge — ask whether the power bill has a demand charge
-    (Leistungspreis, €/kW per month) and the billed peak in kW. If so, set
-    `peak_demand_charge_eur_per_kw_month` and `billed_peak_kw` — a battery then shaves peak
-    costs. Skip entirely for homes.
+def _plan(assessment: HouseholdAssessment, metric: RecommendationMetric | None = None) -> dict:
+    """POST /plan on the backend; validated against the generated contract (drift guard)."""
+    try:
+        plan = get_api().plan(assessment.model_dump(mode="json"), metric.value if metric else None)
+    except BackendError as e:
+        raise ToolError(str(e)) from e
+    PlanResponse.model_validate(plan)
+    return plan
 
-When done: build the profile (building_type, confirmed electricity price, roof size), then
-call `compare_scenarios`, `project_savings`, and `recommend_upsell`.
-- RENDER `project_savings` as a line chart (an artifact / chart): x = months, y = cumulative
-  € saved, one line per upgrade path — so the user sees every upsell option compared visually.
-- Lead the written summary with the best path's €/month saved (now, and after payoff if they
-  differ), explain in plain language why across the savings buckets, and name the single
-  strongest next upgrade. Then list the OTHER upgrade options with their €/month so a bigger
-  package that saves more is on the table. Currency EUR, round to whole euros, no jargon."""
+
+def _headline(s: dict) -> str:
+    now, after = s["monthly_saving_eur"], s["monthly_saving_post_payoff_eur"]
+    if now >= 0:
+        return f"saves about €{now:,.0f}/month now (loan included), €{after:,.0f}/month after payoff"
+    return f"costs about €{-now:,.0f}/month more while the loan runs, saves €{after:,.0f}/month after payoff"
+
+
+def _components(s: dict) -> set[str]:
+    return {c for c, on in s["components"].items() if on}
+
+
+def _summary(s: dict) -> dict:
+    f = s.get("financials") or {}
+    return {
+        "id": s["id"],
+        "components": sorted(_components(s)),
+        "monthly_saving_eur": s["monthly_saving_eur"],
+        "monthly_saving_post_payoff_eur": s["monthly_saving_post_payoff_eur"],
+        "financing_installment_eur": s["monthly_cost_eur"]["financing_installment"],
+        "cumulative_net_savings_central_eur": f.get("cumulative_net_savings_central_eur"),
+        "break_even_year": f.get("break_even_year"),
+        "payback_month": s.get("payback_month"),
+        "headline": _headline(s),
+    }
+
+
+def _delta(better: dict, base: dict) -> dict:
+    fb, fa = better.get("financials") or {}, base.get("financials") or {}
+    return {
+        "adds": sorted(_components(better) - _components(base)),
+        "monthly_saving_delta_eur": round(better["monthly_saving_eur"] - base["monthly_saving_eur"], 2),
+        "monthly_saving_post_payoff_delta_eur": round(
+            better["monthly_saving_post_payoff_eur"] - base["monthly_saving_post_payoff_eur"], 2
+        ),
+        "cumulative_net_savings_delta_eur": round(
+            (fb.get("cumulative_net_savings_central_eur") or 0) - (fa.get("cumulative_net_savings_central_eur") or 0), 2
+        ),
+    }
+
+
+def _next_best_upgrade(plan: dict, current_scenario_id: str | None) -> dict:
+    rec = plan["recommendation"]
+    by_id = {s["id"]: s for s in plan["forecast"]["scenarios"]}
+    ranked = [by_id[i["id"]] for i in rec["ranked_scenarios"]]
+    if not ranked:
+        return {"next_best_upgrade": None, "reason": _NO_SCENARIOS}
+
+    if current_scenario_id:
+        if current_scenario_id not in by_id:
+            raise ToolError(f"Unknown scenario '{current_scenario_id}'; available: {', '.join(by_id)}")
+        current = by_id[current_scenario_id]
+        bigger = [s for s in ranked if _components(s) > _components(current)]
+        if not bigger:
+            return {"next_best_upgrade": None, "current": _summary(current),
+                    "reason": "No larger upgrade option extends the current one."}
+        return {"next_best_upgrade": _summary(bigger[0]), "current": _summary(current),
+                "step": _delta(bigger[0], current)}
+
+    best = ranked[0]
+    steps = [{"from": s["id"], **_delta(best, s)} for s in ranked if _components(s) < _components(best)]
+    return {"next_best_upgrade": _summary(best), "steps": steps, "rationale": rec["rationale"]}
+
+
+_NO_SCENARIOS = "No upgrade scenario is available for this household with the selected options."
+_RESIDENTIAL = {"", "home", "residential", "old", "average", "modern", "efficient"}
+_COMMERCIAL_NOTE = (
+    "MAXergy currently models residential buildings only; commercial buildings are not supported yet."
+)
 
 
 @mcp.tool
@@ -257,36 +284,43 @@ def start_advisor() -> str:
     """Begin a MAXergy home-energy savings analysis. Call this FIRST whenever the user
     wants to use MAXergy or asks about saving on home energy / solar / heat pump / EV.
     Returns the onboarding script — then ask the household the questions one at a time,
-    like a form, before running the savings tools."""
+    like a form, before running `energy_savings_overview`."""
     return ONBOARDING_SCRIPT
 
 
 @mcp.prompt(name="maxergy_advisor", title="Start MAXergy energy advisor")
 def maxergy_advisor_prompt() -> str:
     """Kick off the MAXergy onboarding + savings analysis."""
-    return (
-        "Act as the MAXergy home-energy advisor. " + ONBOARDING_SCRIPT
-    )
+    return "Act as the MAXergy home-energy advisor. " + ONBOARDING_SCRIPT
+
+
+@mcp.tool
+def default_assumptions() -> dict:
+    """The MAXergy engine's default assumptions (tariff, solar, battery, heat pump, EV,
+    investment costs, financing, price growth, supported inputs). Use them as the defaults
+    you propose during onboarding."""
+    return _assumptions()
 
 
 @mcp.tool
 def estimate_heating_spend(
     living_area_m2: float, heating_type: str = "gas", building_type: str = "average"
 ) -> dict:
-    """Estimate annual heating spend from floor area, to PROPOSE to the user for confirmation.
+    """Estimate annual heating consumption and spend from floor area, to PROPOSE to the user.
 
-    heating_type: gas|oil|heat_pump|district|electric_resistive|wood.
-    building_type: residential vintage (old|average|modern|efficient) OR use type
-    (home|office|retail|warehouse|hotel|school). Same tool for a flat or a 4,500 m² office."""
-    return suggestions.estimate_heating_spend(living_area_m2, heating_type, building_type)
+    heating_type: gas | oil (the only fuels MAXergy models).
+    building_type: insulation class old | average | modern | efficient (residential only)."""
+    kind = building_type.lower()
+    if kind not in _RESIDENTIAL:
+        return {"supported": False, "note": _COMMERCIAL_NOTE}
+    insulation = kind if kind in suggestions.HEATING_DEMAND_KWH_PER_M2 else suggestions.DEFAULT_INSULATION
+    return suggestions.estimate_heating_spend(_assumptions(), living_area_m2, heating_type, insulation)
 
 
 @mcp.tool
 def suggest_battery_kwh(pv_kwp: float, annual_electricity_kwh: float | None = None) -> dict:
-    """Suggest a home-battery size (kWh) for the household, to propose for the upsell.
-
-    Anchored to ~1 kWh per kWp of solar (and per 1,000 kWh/yr of use), 5–15 kWh typical."""
-    return suggestions.suggest_battery_kwh(pv_kwp, annual_electricity_kwh)
+    """Suggest a home-battery size (kWh) to propose: ~1 kWh per kWp of solar, 5–15 kWh."""
+    return suggestions.suggest_battery_kwh(_assumptions(), pv_kwp, annual_electricity_kwh)
 
 
 @mcp.tool
@@ -300,9 +334,8 @@ def geocode_address(address: str) -> dict:
 def get_roof_geometry(lat: float, lon: float) -> dict:
     """Roof planes (tilt, azimuth, area) and the installable system ceiling for a building.
 
-    Roof pitch = the tilt of any roof-mounted panels, so the largest segment's
-    tilt/azimuth is your best estimate of the existing array's orientation.
-    `max_array_kwp` is the upsell ceiling — how big the system could get.
+    Roof pitch = the tilt of roof-mounted panels, so the largest segment's tilt/azimuth is the
+    best proposal for household.roof. `max_array_area_m2` approximates the usable roof area.
     """
     return providers.get_roof_geometry(lat, lon).model_dump()
 
@@ -316,191 +349,114 @@ def estimate_pv_production(
     azimuth_degrees: float,
     system_loss_pct: float = 14.0,
 ) -> dict:
-    """Annual + monthly PV yield (kWh) for a system, via PVGIS. azimuth: 0=N,90=E,180=S,270=W."""
+    """Annual + monthly PV yield (kWh) for a system, via PVGIS. azimuth: 0=N,90=E,180=S,270=W.
+
+    Call with kwp=1 to get the site's `specific_yield_kwh_per_kwp` for
+    household.roof.specific_yield_kwh_per_kwp."""
     return providers.estimate_pv_production(lat, lon, kwp, tilt_degrees, azimuth_degrees, system_loss_pct)
 
 
 @mcp.tool
 def suggest_electricity_price(building_type: str = "home", monthly_spend_eur: float | None = None) -> dict:
-    """Propose a €/kWh electricity price for the building type (and implied annual kWh), to confirm.
-
-    Residential ~0.35, commercial ~0.28, industrial/warehouse ~0.20. Set the profile's
-    electricity_price_eur_per_kwh from the confirmed value — it drives the kWh the spend implies."""
-    return suggestions.suggest_electricity_price(building_type, monthly_spend_eur)
+    """Propose the default German household tariff (work price €/kWh, base price €/month) and,
+    from a monthly bill, the implied annual kWh — for the user to confirm."""
+    if building_type.lower() not in _RESIDENTIAL:
+        return {"supported": False, "note": _COMMERCIAL_NOTE}
+    return suggestions.suggest_electricity_price(_assumptions(), monthly_spend_eur)
 
 
 @mcp.tool
 def estimate_roof_capacity_from_area(floor_area_m2: float, stories: int = 1) -> dict:
-    """Fallback PV roof ceiling from floor area when get_roof_geometry returns low_confidence
-    (a tiny roof for a large building). A single-story hall's roof ≈ its footprint."""
-    return suggestions.estimate_roof_capacity_from_area(floor_area_m2, stories)
+    """Fallback usable roof area (m²) and PV ceiling from floor area when get_roof_geometry
+    fails or returns low_confidence."""
+    return suggestions.estimate_roof_capacity_from_area(_assumptions(), floor_area_m2, stories)
 
 
 @mcp.tool
-def project_savings(profile: HouseholdProfile, horizon_months: int = 180) -> dict:
-    """Cumulative-savings time series per upgrade path, for charting as a multi-line graph.
+def energy_savings_overview(
+    assessment: HouseholdAssessment, metric: RecommendationMetric | None = None
+) -> dict:
+    """The headline overview: forecast + recommendation for a household, computed by the
+    MAXergy backend's production engine (POST /plan).
 
-    Returns months on the x-axis and, for each scenario in the upgrade ladder, the cumulative
-    net saving (vs. doing nothing) on the y-axis — savings_now while its financing runs, then
-    savings_after_payoff. The horizon runs past the financing term (default 15y) so the chart
-    shows each path crossing above the baseline once it's paid off. Includes each path's monthly
-    figures and break-even month. Render as a line chart: one line per scenario, x = months."""
-    ladder = _build_ladder(profile)
-    months = list(range(0, horizon_months + 1, 3))  # quarterly points keep the chart light
-    series = []
-    for s in ladder:
-        production = _production_for(profile, s)
-        r = evaluate_scenario(profile, s, production)
-        fin_months = s.financing_months if (s.add_pv_kwp or s.add_battery_kwh or s.add_heat_pump or s.add_ev or s.add_ev_charger) else 0
-        cumulative, running, breakeven = [], 0.0, None
-        for m in range(0, horizon_months + 1):
-            rate = r.monthly_saving_now_eur if m < fin_months else r.monthly_saving_after_payoff_eur
-            running += rate
-            if breakeven is None and running >= 0 and m > 0:
-                breakeven = m
-            if m % 3 == 0:
-                cumulative.append(round(running))
-        series.append({
-            "scenario": r.scenario,
-            "cumulative_eur": cumulative,
-            "monthly_saving_now_eur": r.monthly_saving_now_eur,
-            "monthly_saving_after_payoff_eur": r.monthly_saving_after_payoff_eur,
-            "financing_months": fin_months,
-            "breakeven_month": breakeven,
-        })
-    series.sort(key=lambda x: x["cumulative_eur"][-1], reverse=True)
+    Returns `forecast` (baseline costs, up to six upgrade scenarios with monthly costs incl.
+    the loan instalment, monthly net saving, saving after payoff, financials, short/long-term
+    forecasts) and `recommendation` (best scenario, ranking, rationale). `metric` ranks by
+    `cumulative_central` (default) or `monthly_net`. Lead the answer with the recommended
+    scenario's monthly figure and be honest when it is negative during the loan."""
+    return _plan(assessment, metric)
+
+
+@mcp.tool
+def compare_scenarios(
+    assessment: HouseholdAssessment, metric: RecommendationMetric | None = None
+) -> dict:
+    """All upgrade options side by side, ranked exactly like the MAXergy app (same backend
+    ranking), each with its monthly figures, long-term total and a one-line headline."""
+    plan = _plan(assessment, metric)
+    rec = plan["recommendation"]
+    by_id = {s["id"]: s for s in plan["forecast"]["scenarios"]}
     return {
-        "months": months,
-        "series": series,
-        "chart": {"x_label": "Months", "y_label": "Cumulative € saved vs. today", "type": "line"},
-        "note": "Render as a line chart, one line per scenario. Lead the summary with the best path.",
+        "recommended": rec["selected_scenario_id"],
+        "metric": rec["metric_used"],
+        "ranked": [{**_summary(by_id[i["id"]]), "score_eur": i["score_eur"]} for i in rec["ranked_scenarios"]],
+        "rationale": rec["rationale"],
     }
 
 
 @mcp.tool
-def model_savings(profile: HouseholdProfile, scenario: Scenario) -> dict:
-    """Evaluate ONE upgrade scenario against the household's status quo.
-
-    Returns the per-bucket (electricity/heating/mobility) split plus the North Star:
-    monthly saving now (incl. new financing) and after the financing is paid off.
-    Pass production_annual_kwh implicitly by setting the profile's existing kWp and
-    letting the engine use PVGIS-derived yield where available.
-    """
-    production = _production_for(profile, scenario)
-    return evaluate_scenario(profile, scenario, production).model_dump()
-
-
-@mcp.tool
-def compare_scenarios(profile: HouseholdProfile) -> dict:
-    """Build and rank the standard upgrade ladder for this household by monthly saving.
-
-    Ladder: status quo solar -> +battery -> +heat pump -> +EV (each step cumulative),
-    plus a "max" scenario stacking everything. Returns every scenario sorted best-first
-    so the LLM can recommend the configuration with the biggest €/month saving.
-    """
-    ladder = _build_ladder(profile)
-    results = []
-    for s in ladder:
-        production = _production_for(profile, s)
-        results.append(evaluate_scenario(profile, s, production).model_dump())
-    results.sort(key=lambda r: r["monthly_saving_now_eur"], reverse=True)
-    return {
-        "best": results[0] if results else None,
-        "ranked": results,
-        "north_star": "monthly_saving_now_eur",
-    }
-
-
-@mcp.tool
-def recommend_upsell(profile: HouseholdProfile) -> dict:
-    """Spot the single strongest next upgrade vs. what the household has today.
-
-    Compares each individual add-on (battery, heat pump, EV) as a standalone step and
-    returns the one with the best marginal monthly saving, with proposal-ready copy.
-    """
-    candidates: list[Scenario] = []
-    if profile.heating_type.value in {"gas", "oil"}:
-        candidates.append(Scenario(name="Add heat pump", add_heat_pump=True))
-    if not profile.battery_installed:
-        candidates.append(Scenario(name="Add home battery", add_battery_kwh=max(profile.existing_pv_kwp, 5.0)))
-    if any(c.kind.lower() == "ice" for c in profile.cars):
-        candidates.append(Scenario(name="Switch to EV", add_ev=True, add_ev_charger=True))
-
-    if not candidates:
-        return {"recommendation": None, "reason": "Household already has battery, heat pump, and EV."}
-
-    scored = []
-    for s in candidates:
-        production = _production_for(profile, s)
-        scored.append(evaluate_scenario(profile, s, production).model_dump())
-    scored.sort(key=lambda r: r["monthly_saving_after_payoff_eur"], reverse=True)
-    best = scored[0]
-    return {
-        "recommendation": best["scenario"],
-        "headline": best["headline"],
-        "monthly_saving_after_payoff_eur": best["monthly_saving_after_payoff_eur"],
-        "monthly_saving_now_eur": best["monthly_saving_now_eur"],
-        "all_candidates": scored,
-    }
-
-
-@mcp.tool
-def energy_savings_overview(model: ModelInput) -> dict:
-    """The headline overview: one structured, outcome-first read of a building's energy future.
-
-    Takes the canonical model input (location, electricity tariff, heating, mobility,
-    upgrade candidates, financing, forecast horizon) and returns the full picture:
-      - baseline monthly cost (electricity/heating/mobility) + seasonal short-term and
-        escalating long-term forecasts;
-      - the fixed upgrade ladder (solar_only, pv_battery, pv_heatpump, pv_ev,
-        pv_battery_heatpump, full_upgrade), each with sizing, monthly cost incl. financing,
-        €/month saved now, the honest "saves €X/mo after payoff" figure when it's
-        cost-neutral early, self-consumption ratio, forecasts, and the payback month.
-
-    This is the primary, positively-framed entry point — lead the summary with the clear
-    monthly number. Works for homes and commercial buildings alike.
-    """
-    return run_overview(model)
-
-
-# --- helpers ---
-
-def _production_for(profile: HouseholdProfile, scenario: Scenario) -> float | None:
-    """Best-effort PVGIS yield for the scenario's total system; None if no geometry/key."""
-    total_kwp = profile.existing_pv_kwp + scenario.add_pv_kwp
-    if total_kwp <= 0 or profile.lat is None or profile.lon is None:
-        return None
-    tilt = profile.pv_tilt_degrees if profile.pv_tilt_degrees is not None else 35.0
-    azimuth = profile.pv_azimuth_degrees if profile.pv_azimuth_degrees is not None else 180.0
-    try:
-        return providers.estimate_pv_production(profile.lat, profile.lon, total_kwp, tilt, azimuth)["annual_kwh"]
-    except Exception:
-        return None  # fall back to the engine's default specific yield
-
-
-def _build_ladder(profile: HouseholdProfile) -> list[Scenario]:
-    """Upgrade ladder: individual steps (so each upsell shows as its own line on the chart)
-    plus the cumulative combos. Battery sized to the system (commercial scales up)."""
-    batt = max(profile.existing_pv_kwp, 5.0)
-    has_ice = any(c.kind.lower() == "ice" for c in profile.cars)
-    ladder = [
-        Scenario(name="Keep current setup"),
-        Scenario(name="+ Battery", add_battery_kwh=batt),
-        Scenario(name="+ Heat pump", add_heat_pump=True),
+def project_savings(assessment: HouseholdAssessment) -> dict:
+    """Cumulative net savings per upgrade option over the forecast horizon (central prices),
+    for a multi-line chart: x = year, y = cumulative € saved vs. today, one line per option.
+    Lines start negative while the loan runs and rise once savings exceed the instalments."""
+    plan = _plan(assessment)
+    years = [p["year"] for p in plan["forecast"]["baseline"]["long_term_forecast"]]
+    series = [
+        {
+            "scenario": s["id"],
+            "cumulative_eur": [round(p.get("cumulative_saving_eur") or 0) for p in s["long_term_forecast"]],
+            "break_even_year": (s.get("financials") or {}).get("break_even_year"),
+            "monthly_saving_eur": s["monthly_saving_eur"],
+            "monthly_saving_post_payoff_eur": s["monthly_saving_post_payoff_eur"],
+        }
+        for s in plan["forecast"]["scenarios"]
     ]
-    if has_ice:
-        ladder.append(Scenario(name="+ EV fleet", add_ev=True, add_ev_charger=True))
-    ladder.append(Scenario(name="+ Battery + Heat pump", add_battery_kwh=batt, add_heat_pump=True))
-    ladder.append(
-        Scenario(
-            name="+ Battery + Heat pump + EV" if has_ice else "+ Battery + Heat pump (max)",
-            add_battery_kwh=batt,
-            add_heat_pump=True,
-            add_ev=has_ice,
-            add_ev_charger=has_ice,
-        )
-    )
-    return ladder
+    series.sort(key=lambda x: x["cumulative_eur"][-1] if x["cumulative_eur"] else 0, reverse=True)
+    return {
+        "years": years,
+        "series": series,
+        "recommended": plan["recommendation"]["selected_scenario_id"],
+        "chart": {"x_label": "Year", "y_label": "Cumulative € saved vs. today", "type": "line"},
+        "note": "Render as a line chart, one line per option; highlight the recommended one.",
+    }
+
+
+@mcp.tool
+def next_best_upgrade(assessment: HouseholdAssessment, current_scenario_id: str | None = None) -> dict:
+    """What each additional component adds, framed around the outcome.
+
+    Without `current_scenario_id`: the recommended option and, for every smaller option it
+    contains, what the extra components add per month and over the horizon.
+    With `current_scenario_id` (e.g. "solar_only"): the best-ranked option that extends it, and
+    what that step adds."""
+    return _next_best_upgrade(_plan(assessment), current_scenario_id)
+
+
+@mcp.tool
+def recommend_upsell(assessment: HouseholdAssessment, current_scenario_id: str | None = None) -> dict:
+    """Deprecated alias of `next_best_upgrade` (kept for existing clients; will be removed)."""
+    return _next_best_upgrade(_plan(assessment), current_scenario_id)
+
+
+@mcp.tool
+def model_savings() -> dict:
+    """Deprecated: replaced by `energy_savings_overview` (will be removed)."""
+    return {
+        "deprecated": True,
+        "use_instead": "energy_savings_overview",
+        "note": "Per-scenario savings now come from the MAXergy backend; call "
+        "energy_savings_overview with the household assessment.",
+    }
 
 
 def main() -> None:
