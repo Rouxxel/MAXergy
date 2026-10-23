@@ -19,21 +19,20 @@ Currently, the API does not require authentication. Rate limiting is applied to 
 
 ## Endpoints
 
+All request/response shapes are defined in
+[`documentation/app/API_CONTRACT.md`](../documentation/app/API_CONTRACT.md); the examples below
+are trimmed.
+
 ### POST /assessment
 
-Submit a household assessment for processing.
+Submit a household assessment (stored in memory; returns an id).
 
-**Request Body:**
+**Request Body** (`HouseholdAssessment`, see `documentation/data/model_input1.json`):
 ```json
 {
-  "location": {
-    "postcode": "10115",
-    "country": "Germany"
-  },
+  "location": { "postcode": "10115", "country": "DE" },
   "household": {
-    "occupants": {
-      "count": 2
-    },
+    "occupants": 2,
     "electricity": {
       "annual_kwh": 3500,
       "current_tariff_type": "fixed",
@@ -46,153 +45,111 @@ Submit a household assessment for processing.
       "usable_area_m2": 50,
       "orientation": "south",
       "tilt_deg": 35,
-      "shading_factor": 0.1
+      "shading_factor": 0.1,
+      "specific_yield_kwh_per_kwp": null
     }
   },
   "heating": {
     "fuel_type": "gas",
     "annual_consumption": 15000,
     "annual_spend_eur": 1800,
-    "building": {
-      "floor_area_m2": 120,
-      "insulation_class": "moderate"
-    }
+    "building": { "floor_area_m2": 120, "insulation_class": "average" }
   },
   "mobility": {
-    "vehicle_type": "none",
-    "annual_mileage_km": null,
-    "fuel_consumption_l_per_100km": null,
-    "annual_fuel_spend_eur": null
+    "vehicle_count": 1,
+    "vehicles": [
+      { "vehicle_type": "petrol", "annual_mileage_km": 12000, "fuel_consumption_l_per_100km": 6.5, "annual_fuel_spend_eur": 1100 }
+    ]
   },
   "upgrade_candidates": {
-    "solar_pv": true,
-    "battery": true,
-    "heat_pump": false,
-    "ev_charger": false,
-    "solar_pv_kwp": 5,
-    "battery_kwh": 7.5,
-    "heat_pump_kw": null
+    "solar_pv": true, "battery": true, "heat_pump": true, "ev_charger": true,
+    "solar_pv_kwp": null, "battery_kwh": null, "heat_pump_kw": null
   },
-  "financing": {
-    "loan_term_years": 10,
-    "loan_rate_pct": 4.5,
-    "known_subsidy_eur": 3000
-  },
-  "forecast_horizon": {
-    "short_term_months": 12,
-    "long_term_years": 20
-  }
+  "financing": { "loan_term_years": 15, "loan_rate_pct": 4.5, "known_subsidy_eur": null },
+  "forecast_horizon": { "short_term_months": 12, "long_term_years": 20 }
 }
 ```
 
 **Response:**
 ```json
 {
-  "id": "uuid",
-  "status": "processing"
+  "assessment_id": "uuid",
+  "status": "submitted",
+  "message": "Assessment submitted successfully. Use the assessment_id to request forecasts."
 }
 ```
 
 ### POST /forecast
 
-Generate a forecast based on household assessment.
+Run the production energy model (`scripts/energy_model`) for an assessment.
 
-**Request Body:** Same as assessment endpoint.
+**Request Body:** `HouseholdAssessment` (as above).
 
-**Response:**
+**Response** (`ForecastResult`, trimmed; full example `documentation/data/model_output_v2.json`):
 ```json
 {
+  "model": { "name": "energy_cost_comparison", "version": "4.0", "engine": "energy_model" },
+  "assumptions_used": { "solar_kwp": 6.667, "pv_yield_source": "regional_table", "...": "..." },
+  "validation_warnings": ["battery_kwh not specified; using default 10.0 kWh"],
   "baseline": {
-    "monthly_cost_eur": {
-      "electricity": 102.92,
-      "gas_oil": 150.0,
-      "fuel": 0.0,
-      "total": 252.92
-    },
-    "short_term_forecast": [
-      {
-        "month": 1,
-        "year": 2024,
-        "cost_eur": 252.92
-      }
-    ],
-    "long_term_forecast": [
-      {
-        "month": 1,
-        "year": 2024,
-        "cost_eur": 252.92
-      }
-    ]
+    "monthly_cost_eur": { "electricity": 124.41, "heating": 120.83, "mobility": 91.67, "total": 336.91 },
+    "short_term_forecast": [ { "month": "2026-11", "total_eur": 446.31 } ],
+    "long_term_forecast": [ { "year": 2026, "annual_total_eur": 4085.35 } ]
   },
   "scenarios": [
     {
-      "id": "solar_only",
-      "components": {
-        "solar_pv": true,
-        "battery": false,
-        "heat_pump": false,
-        "ev_charger": false
-      },
-      "sizing": {
-        "solar_pv_kwp": 5,
-        "battery_kwh": null,
-        "heat_pump_kw": null
-      },
-      "monthly_cost_eur": {
-        "electricity": 50.0,
-        "gas_oil": 150.0,
-        "fuel": 0.0,
-        "total": 200.0
-      },
-      "financing_installment_eur": 45.0,
-      "monthly_saving_eur": 52.92,
-      "monthly_saving_post_payoff_eur": 97.92,
-      "self_consumption_ratio": 0.35,
-      "payback_month": 84,
-      "short_term_forecast": [],
-      "long_term_forecast": []
+      "id": "full_upgrade",
+      "components": { "solar_pv": true, "battery": true, "heat_pump": true, "ev_charger": true },
+      "sizing": { "solar_pv_kwp": 6.67, "battery_kwh": 10.0, "heat_pump_kw": null },
+      "monthly_cost_eur": { "electricity": 157.81, "heating": 0.0, "mobility": 0.0, "financing_installment": 218.28, "total": 376.09 },
+      "monthly_saving_eur": -39.18,
+      "monthly_saving_post_payoff_eur": 179.1,
+      "self_consumption_ratio": 0.744,
+      "payback_month": 138,
+      "financials": { "gross_investment_eur": 28533.33, "cumulative_net_savings_central_eur": 21959.78, "break_even_year": 12, "...": "..." },
+      "short_term_forecast": [ "..." ],
+      "long_term_forecast": [ "..." ],
+      "long_term_band": { "low": [ "..." ], "high": [ "..." ] }
     }
   ]
 }
 ```
 
+Monthly figures are 12-month averages; `monthly_saving_eur` is net of the loan instalment.
+
 ### POST /recommendation
 
-Generate upgrade recommendations based on forecast.
+Rank the forecast's scenarios and explain the best one.
 
-**Request Body:** Same as assessment endpoint.
+**Request Body:** `HouseholdAssessment`. **Query:** `metric` = `cumulative_central` (default,
+from `config_file.json` → `recommendation.default_metric`) or `monthly_net`.
 
-**Response:**
+**Response** (`Recommendation`):
 ```json
 {
-  "selected_scenario": {
-    "id": "pv_battery",
-    "components": {
-      "solar_pv": true,
-      "battery": true,
-      "heat_pump": false,
-      "ev_charger": false
-    },
-    "sizing": {
-      "solar_pv_kwp": 5,
-      "battery_kwh": 7.5,
-      "heat_pump_kw": null
-    },
-    "monthly_cost_eur": {
-      "electricity": 30.0,
-      "gas_oil": 150.0,
-      "fuel": 0.0,
-      "total": 180.0
-    },
-    "financing_installment_eur": 65.0,
-    "monthly_saving_eur": 72.92,
-    "monthly_saving_post_payoff_eur": 137.92,
-    "self_consumption_ratio": 0.65,
-    "payback_month": 96
-  },
-  "ranked_scenarios": [],
-  "reasoning": "This scenario offers the best balance of monthly savings and self-consumption ratio."
+  "selected_scenario_id": "full_upgrade",
+  "selected_scenario": { "...": "Scenario" },
+  "ranked_scenarios": [
+    { "id": "full_upgrade", "score_eur": 21959.78, "metric": "cumulative_central" },
+    { "id": "pv_ev", "score_eur": 21697.42, "metric": "cumulative_central" }
+  ],
+  "metric_used": "cumulative_central",
+  "rationale": "Solar panels, battery storage, a heat pump and an EV charger (full_upgrade) ranks best by long-term net savings. During the 15-year loan it costs about €39/month more than today (loan instalment €218/month). Once the loan is repaid it saves about €179/month at today's prices. Over 20 years the cumulative net saving is about €21,960 ..."
 }
+```
+
+When no scenario is available (e.g. `roof.available` is false), `selected_scenario_id` and
+`selected_scenario` are `null`, `ranked_scenarios` is empty and the rationale says so.
+
+### POST /plan
+
+Forecast and recommendation from **one** engine run (preferred by the frontends and the MCP).
+
+**Request Body / Query:** as `/recommendation`.
+
+**Response** (`PlanResponse`):
+```json
+{ "forecast": { "...": "ForecastResult" }, "recommendation": { "...": "Recommendation" } }
 ```
 
 ### POST /advisor/chat
@@ -223,20 +180,22 @@ Chat with the AI advisor about energy upgrades.
 
 ## Rate Limiting
 
-All endpoints are rate-limited to prevent abuse:
+Per-endpoint limits from `src/core_specs/configuration/config_file.json`:
 - Assessment: 10 requests per minute
 - Forecast: 5 requests per minute
 - Recommendation: 5 requests per minute
-- Advisor: 20 requests per minute
+- Plan: 5 requests per minute
+- Advisor: 10 requests per minute
+- Benchmark: 25 requests per minute
 
 ## Error Responses
 
-All endpoints return standard HTTP error codes:
-- `400 Bad Request`: Invalid input data
-- `429 Too Many Requests`: Rate limit exceeded
-- `500 Internal Server Error`: Server error
+- `422 Unprocessable Entity`: schema validation failure, or a valid assessment the engine cannot
+  model (e.g. heating fuel other than gas/oil) with the reason in `detail`
+- `429 Too Many Requests`: rate limit exceeded
+- `500 Internal Server Error`: engine or server error
 
 ## Example Files
 
-- `backend/data/model_input_1.json`: Example assessment input
+- `documentation/data/model_input1.json`: Example assessment input
 - `documentation/data/model_output_v2.json`: Example forecast output (production engine)
