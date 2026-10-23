@@ -1,8 +1,10 @@
 import planFixture from '@/services/fixtures/plan_model_input1.json';
-import { mockAdvisorReply, mockAssessmentResponse, mockPlan } from '@/services/mocks';
+import benchmarkFixture from '@/services/fixtures/benchmark.json';
+import { mockAdvisorReply, mockAssessmentResponse, mockBenchmark, mockPlan } from '@/services/mocks';
 import {
   validateAdvisorChatResponse,
   validateAssessmentResponse,
+  validateBenchmarkData,
   validatePlanResponse,
 } from '@/services/validation';
 import type { HouseholdAssessment } from '@/types';
@@ -38,5 +40,15 @@ describe('API contract (v2) on mobile', () => {
   it('assessment and advisor mocks match the backend shapes', () => {
     expect(validateAssessmentResponse(mockAssessmentResponse(assessment)).assessment_id).toMatch(/^mock_/);
     expect(validateAdvisorChatResponse(mockAdvisorReply('why this?')).advisor_message.length).toBeGreaterThan(0);
+  });
+
+  it('validates the recorded engine-computed /benchmark response', () => {
+    const b = validateBenchmarkData(benchmarkFixture);
+    expect(b.recommendation.scenario).toBe('full_upgrade');
+    expect(b.recommendation.monthly_instalment_eur).toBe(209.35);
+    expect(b.recommendation.monthly_saving_eur).toBeLessThan(0);
+    expect(b.cumulative_series).toHaveLength(b.projection_years);
+    expect(b.cumulative_series.at(-1)?.central).toBe(b.recommendation.cumulative_savings_eur);
+    expect(mockBenchmark()).toEqual(b);
   });
 });
