@@ -10,13 +10,14 @@
 import type {
   AdvisorChatResponse,
   AssessmentResponse,
+  BenchmarkData,
   EnrichmentResponse,
   ForecastResult,
   HouseholdAssessment,
   PlanResponse,
   Recommendation,
 } from "@/types";
-import { validatePlanResponse } from "./validation";
+import { validateBenchmarkData, validatePlanResponse } from "./validation";
 
 let planFixture: Promise<PlanResponse> | undefined;
 
@@ -74,3 +75,7 @@ export const mockAdvisorReply = (msg: string): AdvisorChatResponse => {
         : advisorReplies.default;
   return { advisor_message: reply, context_used: ["mock"], suggestions: [] };
 };
+
+/** Recorded GET /benchmark response (engine output; see `forecast_start` for its run month). */
+export const mockBenchmark = (): Promise<BenchmarkData> =>
+  import("./fixtures/benchmark.json").then((m) => validateBenchmarkData(m.default));

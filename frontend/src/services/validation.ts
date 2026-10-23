@@ -8,6 +8,7 @@ import type {
   AdvisorChatResponse,
   AssessmentResponse,
   EnrichmentResponse,
+  BenchmarkData,
 } from "@/types";
 
 // Location schema
@@ -391,4 +392,49 @@ export function validateAssessmentResponse(data: unknown): AssessmentResponse {
 
 export function validateEnrichmentResponse(data: unknown): EnrichmentResponse {
   return EnrichmentResponseSchema.parse(data);
+}
+
+// Benchmark schema (GET /benchmark)
+export const BenchmarkDataSchema = z.object({
+  household: z.object({
+    location: z.string(),
+    occupants: z.number(),
+    annual_electricity_kwh: z.number(),
+    heating_type: z.string(),
+    heating_annual_kwh: z.number(),
+    vehicle_type: z.string(),
+    annual_mileage_km: z.number(),
+    roof_area_m2: z.number(),
+    roof_orientation: z.string(),
+    roof_tilt_deg: z.number(),
+  }),
+  recommendation: z.object({
+    scenario: z.string(),
+    description: z.string(),
+    rationale: z.string(),
+    metric: z.enum(["monthly_net", "cumulative_central"]),
+    break_even_year: z.number().nullable(),
+    monthly_instalment_eur: z.number(),
+    monthly_saving_eur: z.number(),
+    monthly_saving_post_payoff_eur: z.number(),
+    cumulative_savings_eur: z.number(),
+    cumulative_savings_low_eur: z.number(),
+    cumulative_savings_high_eur: z.number(),
+  }),
+  cumulative_series: z.array(
+    z.object({
+      year: z.number(),
+      central: z.number().nullable(),
+      low: z.number().nullable(),
+      high: z.number().nullable(),
+    }),
+  ),
+  scenarios_count: z.number(),
+  projection_years: z.number(),
+  model_version: z.string(),
+  forecast_start: z.string().nullable(),
+}) satisfies z.ZodType<BenchmarkData, z.ZodTypeDef, unknown>;
+
+export function validateBenchmarkData(data: unknown): BenchmarkData {
+  return BenchmarkDataSchema.parse(data);
 }
