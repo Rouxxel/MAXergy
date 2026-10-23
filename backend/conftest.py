@@ -20,6 +20,15 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limits():
+    """Rate limits are real (per-IP, in memory); start every test with empty buckets."""
+    from src.utils.limiter import limiter
+
+    limiter.reset()
+    yield
+
+
 @pytest.fixture
 def assessment_dict() -> dict:
     """The canonical example assessment (documentation/data/model_input1.json)."""
