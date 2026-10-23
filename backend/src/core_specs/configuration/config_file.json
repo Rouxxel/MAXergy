@@ -26,6 +26,15 @@
         "default_metric": "cumulative_central"
     },
 
+    "service_request_limit": {
+        "request_limit": 300,
+        "unit_of_time_for_limit": "m"
+    },
+
+    "mcp": {
+        "timeout_seconds": 10
+    },
+
     "endpoints": {
         "root_directory_endpoint":{
             "request_limit":25,
@@ -69,6 +78,13 @@
             "endpoint_prefix": "/assumptions",
             "endpoint_tag": "assumptions",
             "endpoint_route": ""
+        },
+        "maxergy_location_enrich": {
+            "request_limit": 10,
+            "unit_of_time_for_limit": "m",
+            "endpoint_prefix": "/location",
+            "endpoint_tag": "location",
+            "endpoint_route": "/enrich"
         },
         "maxergy_advisor_chat": {
             "request_limit": 10,
