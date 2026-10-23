@@ -31,6 +31,11 @@
         "unit_of_time_for_limit": "m"
     },
 
+    "benchmark": {
+        "profile_path": "documentation/data/test_profiles/average_german_household.json",
+        "cache_ttl_seconds": 3600
+    },
+
     "mcp": {
         "timeout_seconds": 10
     },
@@ -77,6 +82,13 @@
             "unit_of_time_for_limit": "m",
             "endpoint_prefix": "/assumptions",
             "endpoint_tag": "assumptions",
+            "endpoint_route": ""
+        },
+        "maxergy_benchmark": {
+            "request_limit": 25,
+            "unit_of_time_for_limit": "m",
+            "endpoint_prefix": "/benchmark",
+            "endpoint_tag": "benchmark",
             "endpoint_route": ""
         },
         "maxergy_location_enrich": {
