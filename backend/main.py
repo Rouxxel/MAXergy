@@ -43,6 +43,7 @@ from src.api_endpoints.routers.maxergy.assessment_router import router as assess
 from src.api_endpoints.routers.maxergy.forecast_router import router as forecast_router
 from src.api_endpoints.routers.maxergy.recommendation_router import router as recommendation_router
 from src.api_endpoints.routers.maxergy.plan_router import router as plan_router
+from src.api_endpoints.routers.maxergy.assumptions_router import router as assumptions_router
 from src.api_endpoints.routers.maxergy.advisor_router import router as advisor_router
 from src.api_endpoints.routers.maxergy.visualization_router import router as visualization_router
 from src.api_endpoints.routers.maxergy.benchmark_router import router as benchmark_router
@@ -157,6 +158,7 @@ app.include_router(assessment_router)
 app.include_router(forecast_router)
 app.include_router(recommendation_router)
 app.include_router(plan_router)
+app.include_router(assumptions_router)
 app.include_router(advisor_router)
 app.include_router(visualization_router)
 app.include_router(benchmark_router)
