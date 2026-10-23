@@ -44,6 +44,7 @@ from src.api_endpoints.routers.maxergy.forecast_router import router as forecast
 from src.api_endpoints.routers.maxergy.recommendation_router import router as recommendation_router
 from src.api_endpoints.routers.maxergy.plan_router import router as plan_router
 from src.api_endpoints.routers.maxergy.assumptions_router import router as assumptions_router
+from src.api_endpoints.routers.maxergy.location_router import router as location_router
 from src.api_endpoints.routers.maxergy.advisor_router import router as advisor_router
 from src.api_endpoints.routers.maxergy.visualization_router import router as visualization_router
 from src.api_endpoints.routers.maxergy.benchmark_router import router as benchmark_router
@@ -52,7 +53,7 @@ from src.api_endpoints.routers.maxergy.benchmark_router import router as benchma
 #Lifespan event manager (startup and shutdown)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    port = config_loader["network"]["server_port"]
+    port = os.getenv("PORT", config_loader["network"]["server_port"])
     log_handler.info(f"MAXergy server starting on port {port}")
     yield
     log_handler.info("MAXergy server shutting down")
@@ -86,18 +87,20 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 #Add global exception handler for validation errors
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    #Errors can carry exception objects (e.g. from model validators); make them JSON-safe
+    errors = json.loads(json.dumps(exc.errors(), default=str))
     log_handler.error(
         "Validation error on %s %s: %s",
         request.method,
         request.url.path,
-        json.dumps(exc.errors(), indent=2)
+        json.dumps(errors, indent=2)
     )
     from fastapi.responses import JSONResponse
     # In development, return field errors for debugging
     if os.getenv("ENVIRONMENT") == "development":
         return JSONResponse(
             status_code=422,
-            content={"detail": exc.errors()}
+            content={"detail": errors}
         )
     # In production, return generic message
     return JSONResponse(
@@ -159,18 +162,21 @@ app.include_router(forecast_router)
 app.include_router(recommendation_router)
 app.include_router(plan_router)
 app.include_router(assumptions_router)
+app.include_router(location_router)
 app.include_router(advisor_router)
 app.include_router(visualization_router)
 app.include_router(benchmark_router)
 
 """Start server-----------------------------------------------------------"""
 if __name__ == "__main__":
-    port = config_loader["network"]["server_port"]
+    #Railway (and most PaaS) inject PORT; fall back to the configured port locally
+    port = int(os.getenv("PORT", config_loader["network"]["server_port"]))
     
     uvicorn.run(
         config_loader["network"]["uvicorn_app_reference"],
-        host=config_loader["network"]["host"],
-        port=config_loader["network"]["server_port"],
+        #HOST="::" listens on IPv6 only: set it only for legacy IPv6-only Railway environments
+        host=os.getenv("HOST", config_loader["network"]["host"]),
+        port=port,
         reload=config_loader["network"]["reload"],
         workers=config_loader["network"]["workers"],
         proxy_headers=config_loader["network"]["proxy_headers"]
