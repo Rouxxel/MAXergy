@@ -1,0 +1,9 @@
+{
+  "name": "maxergy-railway-iac",
+  "private": true,
+  "description": "Railway Infrastructure as Code for MAXergy (railway config plan / apply)",
+  "devDependencies": {
+    "railway": "3.16.0",
+    "typescript": "5.6.3"
+  }
+}
