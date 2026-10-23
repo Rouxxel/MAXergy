@@ -90,22 +90,24 @@ Example (identical to [`documentation/data/model_input1.json`](../data/model_inp
 | Field | Type / range | Notes |
 | ----- | ------------ | ----- |
 | `location.postcode` | string, 3–10 chars | German postcode; drives regional PV yield and degree days |
-| `location.country` | `"DE"` | Other countries will be rejected (planned) |
+| `location.country` | `"DE"` | The web and mobile forms only offer Germany (others shown as coming soon); the API does not reject other values yet (planned) |
 | `household.occupants` | int 1–20 | |
 | `household.electricity.annual_kwh` | 0–100 000 | |
 | `household.electricity.arbeitspreis_eur_per_kwh` | 0–2 | Work price (€/kWh) |
 | `household.electricity.grundpreis_eur_per_month` | 0–100 | Standing charge (€/month) |
 | `household.electricity.contract_end_date` | ISO date or null | |
-| `household.roof.available` | bool | `false` → solar disabled → no scenarios (baseline-only result) |
+| `household.roof.available` | bool | `false` → solar disabled → **baseline-only result**: `/plan` returns 200 with `forecast.scenarios: []`, the baseline costs and forecasts, and a recommendation with `selected_scenario_id: null` and a rationale explaining that no upgrade is possible. The frontends show the current costs and the rationale |
 | `household.roof.usable_area_m2` | 0–500 or null | PV size derived at 6 m²/kWp by the production engine (unless `solar_pv_kwp` is set) |
-| `household.roof.orientation` | `south` \| `east` \| `west` \| `north` | |
+| `household.roof.orientation` | `south` \| `south_east` \| `east` \| `north_east` \| `north` \| `north_west` \| `west` \| `south_west` | |
 | `household.roof.tilt_deg` | 0–90 | |
 | `household.roof.shading_factor` | 0–1 | 0 = no shade |
-| `household.roof.specific_yield_kwh_per_kwp` | > 0 and ≤ 2000, or null | Site PV yield in kWh/kWp (e.g. PVGIS; MCP enrichment planned). Null → engine regional table (950–1150 by first postcode digit) |
-| `heating.fuel_type` | `gas` \| `oil` | Only fuels supported by the production engine; anything else → 422 |
+| `household.roof.specific_yield_kwh_per_kwp` | > 0 and ≤ 2000, or null | Site PV yield in kWh/kWp, set by the frontends from `POST /location/enrich` (PVGIS) when available. Null → engine regional table (950–1150 by first postcode digit) |
+| `heating.fuel_type` | `gas` \| `oil` | Only fuels supported by the production engine; anything else → 422. The forms list other systems as "not modelled yet" (web) or hide them (mobile) |
 | `heating.annual_consumption` | kWh (gas) or litres (oil) | |
 | `heating.annual_spend_eur` | 0–10 000 | |
+| `heating.building.floor_area_m2` / `insulation_class` | m² / `poor` \| `medium` \| `good` \| `excellent` | Collected for context; not used by the engine (heating demand comes from consumption or spend) |
 | `mobility.vehicles[].vehicle_type` | `petrol` \| `diesel` \| `electric` \| `phev` \| `hybrid` | Aliases: `gas` → `petrol`, `ev` → `electric`; other values → 422 |
+| `mobility.vehicles[].annual_mileage_km` | km/year | Required by the forms for every vehicle (the API treats null as 0 km) |
 | `mobility.vehicles[]` aggregation | – | Combustion vehicles: mileage and spend summed, consumption mileage-weighted, type of the highest-mileage vehicle (decision #6). Electric vehicles are excluded (charging assumed in household electricity). Reported in `validation_warnings` |
 | `upgrade_candidates.*` | bool | Scenarios that need a disabled component are omitted (decision #5). The EV charger is also disabled when there is no combustion vehicle |
 | `upgrade_candidates.solar_pv_kwp` / `battery_kwh` | number or null | Sizing overrides used by the engine |

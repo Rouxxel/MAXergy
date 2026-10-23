@@ -28,6 +28,14 @@ match — including a negative monthly figure while the loan runs.
 
 Persisted results use store version 2; results saved by older app versions are discarded.
 
+**Assessment:** same steps, defaults (`ENGINE_DEFAULTS` = backend `GET /assumptions`) and rules as
+the web app (`frontend/README.md` §7): Germany only, gas/oil heating only (other options are hidden
+because the mobile `Select` has no disabled items), canonical vehicle types with required mileage,
+monthly-bill shortcut, "roof can take solar panels" switch, and roof/site-yield pre-fill from
+`POST /location/enrich` after the postcode step (skipped silently on 503).
+`__tests__/assessmentStore.test.ts` checks the defaults against the recorded `/assumptions`
+response and the pre-fill logic.
+
 ## Tests
 
 ```bash

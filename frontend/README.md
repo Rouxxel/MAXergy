@@ -242,7 +242,37 @@ To connect to an analytics provider, implement the `trackEvent` function in `ana
 
 ---
 
-## 7. Adding a new page
+## 7. The assessment (onboarding) steps
+
+`src/routes/assessment.tsx` collects a `HouseholdAssessment` in ten steps. Defaults come from
+`ENGINE_DEFAULTS` in `src/stores/assessmentStore.ts`, which match the backend's `GET /assumptions`
+(work price €0.32/kWh, base fee €12.50/month, 15-year loan at 4.5 %, all four upgrades selected), so
+the web form, the mobile app and the MCP onboarding propose the same values.
+
+| Step | What it collects | Rules |
+| ---- | ---------------- | ----- |
+| Country | `location.country` | Germany only; other countries shown as "coming soon" |
+| Postcode | `location.postcode` | On "Continue", `POST /location/enrich` runs in the background and pre-fills the roof (see below) |
+| Occupants | `household.occupants` | |
+| Electricity | annual kWh, tariff type, work price, base fee | Optional "monthly payment" shortcut: kWh = (monthly € − base fee) × 12 ÷ work price |
+| Roof | availability, usable area, orientation, tilt, shading | "My roof can take solar panels" off → baseline-only result. Badges show "From satellite roof scan" / "Site solar yield … kWh/kWp" when the lookup succeeded, otherwise "Estimated from region"; every value can be overridden |
+| Heating | fuel, floor area, insulation, consumption, spend | Gas or oil only; other systems listed as "not modelled yet" |
+| Mobility | vehicles: type, mileage, consumption, fuel spend | Types: petrol, diesel, hybrid, plug-in hybrid, electric. Mileage required per vehicle. Combustion cars are combined; electric cars are not counted (charged from household electricity) |
+| Upgrades | solar, battery, heat pump, EV charger, optional sizes | |
+| Financing | loan term, rate, known subsidy | |
+| Horizon | short- and long-term forecast length | |
+
+**Roof pre-fill:** the lookup (Google geocoding + Solar roof scan + PVGIS, via the backend and the
+MCP service) sets `usable_area_m2`, `tilt_deg`, `orientation` and
+`household.roof.specific_yield_kwh_per_kwp`. If the backend returns 503 (MCP disabled or no Google
+key) or any error, it is skipped silently and the engine uses its regional yield table. The
+result is stored with the postcode it belongs to, so a changed postcode triggers a new lookup.
+
+The draft is persisted (store version 2); drafts saved by older versions restart from the defaults.
+
+---
+
+## 8. Adding a new page
 
 File-based routing: the filename **is** the URL.
 
@@ -304,7 +334,7 @@ Pages that don't belong in the tab bar (modals, full-screen flows like
 
 ---
 
-## 7. Modifying existing pages
+## 9. Modifying existing pages
 
 - **Onboarding form** (`src/routes/index.tsx`): each step reads/writes the
   `assessmentStore`. To add a question, extend `HouseholdAssessment` in
@@ -317,7 +347,7 @@ Pages that don't belong in the tab bar (modals, full-screen flows like
 
 ---
 
-## 8. State management cheatsheet
+## 10. State management cheatsheet
 
 | Store             | Holds                                      | When to use              |
 | ----------------- | ------------------------------------------ | ------------------------ |
@@ -330,7 +360,7 @@ Create new stores in `src/stores/` and follow the same pattern:
 
 ---
 
-## 9. Deployment
+## 11. Deployment
 
 The output is a standard Vite build (`bun run build` → `dist/`). Any static
 host works. For Render/Railway:
@@ -358,7 +388,7 @@ Vite preview headers do not apply when serving from a static bucket or CDN.
 
 ---
 
-## 10. Porting to React Native
+## 12. Porting to React Native
 
 See `MIGRATION_TO_REACT_NATIVE.md`. In short: `src/types/`, `src/stores/`,
 and `src/services/` move over as-is. Only `src/routes/` and
@@ -366,7 +396,7 @@ and `src/services/` move over as-is. Only `src/routes/` and
 
 ---
 
-## 12. Conventions & gotchas
+## 13. Conventions & gotchas
 
 - **Never edit `src/routeTree.gen.ts`** — it's regenerated on every build.
 - **Never import from `react-router-dom`** — this is TanStack Router.

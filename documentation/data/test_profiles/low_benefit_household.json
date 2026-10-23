@@ -15,30 +15,53 @@
     "occupants": 1,
     "electricity": {
       "annual_kwh": 1500,
+      "current_tariff_type": "fixed",
       "arbeitspreis_eur_per_kwh": 0.33,
       "grundpreis_eur_per_month": 10.0,
       "contract_end_date": "2026-06-30"
     },
     "roof": {
+      "available": true,
       "usable_area_m2": 12,
       "orientation": "north",
       "tilt_deg": 20,
-      "shading_factor": 0.4
+      "shading_factor": 0.4,
+      "specific_yield_kwh_per_kwp": null
     }
   },
   "heating": {
     "fuel_type": "gas",
     "annual_consumption": 4500,
-    "annual_spend_eur": 495
+    "annual_spend_eur": 495,
+    "building": {
+      "floor_area_m2": 55,
+      "insulation_class": "good"
+    }
   },
   "mobility": {
-    "vehicle_type": "petrol",
-    "annual_mileage_km": 4000,
-    "fuel_consumption_l_per_100km": 6.0
+    "vehicle_count": 1,
+    "vehicles": [
+      {
+        "vehicle_type": "petrol",
+        "annual_mileage_km": 4000,
+        "fuel_consumption_l_per_100km": 6.0,
+        "annual_fuel_spend_eur": null
+      }
+    ]
+  },
+  "upgrade_candidates": {
+    "solar_pv": true,
+    "battery": true,
+    "heat_pump": true,
+    "ev_charger": true,
+    "solar_pv_kwp": null,
+    "battery_kwh": null,
+    "heat_pump_kw": null
   },
   "financing": {
     "loan_term_years": 10,
-    "loan_rate_pct": 6.5
+    "loan_rate_pct": 6.5,
+    "known_subsidy_eur": null
   },
   "forecast_horizon": {
     "short_term_months": 12,

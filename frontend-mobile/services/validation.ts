@@ -19,7 +19,7 @@ const LocationSchema = z.object({
 // Step-specific schemas for progressive validation
 export const StepCountrySchema = z.object({
   location: z.object({
-    country: z.string().min(1),
+    country: z.literal("DE", { error: "MAXergy currently supports households in Germany only" }),
   }),
 });
 
@@ -49,19 +49,24 @@ export const StepElectricitySchema = z.object({
 
 export const StepRoofSchema = z.object({
   household: z.object({
-    roof: z.object({
-      available: z.boolean(),
-      usable_area_m2: z.number().nullable(),
-      orientation: z.string().nullable(),
-      tilt_deg: z.number().nullable(),
-      shading_factor: z.number().nullable(),
-    }),
+    roof: z
+      .object({
+        available: z.boolean(),
+        usable_area_m2: z.number().nullable(),
+        orientation: z.string().nullable(),
+        tilt_deg: z.number().min(0).max(90).nullable(),
+        shading_factor: z.number().min(0).max(1).nullable(),
+      })
+      .refine((r) => !r.available || (r.usable_area_m2 ?? 0) > 0, {
+        message: "Enter the usable roof area (or switch off solar if the roof can't take panels)",
+        path: ["usable_area_m2"],
+      }),
   }),
 });
 
 export const StepHeatingSchema = z.object({
   heating: z.object({
-    fuel_type: z.string(),
+    fuel_type: z.enum(["gas", "oil"], { error: "MAXergy can currently model gas or oil heating only" }),
     annual_consumption: z.number().nullable(),
     annual_spend_eur: z.number().nullable(),
     building: z.object({
@@ -75,8 +80,10 @@ export const StepMobilitySchema = z.object({
   mobility: z.object({
     vehicle_count: z.number().min(0).max(5),
     vehicles: z.array(z.object({
-      vehicle_type: z.string(),
-      annual_mileage_km: z.number().nullable(),
+      vehicle_type: z.enum(["petrol", "diesel", "hybrid", "phev", "electric"]),
+      annual_mileage_km: z
+        .number({ error: "Enter the yearly mileage for each vehicle" })
+        .positive({ error: "Enter the yearly mileage for each vehicle" }),
       fuel_consumption_l_per_100km: z.number().nullable(),
       annual_fuel_spend_eur: z.number().nullable(),
     })),
@@ -125,6 +132,7 @@ const HouseholdRoofSchema = z.object({
   orientation: z.string().nullable(),
   tilt_deg: z.number().nullable(),
   shading_factor: z.number().nullable(),
+  specific_yield_kwh_per_kwp: z.number().positive().max(2000).nullish(),
 });
 
 const HouseholdSchema = z.object({

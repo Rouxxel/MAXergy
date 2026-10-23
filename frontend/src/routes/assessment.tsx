@@ -18,7 +18,12 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { useAssessmentStore } from "@/stores/assessmentStore";
+import {
+  DEFAULT_ELECTRICITY,
+  DEFAULT_ROOF,
+  ENGINE_DEFAULTS,
+  useAssessmentStore,
+} from "@/stores/assessmentStore";
 import { useUiStore } from "@/stores/uiStore";
 import {
   HouseholdAssessmentSchema,
@@ -33,7 +38,7 @@ import {
   StepFinancingSchema,
   StepHorizonSchema,
 } from "@/services/validation";
-import { postAssessment } from "@/services/endpoints";
+import { postAssessment, postLocationEnrich } from "@/services/endpoints";
 
 export const Route = createFileRoute("/assessment")({
   head: () => ({
@@ -48,29 +53,40 @@ export const Route = createFileRoute("/assessment")({
   component: Onboarding,
 });
 
+// The engine models German households only; other countries are shown as coming soon.
 const COUNTRIES = [
-  { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" },
-  { code: "NL", name: "Netherlands" },
-  { code: "BE", name: "Belgium" },
-  { code: "ES", name: "Spain" },
-  { code: "IT", name: "Italy" },
+  { code: "DE", name: "Germany", available: true },
+  { code: "FR", name: "France", available: false },
+  { code: "NL", name: "Netherlands", available: false },
+  { code: "BE", name: "Belgium", available: false },
+  { code: "ES", name: "Spain", available: false },
+  { code: "IT", name: "Italy", available: false },
 ];
 
+// The engine models gas and oil heating; other systems are listed but cannot be selected yet.
 const HEATING_TYPES = [
-  { value: "electric", label: "Electric" },
-  { value: "gas", label: "Gas" },
-  { value: "oil", label: "Oil" },
-  { value: "district", label: "District heating" },
-  { value: "coal", label: "Coal" },
-  { value: "wood_pellets", label: "Wood pellets" },
-  { value: "other", label: "Other" },
+  { value: "gas", label: "Gas", supported: true },
+  { value: "oil", label: "Oil", supported: true },
+  { value: "electric", label: "Electric", supported: false },
+  { value: "district", label: "District heating", supported: false },
+  { value: "heat_pump", label: "Heat pump (already installed)", supported: false },
+  { value: "wood_pellets", label: "Wood pellets", supported: false },
+  { value: "other", label: "Other", supported: false },
 ];
 
+// Backend vehicle types (energy_model SUPPORTED_VEHICLE_TYPES).
 const VEHICLE_TYPES = [
-  { value: "ev", label: "Electric (EV)" },
-  { value: "gas", label: "Gas / petrol / diesel" },
-  { value: "hydrogen", label: "Hydrogen" },
+  { value: "petrol", label: "Petrol" },
+  { value: "diesel", label: "Diesel" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "phev", label: "Plug-in hybrid" },
+  { value: "electric", label: "Electric (EV)" },
+];
+
+const TARIFF_TYPES = [
+  { value: "fixed", label: "Fixed price" },
+  { value: "dynamic", label: "Dynamic (hourly)" },
+  { value: "ht_nt", label: "Day/night (HT/NT)" },
 ];
 
 const INSULATION_CLASSES = [
@@ -103,8 +119,16 @@ type StepId =
 
 function Onboarding() {
   const navigate = useNavigate();
-  const { draft, setField, step, setStep, setSubmittedId } = useAssessmentStore();
+  const { draft, setField, step, setStep, setSubmittedId, applyEnrichment, enrichedPostcode } =
+    useAssessmentStore();
   const { setError: setGlobalError } = useUiStore();
+
+  // Roof + site PV yield pre-fill via the MCP (POST /location/enrich). Optional: on 503 or any
+  // error the user's own roof inputs are kept and the engine uses its regional yield table.
+  const enrichLocation = useMutation({
+    mutationFn: (postcode: string) => postLocationEnrich({ postcode, country: "DE" }),
+    onSuccess: (result, postcode) => applyEnrichment(postcode, result),
+  });
 
   const submitAssessment = useMutation({
     mutationFn: postAssessment,
@@ -175,6 +199,10 @@ function Onboarding() {
       return;
     }
     setError(undefined);
+    const postcode = draft.location?.postcode?.trim();
+    if (current === "postcode" && postcode && postcode !== enrichedPostcode) {
+      enrichLocation.mutate(postcode);
+    }
     if (safeStep === steps.length - 1) {
       const completed = useAssessmentStore.getState().getCompleted();
       if (completed) {
@@ -235,7 +263,7 @@ function StepView({ step }: { step: StepId }) {
       return (
         <Field
           title="Where do you live?"
-          subtitle="We use this to estimate local energy prices and incentives."
+          subtitle="MAXergy currently models households in Germany; more countries are coming soon."
         >
           <Select
             value={draft.location?.country}
@@ -248,8 +276,8 @@ function StepView({ step }: { step: StepId }) {
             </SelectTrigger>
             <SelectContent>
               {COUNTRIES.map((c) => (
-                <SelectItem key={c.code} value={c.code}>
-                  {c.name}
+                <SelectItem key={c.code} value={c.code} disabled={!c.available}>
+                  {c.available ? c.name : `${c.name} (coming soon)`}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -288,20 +316,8 @@ function StepView({ step }: { step: StepId }) {
               const n = parseInt(e.target.value, 10);
               setField("household", {
                 occupants: Number.isFinite(n) && n > 0 ? n : 1,
-                electricity: draft.household?.electricity ?? {
-                  annual_kwh: 3000,
-                  current_tariff_type: "standard",
-                  arbeitspreis_eur_per_kwh: 0.35,
-                  grundpreis_eur_per_month: 10,
-                  contract_end_date: null,
-                },
-                roof: draft.household?.roof ?? {
-                  available: true,
-                  usable_area_m2: 50,
-                  orientation: "south",
-                  tilt_deg: 30,
-                  shading_factor: 0.1,
-                },
+                electricity: draft.household?.electricity ?? DEFAULT_ELECTRICITY,
+                roof: draft.household?.roof ?? DEFAULT_ROOF,
               });
             }}
             placeholder="2"
@@ -310,8 +326,12 @@ function StepView({ step }: { step: StepId }) {
       );
     case "electricity":
       return (
-        <Field title="Annual electricity consumption" subtitle="In kWh per year. Check your bill.">
+        <Field
+          title="Annual electricity consumption"
+          subtitle="In kWh per year (on your annual bill). Only know your monthly payment? Enter it below."
+        >
           <div className="space-y-4">
+            <ElectricityBillShortcut />
             <div className="relative">
               <Input
                 inputMode="numeric"
@@ -325,20 +345,16 @@ function StepView({ step }: { step: StepId }) {
                     electricity: {
                       annual_kwh: Number.isFinite(n) ? n : 0,
                       current_tariff_type:
-                        draft.household?.electricity?.current_tariff_type ?? "standard",
+                        draft.household?.electricity?.current_tariff_type ?? "fixed",
                       arbeitspreis_eur_per_kwh:
-                        draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
+                        draft.household?.electricity?.arbeitspreis_eur_per_kwh ??
+                        ENGINE_DEFAULTS.arbeitspreis_eur_per_kwh,
                       grundpreis_eur_per_month:
-                        draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
+                        draft.household?.electricity?.grundpreis_eur_per_month ??
+                        ENGINE_DEFAULTS.grundpreis_eur_per_month,
                       contract_end_date: draft.household?.electricity?.contract_end_date ?? null,
                     },
-                    roof: draft.household?.roof ?? {
-                      available: true,
-                      usable_area_m2: 50,
-                      orientation: "south",
-                      tilt_deg: 30,
-                      shading_factor: 0.1,
-                    },
+                    roof: draft.household?.roof ?? DEFAULT_ROOF,
                   });
                 }}
                 placeholder="3000"
@@ -350,7 +366,7 @@ function StepView({ step }: { step: StepId }) {
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Tariff type</Label>
               <Select
-                value={draft.household?.electricity?.current_tariff_type ?? "standard"}
+                value={draft.household?.electricity?.current_tariff_type ?? "fixed"}
                 onValueChange={(v) =>
                   setField("household", {
                     occupants: draft.household?.occupants ?? 2,
@@ -358,18 +374,14 @@ function StepView({ step }: { step: StepId }) {
                       annual_kwh: draft.household?.electricity?.annual_kwh ?? 3000,
                       current_tariff_type: v,
                       arbeitspreis_eur_per_kwh:
-                        draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
+                        draft.household?.electricity?.arbeitspreis_eur_per_kwh ??
+                        ENGINE_DEFAULTS.arbeitspreis_eur_per_kwh,
                       grundpreis_eur_per_month:
-                        draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
+                        draft.household?.electricity?.grundpreis_eur_per_month ??
+                        ENGINE_DEFAULTS.grundpreis_eur_per_month,
                       contract_end_date: draft.household?.electricity?.contract_end_date ?? null,
                     },
-                    roof: draft.household?.roof ?? {
-                      available: true,
-                      usable_area_m2: 50,
-                      orientation: "south",
-                      tilt_deg: 30,
-                      shading_factor: 0.1,
-                    },
+                    roof: draft.household?.roof ?? DEFAULT_ROOF,
                   })
                 }
               >
@@ -377,9 +389,11 @@ function StepView({ step }: { step: StepId }) {
                   <SelectValue placeholder="Select tariff type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="standard">Standard</SelectItem>
-                  <SelectItem value="ht">HT (High Tariff)</SelectItem>
-                  <SelectItem value="nt">NT (Low Tariff)</SelectItem>
+                  {TARIFF_TYPES.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -400,23 +414,20 @@ function StepView({ step }: { step: StepId }) {
                         electricity: {
                           annual_kwh: draft.household?.electricity?.annual_kwh ?? 3000,
                           current_tariff_type:
-                            draft.household?.electricity?.current_tariff_type ?? "standard",
-                          arbeitspreis_eur_per_kwh: Number.isFinite(n) ? n : 0.35,
+                            draft.household?.electricity?.current_tariff_type ?? "fixed",
+                          arbeitspreis_eur_per_kwh: Number.isFinite(n)
+                            ? n
+                            : ENGINE_DEFAULTS.arbeitspreis_eur_per_kwh,
                           grundpreis_eur_per_month:
-                            draft.household?.electricity?.grundpreis_eur_per_month ?? 10,
+                            draft.household?.electricity?.grundpreis_eur_per_month ??
+                            ENGINE_DEFAULTS.grundpreis_eur_per_month,
                           contract_end_date:
                             draft.household?.electricity?.contract_end_date ?? null,
                         },
-                        roof: draft.household?.roof ?? {
-                          available: true,
-                          usable_area_m2: 50,
-                          orientation: "south",
-                          tilt_deg: 30,
-                          shading_factor: 0.1,
-                        },
+                        roof: draft.household?.roof ?? DEFAULT_ROOF,
                       });
                     }}
-                    placeholder="0.35"
+                    placeholder={String(ENGINE_DEFAULTS.arbeitspreis_eur_per_kwh)}
                   />
                   <span className="pointer-events-none absolute inset-y-0 right-3 grid place-items-center text-xs text-muted-foreground">
                     €
@@ -442,23 +453,20 @@ function StepView({ step }: { step: StepId }) {
                         electricity: {
                           annual_kwh: draft.household?.electricity?.annual_kwh ?? 3000,
                           current_tariff_type:
-                            draft.household?.electricity?.current_tariff_type ?? "standard",
+                            draft.household?.electricity?.current_tariff_type ?? "fixed",
                           arbeitspreis_eur_per_kwh:
-                            draft.household?.electricity?.arbeitspreis_eur_per_kwh ?? 0.35,
-                          grundpreis_eur_per_month: Number.isFinite(n) ? n : 10,
+                            draft.household?.electricity?.arbeitspreis_eur_per_kwh ??
+                            ENGINE_DEFAULTS.arbeitspreis_eur_per_kwh,
+                          grundpreis_eur_per_month: Number.isFinite(n)
+                            ? n
+                            : ENGINE_DEFAULTS.grundpreis_eur_per_month,
                           contract_end_date:
                             draft.household?.electricity?.contract_end_date ?? null,
                         },
-                        roof: draft.household?.roof ?? {
-                          available: true,
-                          usable_area_m2: 50,
-                          orientation: "south",
-                          tilt_deg: 30,
-                          shading_factor: 0.1,
-                        },
+                        roof: draft.household?.roof ?? DEFAULT_ROOF,
                       });
                     }}
-                    placeholder="10"
+                    placeholder={String(ENGINE_DEFAULTS.grundpreis_eur_per_month)}
                   />
                   <span className="pointer-events-none absolute inset-y-0 right-3 grid place-items-center text-xs text-muted-foreground">
                     €
@@ -477,6 +485,8 @@ function StepView({ step }: { step: StepId }) {
           subtitle="A rough estimate in square meters is fine."
         >
           <div className="space-y-4">
+            <RoofAvailability />
+            <RoofSourceBadges />
             <div className="relative">
               <Input
                 inputMode="decimal"
@@ -487,15 +497,11 @@ function StepView({ step }: { step: StepId }) {
                   const n = Number(e.target.value);
                   setField("household", {
                     occupants: draft.household?.occupants ?? 2,
-                    electricity: draft.household?.electricity ?? {
-                      annual_kwh: 3000,
-                      current_tariff_type: "standard",
-                      arbeitspreis_eur_per_kwh: 0.35,
-                      grundpreis_eur_per_month: 10,
-                      contract_end_date: null,
-                    },
+                    electricity: draft.household?.electricity ?? DEFAULT_ELECTRICITY,
                     roof: {
-                      available: true,
+                      ...DEFAULT_ROOF,
+                      ...draft.household?.roof,
+                      available: draft.household?.roof?.available ?? true,
                       usable_area_m2: Number.isFinite(n) ? n : 0,
                       orientation: draft.household?.roof?.orientation ?? "south",
                       tilt_deg: draft.household?.roof?.tilt_deg ?? 30,
@@ -516,15 +522,11 @@ function StepView({ step }: { step: StepId }) {
                 onValueChange={(v) =>
                   setField("household", {
                     occupants: draft.household?.occupants ?? 2,
-                    electricity: draft.household?.electricity ?? {
-                      annual_kwh: 3000,
-                      current_tariff_type: "standard",
-                      arbeitspreis_eur_per_kwh: 0.35,
-                      grundpreis_eur_per_month: 10,
-                      contract_end_date: null,
-                    },
+                    electricity: draft.household?.electricity ?? DEFAULT_ELECTRICITY,
                     roof: {
-                      available: true,
+                      ...DEFAULT_ROOF,
+                      ...draft.household?.roof,
+                      available: draft.household?.roof?.available ?? true,
                       usable_area_m2: draft.household?.roof?.usable_area_m2 ?? 50,
                       orientation: v,
                       tilt_deg: draft.household?.roof?.tilt_deg ?? 30,
@@ -559,15 +561,11 @@ function StepView({ step }: { step: StepId }) {
                       const n = Number(e.target.value);
                       setField("household", {
                         occupants: draft.household?.occupants ?? 2,
-                        electricity: draft.household?.electricity ?? {
-                          annual_kwh: 3000,
-                          current_tariff_type: "standard",
-                          arbeitspreis_eur_per_kwh: 0.35,
-                          grundpreis_eur_per_month: 10,
-                          contract_end_date: null,
-                        },
+                        electricity: draft.household?.electricity ?? DEFAULT_ELECTRICITY,
                         roof: {
-                          available: true,
+                          ...DEFAULT_ROOF,
+                          ...draft.household?.roof,
+                          available: draft.household?.roof?.available ?? true,
                           usable_area_m2: draft.household?.roof?.usable_area_m2 ?? 50,
                           orientation: draft.household?.roof?.orientation ?? "south",
                           tilt_deg: Number.isFinite(n) ? n : 30,
@@ -598,15 +596,11 @@ function StepView({ step }: { step: StepId }) {
                       const clamped = Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0.1));
                       setField("household", {
                         occupants: draft.household?.occupants ?? 2,
-                        electricity: draft.household?.electricity ?? {
-                          annual_kwh: 3000,
-                          current_tariff_type: "standard",
-                          arbeitspreis_eur_per_kwh: 0.35,
-                          grundpreis_eur_per_month: 10,
-                          contract_end_date: null,
-                        },
+                        electricity: draft.household?.electricity ?? DEFAULT_ELECTRICITY,
                         roof: {
-                          available: true,
+                          ...DEFAULT_ROOF,
+                          ...draft.household?.roof,
+                          available: draft.household?.roof?.available ?? true,
                           usable_area_m2: draft.household?.roof?.usable_area_m2 ?? 50,
                           orientation: draft.household?.roof?.orientation ?? "south",
                           tilt_deg: draft.household?.roof?.tilt_deg ?? 30,
@@ -634,6 +628,9 @@ function StepView({ step }: { step: StepId }) {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Heating type</Label>
+              <p className="text-[11px] text-muted-foreground">
+                MAXergy can currently model gas and oil heating. Other systems are coming soon.
+              </p>
               <Select
                 value={draft.heating?.fuel_type}
                 onValueChange={(v) =>
@@ -653,8 +650,8 @@ function StepView({ step }: { step: StepId }) {
                 </SelectTrigger>
                 <SelectContent>
                   {HEATING_TYPES.map((h) => (
-                    <SelectItem key={h.value} value={h.value}>
-                      {h.label}
+                    <SelectItem key={h.value} value={h.value} disabled={!h.supported}>
+                      {h.supported ? h.label : `${h.label} (not modelled yet)`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -794,7 +791,7 @@ function StepView({ step }: { step: StepId }) {
                 onValueChange={(v) => {
                   const count = Number(v);
                   const vehicles = Array.from({ length: count }, () => ({
-                    vehicle_type: "gas",
+                    vehicle_type: "petrol",
                     annual_mileage_km: null,
                     fuel_consumption_l_per_100km: null,
                     annual_fuel_spend_eur: null,
@@ -818,15 +815,20 @@ function StepView({ step }: { step: StepId }) {
                 </SelectContent>
               </Select>
             </div>
-            {draft.mobility?.vehicle_count && draft.mobility.vehicle_count > 0 && (
+            {(draft.mobility?.vehicle_count ?? 0) > 0 && (
               <div className="space-y-6">
-                {Array.from({ length: draft.mobility.vehicle_count }).map((_, index) => (
+                <p className="text-[11px] text-muted-foreground">
+                  Combustion cars are combined into one mobility profile (total km and fuel spend).
+                  Electric cars are already charged from your household electricity, so they are not
+                  counted twice.
+                </p>
+                {Array.from({ length: draft.mobility?.vehicle_count ?? 0 }).map((_, index) => (
                   <div key={index} className="space-y-4 rounded-lg border p-4">
                     <h3 className="text-sm font-medium">Vehicle {index + 1}</h3>
                     <div className="space-y-2">
                       <Label className="text-sm text-muted-foreground">Vehicle type</Label>
                       <Select
-                        value={draft.mobility?.vehicles?.[index]?.vehicle_type ?? "gas"}
+                        value={draft.mobility?.vehicles?.[index]?.vehicle_type ?? "petrol"}
                         onValueChange={(v) => {
                           const newVehicles = [...(draft.mobility?.vehicles ?? [])];
                           newVehicles[index] = {
@@ -853,7 +855,7 @@ function StepView({ step }: { step: StepId }) {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-sm text-muted-foreground">
-                        Approximate annual mileage
+                        Approximate annual mileage (required)
                       </Label>
                       <div className="relative">
                         <Input
@@ -866,7 +868,8 @@ function StepView({ step }: { step: StepId }) {
                             const newVehicles = [...(draft.mobility?.vehicles ?? [])];
                             newVehicles[index] = {
                               ...newVehicles[index],
-                              annual_mileage_km: Number.isFinite(n) ? n : 0,
+                              annual_mileage_km:
+                                e.target.value === "" || !Number.isFinite(n) ? null : n,
                             };
                             setField("mobility", {
                               vehicle_count: draft.mobility?.vehicle_count ?? 0,
@@ -1105,6 +1108,107 @@ function StepView({ step }: { step: StepId }) {
   }
 }
 
+function ElectricityBillShortcut() {
+  const { draft, setField } = useAssessmentStore();
+  const [bill, setBill] = useState("");
+  const electricity = draft.household?.electricity ?? DEFAULT_ELECTRICITY;
+
+  // annual kWh = (monthly bill − base fee) × 12 / energy price — the same conversion the
+  // MCP onboarding uses (suggest_electricity_price), with the prices entered in this step.
+  const onBill = (value: string) => {
+    setBill(value);
+    const monthly = Number(value);
+    if (!value || !Number.isFinite(monthly) || monthly <= 0) return;
+    const kwh = Math.round(
+      (Math.max(monthly - electricity.grundpreis_eur_per_month, 0) * 12) /
+        Math.max(electricity.arbeitspreis_eur_per_kwh, 0.01),
+    );
+    setField("household", {
+      occupants: draft.household?.occupants ?? 2,
+      roof: draft.household?.roof ?? DEFAULT_ROOF,
+      electricity: { ...electricity, annual_kwh: kwh },
+    });
+  };
+
+  return (
+    <div className="space-y-2 rounded-2xl border border-border bg-card p-3">
+      <Label className="text-sm text-muted-foreground">Monthly electricity payment (€)</Label>
+      <Input
+        inputMode="decimal"
+        className="h-11"
+        type="number"
+        value={bill}
+        onChange={(e) => onBill(e.target.value)}
+        placeholder="e.g. 95"
+      />
+      <p className="text-[10px] text-muted-foreground">
+        Optional. Converts to kWh with the prices below: {electricity.annual_kwh.toLocaleString()}{" "}
+        kWh/year.
+      </p>
+    </div>
+  );
+}
+
+function RoofAvailability() {
+  const { draft, setField } = useAssessmentStore();
+  const roof = { ...DEFAULT_ROOF, ...draft.household?.roof };
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
+        <span className="text-base font-medium">My roof can take solar panels</span>
+        <Switch
+          checked={roof.available}
+          onCheckedChange={(available) =>
+            setField("household", {
+              occupants: draft.household?.occupants ?? 2,
+              electricity: draft.household?.electricity ?? DEFAULT_ELECTRICITY,
+              roof: { ...roof, available },
+            })
+          }
+        />
+      </div>
+      {!roof.available && (
+        <p className="text-[11px] text-muted-foreground">
+          Without a usable roof MAXergy can't model solar-based upgrades yet. You'll still see your
+          current monthly costs and forecast.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function RoofSourceBadges() {
+  const enrichment = useAssessmentStore((s) => s.enrichment);
+  const postcode = useAssessmentStore((s) => s.draft.location?.postcode);
+  const enrichedPostcode = useAssessmentStore((s) => s.enrichedPostcode);
+  if (!enrichment || enrichedPostcode !== postcode) {
+    return (
+      <p className="text-[11px] text-muted-foreground">
+        Estimated values — adjust them to match your roof. Solar yield uses the regional average.
+      </p>
+    );
+  }
+  const scanned = enrichment.source.roof === "google_solar" && enrichment.roof;
+  const siteYield = enrichment.source.pv_yield === "pvgis" && enrichment.specific_yield_kwh_per_kwp;
+  return (
+    <div className="flex flex-wrap gap-2 text-[11px]">
+      <span className="rounded-full bg-primary/10 px-2.5 py-1 font-medium text-primary">
+        {scanned ? "From satellite roof scan" : "Roof estimated — please check"}
+      </span>
+      <span className="rounded-full bg-primary/10 px-2.5 py-1 font-medium text-primary">
+        {siteYield
+          ? `Site solar yield ${Math.round(enrichment.specific_yield_kwh_per_kwp!)} kWh/kWp`
+          : "Estimated from region"}
+      </span>
+      {enrichment.roof?.low_confidence && (
+        <span className="text-muted-foreground">
+          The scan may have found a neighbouring building — check the size.
+        </span>
+      )}
+    </div>
+  );
+}
+
 function Field({
   title,
   subtitle,
@@ -1128,12 +1232,12 @@ function Field({
 
 function FinancingTermStep() {
   const { draft, setField } = useAssessmentStore();
-  const years = draft.financing?.loan_term_years ?? 7;
+  const years = draft.financing?.loan_term_years ?? ENGINE_DEFAULTS.loan_term_years;
 
   const setYears = (y: number) =>
     setField("financing", {
       loan_term_years: Math.max(1, Math.min(30, y)),
-      loan_rate_pct: draft.financing?.loan_rate_pct ?? 5.5,
+      loan_rate_pct: draft.financing?.loan_rate_pct ?? ENGINE_DEFAULTS.loan_rate_pct,
       known_subsidy_eur: draft.financing?.known_subsidy_eur ?? 0,
     });
 
@@ -1156,7 +1260,7 @@ function FinancingTermStep() {
             max={30}
             step={1}
             value={[years]}
-            onValueChange={(v) => setYears(v[0] ?? 7)}
+            onValueChange={(v) => setYears(v[0] ?? ENGINE_DEFAULTS.loan_term_years)}
           />
           <div className="mt-2 flex justify-between text-xs text-muted-foreground">
             <span>1 year</span>
@@ -1176,12 +1280,13 @@ function FinancingTermStep() {
                 onChange={(e) => {
                   const n = Number(e.target.value);
                   setField("financing", {
-                    loan_term_years: draft.financing?.loan_term_years ?? 7,
-                    loan_rate_pct: Number.isFinite(n) ? n : 5.5,
+                    loan_term_years:
+                      draft.financing?.loan_term_years ?? ENGINE_DEFAULTS.loan_term_years,
+                    loan_rate_pct: Number.isFinite(n) ? n : ENGINE_DEFAULTS.loan_rate_pct,
                     known_subsidy_eur: draft.financing?.known_subsidy_eur ?? 0,
                   });
                 }}
-                placeholder="5.5"
+                placeholder={String(ENGINE_DEFAULTS.loan_rate_pct)}
               />
               <span className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-sm text-muted-foreground">
                 %
@@ -1201,8 +1306,9 @@ function FinancingTermStep() {
                 onChange={(e) => {
                   const n = Number(e.target.value);
                   setField("financing", {
-                    loan_term_years: draft.financing?.loan_term_years ?? 7,
-                    loan_rate_pct: draft.financing?.loan_rate_pct ?? 5.5,
+                    loan_term_years:
+                      draft.financing?.loan_term_years ?? ENGINE_DEFAULTS.loan_term_years,
+                    loan_rate_pct: draft.financing?.loan_rate_pct ?? ENGINE_DEFAULTS.loan_rate_pct,
                     known_subsidy_eur: Number.isFinite(n) ? n : 0,
                   });
                 }}
