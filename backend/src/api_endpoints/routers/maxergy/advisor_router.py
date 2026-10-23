@@ -13,7 +13,7 @@ import os
 from fastapi import APIRouter, HTTPException, Request, Response
 
 from src.utils.custom_logger import log_handler
-from src.utils.limiter import limiter as SlowLimiter
+from src.utils.limiter import endpoint_limit, limiter as SlowLimiter
 from src.core_specs.configuration.config_loader import config_loader
 from src.models.forecast_schemas import (
     AdvisorChatRequest,
@@ -30,10 +30,7 @@ router = APIRouter(
 
 
 @router.post(config_loader["endpoints"]["maxergy_advisor_chat"]["endpoint_route"])
-@SlowLimiter.limit(
-    f"{config_loader['endpoints']['maxergy_advisor_chat']['request_limit']}/"
-    f"{config_loader['endpoints']['maxergy_advisor_chat']['unit_of_time_for_limit']}"
-)
+@SlowLimiter.limit(endpoint_limit("maxergy_advisor_chat"))
 @timeout(seconds=20)
 async def advisor_chat(request: Request, chat_request: AdvisorChatRequest) -> Response:
     """

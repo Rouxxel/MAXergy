@@ -60,7 +60,7 @@ def load_benchmark_data() -> Dict[str, Any]:
 
 
 @router.get("")
-@SlowLimiter.limit("25/m")
+@SlowLimiter.limit("25/minute")
 async def get_benchmark(request: Request) -> Dict[str, Any]:
     """
     Get pre-computed benchmark household data for the landing page.

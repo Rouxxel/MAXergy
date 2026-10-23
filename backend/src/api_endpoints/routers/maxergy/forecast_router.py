@@ -9,10 +9,11 @@
 POST /forecast endpoint for generating energy forecasts.
 """
 
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from src.utils.custom_logger import log_handler
-from src.utils.limiter import limiter as SlowLimiter
+from src.utils.limiter import endpoint_limit, limiter as SlowLimiter
+from src.utils.service_auth import verify_service_token
 from src.core_specs.configuration.config_loader import config_loader
 from src.models.forecast_schemas import (
     HouseholdAssessment,
@@ -24,14 +25,12 @@ from src.utils.timeout import timeout
 router = APIRouter(
     prefix=config_loader["endpoints"]["maxergy_forecast"]["endpoint_prefix"],
     tags=[config_loader["endpoints"]["maxergy_forecast"]["endpoint_tag"]],
+    dependencies=[Depends(verify_service_token)],
 )
 
 
 @router.post(config_loader["endpoints"]["maxergy_forecast"]["endpoint_route"])
-@SlowLimiter.limit(
-    f"{config_loader['endpoints']['maxergy_forecast']['request_limit']}/"
-    f"{config_loader['endpoints']['maxergy_forecast']['unit_of_time_for_limit']}"
-)
+@SlowLimiter.limit(endpoint_limit("maxergy_forecast"))
 @timeout(seconds=30)
 async def generate_forecast(request: Request, assessment: HouseholdAssessment) -> Response:
     """

@@ -11,11 +11,12 @@ POST /recommendation endpoint for generating upgrade recommendations.
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
 from src.utils.custom_logger import log_handler
-from src.utils.limiter import limiter as SlowLimiter
+from src.utils.limiter import endpoint_limit, limiter as SlowLimiter
+from src.utils.service_auth import verify_service_token
 from src.core_specs.configuration.config_loader import config_loader
 from src.models.forecast_schemas import HouseholdAssessment, RecommendationMetric
 from src.services.forecasting.baseline_service import get_forecasting_service
@@ -25,14 +26,12 @@ from src.utils.timeout import timeout
 router = APIRouter(
     prefix=config_loader["endpoints"]["maxergy_recommendation"]["endpoint_prefix"],
     tags=[config_loader["endpoints"]["maxergy_recommendation"]["endpoint_tag"]],
+    dependencies=[Depends(verify_service_token)],
 )
 
 
 @router.post(config_loader["endpoints"]["maxergy_recommendation"]["endpoint_route"])
-@SlowLimiter.limit(
-    f"{config_loader['endpoints']['maxergy_recommendation']['request_limit']}/"
-    f"{config_loader['endpoints']['maxergy_recommendation']['unit_of_time_for_limit']}"
-)
+@SlowLimiter.limit(endpoint_limit("maxergy_recommendation"))
 @timeout(seconds=30)
 async def generate_recommendation(
     request: Request,

@@ -17,7 +17,7 @@ from fastapi import APIRouter, Request
 
 #Other files imports
 from src.utils.custom_logger import log_handler
-from src.utils.limiter import limiter as SlowLimiter
+from src.utils.limiter import endpoint_limit, limiter as SlowLimiter
 from src.core_specs.configuration.config_loader import config_loader
 
 """API ROUTER-----------------------------------------------------------"""
@@ -30,10 +30,7 @@ router = APIRouter(
 """ENDPOINT-----------------------------------------------------------"""
 # Check if app works
 @router.get(config_loader['endpoints']['root_directory_endpoint']['endpoint_route'])
-@SlowLimiter.limit(
-    f"{config_loader['endpoints']['root_directory_endpoint']['request_limit']}/"
-    f"{config_loader['endpoints']['root_directory_endpoint']['unit_of_time_for_limit']}"
-)  # Root endpoint rate limit
+@SlowLimiter.limit(endpoint_limit("root_directory_endpoint"))  # Root endpoint rate limit
 async def root_endpoint(request: Request):
     """
     Root endpoint to verify that the API is operational.
