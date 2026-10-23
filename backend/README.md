@@ -6,7 +6,7 @@ FastAPI backend for the MAXergy energy forecasting and recommendation system.
 
 - **FastAPI Framework**: Modern, fast web framework for building APIs
 - **Production Forecasting**: Runs the repo's energy model (`scripts/energy_model`, `compute_model`) for 6 upgrade scenarios
-- **Recommendation Engine**: Ranks scenarios (endpoint currently returns 500; rebuild planned)
+- **Recommendation Engine**: Shared ranking service (default: cumulative net savings, central prices) with a rationale built from forecast numbers; exposed via `/recommendation` and `/plan`
 - **AI Advisor Integration**: Gemini LLM for personalized energy advice
 - **Docker Support**: Multi-stage Dockerfile and docker-compose for easy deployment
 - **Rate Limiting**: Built-in request rate limiting with SlowAPI
@@ -25,6 +25,8 @@ backend/
 │   │   │       ├── assessment_router.py
 │   │   │       ├── forecast_router.py
 │   │   │       ├── recommendation_router.py
+│   │   │       ├── plan_router.py
+│   │   │       ├── assumptions_router.py
 │   │   │       ├── advisor_router.py
 │   │   │       ├── benchmark_router.py
 │   │   │       └── visualization_router.py
@@ -40,9 +42,12 @@ backend/
 │   │   ├── forecast_schemas.py     # Forecast and assessment schemas
 │   │   └── models_example.py       # Example model patterns
 │   ├── services/                   # Business logic
+│   │   ├── recommendation/
+│   │   │   └── recommendation_service.py # Shared ranking + rationale
 │   │   ├── forecasting/
 │   │   │   ├── baseline_service.py # Forecasting service (normalizer → engine → adapter, cache)
 │   │   │   ├── engine.py           # Single import point for scripts/energy_model
+│   │   │   ├── assumptions_service.py # Engine defaults for GET /assumptions
 │   │   │   ├── input_normalizer.py # HouseholdAssessment → engine input (fuels, upgrade candidates)
 │   │   │   └── model_adapter.py    # Engine output → ForecastResult
 │   │   └── llm/
@@ -53,7 +58,7 @@ backend/
 │       ├── limiter.py              # Shared SlowAPI limiter instance
 │       ├── request_limiter.py      # 429 handler for rate-limit exceeded
 │       └── validators.py           # Email, password, phone, token, UUID validators
-├── mcp/                            # Standalone MCP service (maxergy-mcp) — see mcp/README.md
+├── mcp/                            # Standalone MCP service (maxergy-mcp), calls /plan and /assumptions — see mcp/README.md
 ├── tests/                          # Backend tests (fixtures/ holds model_input1.json)
 ├── logs/                           # Log files (created automatically)
 ├── main.py                         # Application entry point
@@ -201,7 +206,9 @@ canonical contract). The MAXergy backend provides the following endpoints:
 | `GET` | `/benchmark` | Benchmark data for a typical German household | works; recommendation values hard-coded (engine-computed version planned) |
 | `POST` | `/assessment` | Submit household assessment | works (in-memory store) |
 | `POST` | `/forecast` | Generate energy forecast | works; production engine (`scripts/energy_model`); 422 for inputs the engine cannot model (e.g. heating fuel other than gas/oil) |
-| `POST` | `/recommendation` | Get upgrade recommendation | **returns 500** (fix planned) |
+| `POST` | `/recommendation` | Ranked scenarios + rationale (`?metric=cumulative_central\|monthly_net`) | works; shared recommendation service, reuses the cached forecast |
+| `POST` | `/plan` | Forecast + recommendation from one engine run | works; preferred by frontends and the MCP |
+| `GET` | `/assumptions` | Engine default assumptions (tariff, solar, battery, heat pump, EV, capex, financing, supported inputs) | works; used by the MCP suggestion tools |
 | `POST` | `/advisor/chat` | Chat with AI advisor | works (mock replies without `GEMINI_API_KEY`) |
 | `POST` | `/visualization/forecast-chart` | Forecast chart payload | works |
 
@@ -236,7 +243,7 @@ The `/benchmark` endpoint returns pre-computed energy upgrade results for a typi
 
 **Features:**
 - Caching with 1-hour TTL
-- Rate limiting (3 requests per minute)
+- Rate limiting (25 requests per minute)
 - Error handling with logging
 - Fallback to hardcoded data if JSON file is unavailable
 
@@ -263,6 +270,20 @@ See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for detailed request/response e
    are logged.
 
 Field definitions: [`documentation/app/API_CONTRACT.md`](../documentation/app/API_CONTRACT.md).
+
+### Recommendation Service
+
+`src/services/recommendation/recommendation_service.py` — `build_recommendation(forecast, metric)`
+is the single ranking function (used by `/recommendation` and `/plan`):
+
+- `cumulative_central` (default, `config_file.json` → `recommendation.default_metric`):
+  cumulative net savings at the end of the horizon, central prices; tie-breaks: higher
+  first-year net saving, then lower instalment.
+- `monthly_net`: average monthly net saving in the first year; tie-breaks: higher cumulative
+  net savings, then lower instalment.
+- The rationale quotes only forecast fields (monthly net, instalment, post-payoff saving,
+  cumulative central/low/high, break-even year) and explains negative savings during the loan.
+- No scenarios (e.g. no usable roof) → `selected_scenario_id: null` with an explanatory rationale.
 
 ### Gemini AI Advisor Service
 
@@ -346,7 +367,8 @@ pytest backend/tests backend/src/tests   # from the repo root
 pytest tests                             # production energy model tests (repo root)
 ```
 
-- `backend/tests/` — adapter golden tests, normalizer, service + `/forecast` endpoint (real engine).
+- `backend/tests/` — adapter golden tests, normalizer, recommendation service, assumptions, service
+  and the `/forecast`, `/recommendation`, `/plan`, `/assumptions` endpoints (real engine).
 - `backend/src/tests/` — service unit tests with the engine mocked.
 - `backend/conftest.py` switches the working directory to `backend/` (the config loaders resolve
   paths from there) and provides the `assessment_dict` fixture from

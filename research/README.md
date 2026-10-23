@@ -44,7 +44,7 @@ for full results.
 |----------------------------------|----------------------------|
 | `legacy/run_energy_cost_forecast.py` | `energy_model/pipeline.py` |
 | `legacy/run_upgrade_comparison.py`   | `scripts/run_model.py`     |
-| `legacy/run_baseline_model.py`       | `energy_model/pipeline.py` (`compute_model`, served by `POST /forecast`); kept for MCP parity checks |
+| `legacy/run_baseline_model.py`       | `energy_model/pipeline.py` (`compute_model`, served by `POST /forecast`); kept for reference only |
 | `legacy/visualize_forecast.py`       | (not yet replaced)         |
 | `legacy/visualize_forecasting_accuracy.py` | (not yet replaced)   |
 

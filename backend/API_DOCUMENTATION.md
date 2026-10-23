@@ -10,8 +10,7 @@ http://localhost:8000
 
 Routes are mounted at the root (no `/api/v1` prefix). The canonical contract, including the
 target v2 shapes and endpoint status, is
-[`documentation/app/API_CONTRACT.md`](../documentation/app/API_CONTRACT.md). Note:
-`POST /recommendation` currently returns 500 (fix planned).
+[`documentation/app/API_CONTRACT.md`](../documentation/app/API_CONTRACT.md).
 
 ## Authentication
 
@@ -152,6 +151,17 @@ Forecast and recommendation from **one** engine run (preferred by the frontends 
 { "forecast": { "...": "ForecastResult" }, "recommendation": { "...": "Recommendation" } }
 ```
 
+### GET /assumptions
+
+The production engine's default assumptions (tariff, consumption, solar incl. regional yields and
+feed-in tiers, battery, heat pump, EV, investment costs, financing, long-term price growth, and
+the supported inputs). Cacheable for one hour; used by the MCP suggestion tools. Shape:
+`documentation/app/API_CONTRACT.md` §10.
+
+```json
+{ "tariff": { "arbeitspreis_eur_per_kwh": 0.32, "grundpreis_eur_per_month": 12.5, "...": "..." }, "solar": { "m2_per_kwp": 6.0, "...": "..." }, "supported": { "heating_fuels": ["gas", "oil"], "...": "..." } }
+```
+
 ### POST /advisor/chat
 
 Chat with the AI advisor about energy upgrades.
@@ -185,6 +195,7 @@ Per-endpoint limits from `src/core_specs/configuration/config_file.json`:
 - Forecast: 5 requests per minute
 - Recommendation: 5 requests per minute
 - Plan: 5 requests per minute
+- Assumptions: 30 requests per minute
 - Advisor: 10 requests per minute
 - Benchmark: 25 requests per minute
 
