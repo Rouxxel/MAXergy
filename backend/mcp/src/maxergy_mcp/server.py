@@ -112,6 +112,23 @@ def _build_auth():
     return _bearer_auth()
 
 
+def _with_internal_tokens(public_auth):
+    """Also accept the static bearer tokens in MAXERGY_INTERNAL_TOKENS (comma-separated).
+
+    These are for internal services (the MAXergy backend calling the enrichment tools) so they
+    don't need the public OAuth flow. Composed with the public mode via MultiAuth; when no public
+    auth is configured, the internal tokens alone are required.
+    """
+    tokens = [t.strip() for t in env("INTERNAL_TOKENS").split(",") if t.strip()]
+    if not tokens:
+        return public_auth
+    from fastmcp.server.auth import MultiAuth
+    from fastmcp.server.auth.providers.jwt import StaticTokenVerifier
+
+    internal = StaticTokenVerifier(tokens={t: {"client_id": "maxergy-api", "scopes": []} for t in tokens})
+    return internal if public_auth is None else MultiAuth(server=public_auth, verifiers=[internal])
+
+
 from fastmcp.exceptions import ToolError
 
 from . import providers, suggestions
@@ -123,7 +140,8 @@ from .logging_setup import setup_logging
 
 setup_logging()
 
-_auth = _build_auth()
+_public_auth = _build_auth()
+_auth = _with_internal_tokens(_public_auth)
 
 mcp = FastMCP(
     name="maxergy-advisor",
@@ -135,8 +153,8 @@ mcp.add_middleware(ToolLoggingMiddleware())
 # Passphrase mode serves its own gate pages.
 from .passphrase_auth import PassphraseOAuthProvider, register_gate_routes
 
-if isinstance(_auth, PassphraseOAuthProvider):
-    register_gate_routes(mcp, _auth)
+if isinstance(_public_auth, PassphraseOAuthProvider):
+    register_gate_routes(mcp, _public_auth)
 
 # Serve favicons / logo (used by the gate page and browser tab; /favicon.ico was 404ing).
 _STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
@@ -477,7 +495,8 @@ def main() -> None:
         # session handshake (see FastMCP #1466). Stateless mode is what it expects.
         mcp.run(
             transport=transport,
-            host="0.0.0.0",
+            # HOST="::" listens on IPv6 only: set it only for legacy IPv6-only Railway environments.
+            host=os.environ.get("HOST", "0.0.0.0"),
             port=int(port or 8000),
             stateless_http=True,
             json_response=True,

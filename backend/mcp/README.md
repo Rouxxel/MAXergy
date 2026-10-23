@@ -10,9 +10,10 @@ present a **credible monthly-saving figure** for a full home-energy upgrade
 see exactly the same figures and the same recommendation.
 
 > **Status:** savings tools run on the backend's production engine; the tool input schema is
-> generated from the backend; all instructions come from one module. **Planned:** deployment as
-> its own Railway service wired to the backend over private networking, with service-to-service
-> auth (the backend currently rate-limits `/plan` to 5 requests/minute per IP).
+> generated from the backend; all instructions come from one module. Deployed as the Railway
+> service `maxergy-mcp` next to `maxergy-api` ([`.railway/railway.ts`](../../.railway/railway.ts),
+> [`DEPLOYMENT.md`](../../documentation/app/DEPLOYMENT.md)); the two call each other over
+> private networking with service tokens.
 
 ## Role in the MAXergy architecture
 
@@ -21,8 +22,9 @@ see exactly the same figures and the same recommendation.
   and the conversational onboarding script.
 - Calls the backend for savings (`POST /plan`) and engine defaults (`GET /assumptions`, cached
   for an hour).
-- Planned: the backend calls the enrichment tools (geocode, roof, PVGIS) for the web assessment
-  pre-fill and the advisor.
+- The backend calls the enrichment tools (geocode, roof, PVGIS) for `POST /location/enrich`
+  (web assessment pre-fill), authenticated with a token from `MAXERGY_INTERNAL_TOKENS`. It can only
+  call enrichment tools (allow-list on the backend side), never the savings tools.
 
 ## Tools
 
@@ -87,7 +89,9 @@ contract changes (POST the fixture input to `/plan`, GET `/assumptions`, save th
 | Variable | Purpose |
 |----------|---------|
 | `MAXERGY_API_BASE_URL` | Backend base URL (default `http://localhost:8000`) |
-| `MAXERGY_SERVICE_TOKEN` | Bearer token sent to the backend (service-to-service auth; enforced by the backend once deployed) |
+| `MAXERGY_SERVICE_TOKEN` | Bearer token sent to the backend (its `MAXERGY_SERVICE_TOKEN`): separate rate limit; a wrong token gets 401 |
+| `MAXERGY_INTERNAL_TOKENS` | Comma-separated bearer tokens accepted from internal services (the backend's `MAXERGY_MCP_TOKEN`), in addition to the public auth mode |
+| `HOST` | Bind address (default `0.0.0.0`; `::` only for legacy IPv6-only Railway environments) |
 | `GOOGLE_MAPS_API_KEY` | Google Solar + Geocoding |
 | `MAXERGY_AUTH_MODE` and related | Inbound auth, see below |
 | `LOG_LEVEL` | `INFO` (default) or `DEBUG` |
@@ -108,6 +112,10 @@ Auth mode via `MAXERGY_AUTH_MODE` (switchable on redeploy):
 | `google` | `GoogleProvider` (OAuth proxy, real Google login); `GOOGLE_OAUTH_CLIENT_ID/SECRET`, optional `MAXERGY_JWT_SIGNING_KEY` | claude.ai connector with per-user access control |
 
 Misconfigured modes fall back to `bearer` with a warning.
+
+**Internal callers:** tokens in `MAXERGY_INTERNAL_TOKENS` are accepted in every mode (FastMCP
+`MultiAuth` composes them with the public provider), so the backend never needs the OAuth flow.
+With no public auth configured, the internal tokens alone are required.
 
 **Env-var migration:** the pre-rename names `MAXNERGY_*` are still read as a fallback (with a
 deprecation warning on stderr) by `src/maxergy_mcp/config.py`. Set the `MAXERGY_*` names on
@@ -139,22 +147,16 @@ keys are never logged and secret-looking arguments are masked to `***`.
 
 ## Deploy to Railway
 
-The service deploys from this directory (`backend/mcp`) with Railpack (`railway.toml`,
-start command `uv run --no-dev maxergy-mcp`). Railway injects `PORT`, so the server comes up on
-HTTP at `https://<service-domain>/mcp`.
+The service is defined in [`.railway/railway.ts`](../../.railway/railway.ts) as `maxergy-mcp`
+(Railway Infrastructure as Code; the old `railway.toml` config-as-code file was removed because
+Railway stops reading those files on 2026-12-01): source root `backend/mcp`, Railpack build,
+start `uv run --no-dev maxergy-mcp`, port 8080, volume `/data` for the passphrase-mode OAuth state,
+rebuilds on `backend/mcp/**`. Railway injects `PORT`, so the server comes up on HTTP at
+`https://<service-domain>/mcp`.
 
-```bash
-cd backend/mcp
-railway link                 # project "maxergy", service "maxergy-mcp"
-railway variables --set GOOGLE_MAPS_API_KEY=... \
-                  --set MAXERGY_API_BASE_URL=https://<maxergy-api-domain> \
-                  --set MAXERGY_API_TOKEN=$(python -c "import secrets;print(secrets.token_urlsafe(32))")
-railway up
-```
-
-In the Railway dashboard set the service **root directory** to `backend/mcp`. The full
-two-service layout (`maxergy-api` + `maxergy-mcp`, private networking, service tokens) will be
-documented in `documentation/app/DEPLOYMENT.md`.
+Variables, secrets, first-time migration (rename the existing service to `maxergy-mcp`, clear its
+config file path) and the smoke test are in
+[`documentation/app/DEPLOYMENT.md`](../../documentation/app/DEPLOYMENT.md).
 
 ### Register with an MCP client
 
