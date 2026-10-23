@@ -84,6 +84,8 @@ def compute_benchmark() -> dict:
             "cumulative_savings_low_eur": f.cumulative_net_savings_low_eur,
             "cumulative_savings_high_eur": f.cumulative_net_savings_high_eur,
         },
+        # Cumulative net savings per year for the landing chart (central + low/high prices).
+        "cumulative_series": _cumulative_series(best),
         "scenarios_count": len(forecast.scenarios),
         "projection_years": f.horizon_years,
         "model_version": forecast.model.version if forecast.model else "unknown",
@@ -91,6 +93,21 @@ def compute_benchmark() -> dict:
         if forecast.baseline.short_term_forecast
         else None,
     }
+
+
+def _cumulative_series(scenario) -> list[dict]:
+    band = scenario.long_term_band or {}
+    low = {p.year: p.cumulative_saving_eur for p in band.get("low", [])}
+    high = {p.year: p.cumulative_saving_eur for p in band.get("high", [])}
+    return [
+        {
+            "year": p.year,
+            "central": p.cumulative_saving_eur,
+            "low": low.get(p.year),
+            "high": high.get(p.year),
+        }
+        for p in scenario.long_term_forecast
+    ]
 
 
 def get_benchmark() -> dict:
