@@ -1,0 +1,153 @@
+{
+  "household": {
+    "location": "50667, DE",
+    "occupants": 3,
+    "annual_electricity_kwh": 3500.0,
+    "heating_type": "gas",
+    "heating_annual_kwh": 14000.0,
+    "vehicle_type": "petrol",
+    "annual_mileage_km": 12000.0,
+    "roof_area_m2": 35.0,
+    "roof_orientation": "south",
+    "roof_tilt_deg": 32.0
+  },
+  "recommendation": {
+    "scenario": "full_upgrade",
+    "description": "Solar panels + battery storage + heat pump + EV charger",
+    "rationale": "Solar panels, battery storage, a heat pump and an EV charger (full_upgrade) ranks best by long-term net savings. During the 15-year loan it costs about €29/month more than today (loan instalment €209/month). Once the loan is repaid it saves about €181/month at today's prices. Over 20 years the cumulative net saving is about €24,500 (central price scenario; €9,347 to €46,082 across low/high prices), breaking even in year 9.",
+    "metric": "cumulative_central",
+    "break_even_year": 9,
+    "monthly_instalment_eur": 209.35,
+    "monthly_saving_eur": -28.73,
+    "monthly_saving_post_payoff_eur": 180.62,
+    "cumulative_savings_eur": 24499.54,
+    "cumulative_savings_low_eur": 9346.57,
+    "cumulative_savings_high_eur": 46082.4
+  },
+  "cumulative_series": [
+    {
+      "year": 2026,
+      "central": -311.54,
+      "low": -333.6,
+      "high": -289.73
+    },
+    {
+      "year": 2027,
+      "central": -539.12,
+      "low": -646.18,
+      "high": -431.42
+    },
+    {
+      "year": 2028,
+      "central": -690.87,
+      "low": -943.33,
+      "high": -432.29
+    },
+    {
+      "year": 2029,
+      "central": -762.3,
+      "low": -1223.36,
+      "high": -281.36
+    },
+    {
+      "year": 2030,
+      "central": -750.27,
+      "low": -1486.03,
+      "high": 31.51
+    },
+    {
+      "year": 2031,
+      "central": -650.59,
+      "low": -1730.22,
+      "high": 518.13
+    },
+    {
+      "year": 2032,
+      "central": -461.93,
+      "low": -1957.61,
+      "high": 1187.83
+    },
+    {
+      "year": 2033,
+      "central": -179.79,
+      "low": -2167.03,
+      "high": 2053.98
+    },
+    {
+      "year": 2034,
+      "central": 199.14,
+      "low": -2358.52,
+      "high": 3129.35
+    },
+    {
+      "year": 2035,
+      "central": 679.94,
+      "low": -2530.69,
+      "high": 4429.41
+    },
+    {
+      "year": 2036,
+      "central": 1263.8,
+      "low": -2685.67,
+      "high": 5965.95
+    },
+    {
+      "year": 2037,
+      "central": 1955.92,
+      "low": -2822.19,
+      "high": 7756.19
+    },
+    {
+      "year": 2038,
+      "central": 2761.3,
+      "low": -2939.4,
+      "high": 9818.15
+    },
+    {
+      "year": 2039,
+      "central": 3684.81,
+      "low": -3036.63,
+      "high": 12170.53
+    },
+    {
+      "year": 2040,
+      "central": 4728.47,
+      "low": -3115.69,
+      "high": 14829.61
+    },
+    {
+      "year": 2041,
+      "central": 8410.58,
+      "low": -662.99,
+      "high": 20329.96
+    },
+    {
+      "year": 2042,
+      "central": 12223.75,
+      "low": 1809.43,
+      "high": 26181.37
+    },
+    {
+      "year": 2043,
+      "central": 16174.52,
+      "low": 4302.95,
+      "high": 32409.3
+    },
+    {
+      "year": 2044,
+      "central": 20264.61,
+      "low": 6815.18,
+      "high": 39034.1
+    },
+    {
+      "year": 2045,
+      "central": 24499.54,
+      "low": 9346.57,
+      "high": 46082.4
+    }
+  ],
+  "scenarios_count": 6,
+  "projection_years": 20,
+  "model_version": "4.0",
+  "forecast_start": "2026-11"
+}
