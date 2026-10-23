@@ -5,22 +5,25 @@
 ## High-Level Overview
 
 ```text
-                React Native App
-                        |
-                    HTTPS
-                        |
-                    FastAPI
-                        |
-        +---------------+---------------+
-        |               |               |
-        |               |               |
- Scenario Engine   Recommendation   Gemini Advisor
-                      Engine
-        |               |
-        +-------+-------+
-                |
-          Forecast Models
+   Web app (TanStack) / Mobile (Expo)          LLM clients (claude.ai, Claude Code)
+                  |                                        |
+                HTTPS                                    HTTPS (OAuth / bearer)
+                  |                                        |
+        FastAPI backend (maxergy-api)  <--- POST /plan ---  MCP service (maxergy-mcp)
+                  |                    <- GET /assumptions   |  Google Geocoding / Solar,
+     +------------+-------------+                            |  PVGIS, onboarding script
+     |            |             |
+ Forecasting  Recommendation  Gemini Advisor
+  Service       Service
+     |            |
+     +-----+------+
+           |
+  Production energy model (scripts/energy_model, compute_model)
 ```
+
+The MCP service is a separate deployable that supports the app: it never computes savings,
+it calls the backend. Planned: the backend calls the MCP's enrichment tools (geocode, roof,
+PVGIS) for the assessment pre-fill and the advisor.
 
 ## Frontend
 
@@ -89,11 +92,26 @@ Provider:
 
 - Gemini
 
+### MCP Service (`backend/mcp`)
+
+Responsibilities:
+
+- Onboarding script for LLM clients (single source: `instructions.py`)
+- Roof geometry (Google Solar), geocoding, site PV yield (PVGIS)
+- Savings tools (`energy_savings_overview`, `compare_scenarios`, `project_savings`,
+  `next_best_upgrade`) that return views of the backend's `POST /plan` response
+- Tool input schema generated from the backend Pydantic models (`contract.py`)
+
 ## API Endpoints
+
+Full contract: `documentation/app/API_CONTRACT.md`.
 
 - POST /assessment
 - POST /forecast
 - POST /recommendation
+- POST /plan
+- GET /assumptions
+- GET /benchmark
 - POST /advisor/chat
 
 ## Database

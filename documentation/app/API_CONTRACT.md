@@ -21,10 +21,10 @@ Routers are mounted at the **root** of the API host (decision #13):
 | `GET` | `/` | – | health JSON | v1 |
 | `POST` | `/assessment` | `HouseholdAssessment` | `AssessmentResponse` | v1 |
 | `POST` | `/forecast` | `HouseholdAssessment` | `ForecastResult` | **v2** (production engine) |
-| `POST` | `/recommendation` | `HouseholdAssessment` | `Recommendation` | v1 **broken (500)** → fix planned |
-| `POST` | `/plan` | `HouseholdAssessment` | `PlanResponse` | *(v2, planned)* |
+| `POST` | `/recommendation` | `HouseholdAssessment` (+ `?metric=`) | `Recommendation` | **v2** |
+| `POST` | `/plan` | `HouseholdAssessment` (+ `?metric=`) | `PlanResponse` | **v2** |
 | `GET` | `/benchmark` | – | `BenchmarkData` | v1 (partly hard-coded) → computed from the engine (planned) |
-| `GET` | `/assumptions` | – | `Assumptions` | *(v2, planned)* |
+| `GET` | `/assumptions` | – | `Assumptions` | **v2** |
 | `POST` | `/location/enrich` | `EnrichmentRequest` | `EnrichmentResponse` | *(v2, planned)* |
 | `POST` | `/advisor/chat` | `AdvisorChatRequest` | `AdvisorChatResponse` | v1 |
 | `POST` | `/visualization/forecast-chart` | `HouseholdAssessment` | chart payload | v1 |
@@ -215,42 +215,43 @@ its numbers.
 
 ## 4. Response — `Recommendation`
 
-v1 (code today; endpoint currently returns 500):
+Built by `backend/src/services/recommendation/recommendation_service.py`
+(`build_recommendation`), the single ranking function. Example for `model_input1.json`
+(scores from `model_output_v2.json`):
 
 ```json
 {
   "selected_scenario_id": "full_upgrade",
-  "selected_scenario": { "...": "Scenario" },
-  "ranked_scenarios": [["full_upgrade", 87.44], ["pv_ev", 126.78]],
-  "rationale": "string"
-}
-```
-
-v2 (planned; scores illustrative):
-
-```json
-{
-  "selected_scenario_id": "full_upgrade",
-  "selected_scenario": { "...": "Scenario" },
+  "selected_scenario": { "...": "Scenario (as in ForecastResult)" },
   "ranked_scenarios": [
     { "id": "full_upgrade", "score_eur": 21959.78, "metric": "cumulative_central" },
-    { "id": "pv_ev", "score_eur": 21697.42, "metric": "cumulative_central" }
+    { "id": "pv_ev", "score_eur": 21697.42, "metric": "cumulative_central" },
+    { "id": "pv_battery", "score_eur": 8145.08, "metric": "cumulative_central" }
   ],
   "metric_used": "cumulative_central",
-  "rationale": "string built only from forecast fields"
+  "rationale": "Solar panels, battery storage, a heat pump and an EV charger (full_upgrade) ranks best by long-term net savings. During the 15-year loan it costs about €39/month more than today (loan instalment €218/month). Once the loan is repaid it saves about €179/month at today's prices. Over 20 years the cumulative net saving is about €21,960 (central price scenario; €7,243 to €42,855 across low/high prices), breaking even in year 12."
 }
 ```
 
-`metric_used` enum: `monthly_net` (scenario `monthly_saving_eur`), `cumulative_central`
-(`financials.cumulative_net_savings_central_eur`, end of the horizon).
+| Field | Definition |
+| ----- | ---------- |
+| `metric_used` | `cumulative_central` (default; `config_file.json` → `recommendation.default_metric`) or `monthly_net`. Override per request with `?metric=`. |
+| `ranked_scenarios[]` | All scenarios best-first; `score_eur` is the metric value: `financials.cumulative_net_savings_central_eur` for `cumulative_central`, `monthly_saving_eur` for `monthly_net`. |
+| Tie-breaks | `cumulative_central`: higher first-year net saving, then lower instalment. `monthly_net`: higher cumulative net savings, then lower instalment. |
+| `rationale` | Built only from forecast fields. When the monthly net saving is negative it states the extra monthly cost during the loan, the post-payoff saving, and the cumulative outcome. |
+| No scenarios | `selected_scenario_id` and `selected_scenario` are `null`, `ranked_scenarios` is empty, and the rationale explains why (e.g. no usable roof). |
 
-## 5. Response — `PlanResponse` *(v2, planned)*
+The v1 shape (`ranked_scenarios` as `[id, saving]` tuples, no `metric_used`) is no longer served.
+
+## 5. Response — `PlanResponse`
 
 ```json
-{ "forecast": { "...": "ForecastResult v2" }, "recommendation": { "...": "Recommendation v2" } }
+{ "forecast": { "...": "ForecastResult" }, "recommendation": { "...": "Recommendation" } }
 ```
 
-Computed from **one** engine run. Used by web, mobile, and every MCP savings tool.
+Computed from **one** engine run (the forecast is cached, so a following `/recommendation`
+for the same assessment does not re-run the engine). Preferred by web, mobile, and the MCP
+savings tools.
 
 ## 6. `AssessmentResponse`
 
@@ -320,31 +321,59 @@ Response:
 
 `source.roof`: `google_solar` | `area_estimate` | `unavailable`. `source.yield`: `pvgis` | `regional_table`.
 
-## 10. Assumptions *(v2, planned)*
+## 10. Assumptions (`GET /assumptions`)
 
-`GET /assumptions` returns the production engine defaults so no other component hard-codes
-them. Current engine values: default tariff (`arbeitspreis` 0.32 €/kWh, `grundpreis`
-12.50 €/month), EEG feed-in tiers (≤10 kWp 0.082, 10–40 kWp 0.071, >40 kWp 0.058 €/kWh),
-heat-pump SCOP 3.0 (existing boiler efficiency 0.85), PV 6 m²/kWp, regional yield 950–1150
-kWh/kWp, default battery 10 kWh, capex PV 1400 €/kWp, battery 600 €/kWh, heat pump 12 000 €,
-EV charger 1200 €, long-term price growth bands.
+Returns the production engine defaults (read from `scripts/energy_model` configuration
+objects) so no other component hard-codes them. Cacheable for one hour. Trimmed example:
 
-## 11. MCP tool contract *(v2, planned)*
+```json
+{
+  "tariff": { "arbeitspreis_eur_per_kwh": 0.32, "grundpreis_eur_per_month": 12.5, "gas_eur_per_kwh": 0.1, "oil_eur_per_litre": 1.05, "petrol_eur_per_litre": 1.75 },
+  "consumption": { "electricity_kwh_per_person_per_year": 1500.0, "oil_kwh_per_litre": 10.0 },
+  "solar": {
+    "m2_per_kwp": 6.0, "default_yield_kwh_per_kwp": 1000.0, "annual_degradation_pct": 0.5,
+    "regional_yield_kwh_per_kwp": { "1": 950.0, "4": 1030.0, "8": 1150.0, "...": "..." },
+    "feed_in_tariff_eur_per_kwh": { "up_to_10_kwp": 0.082, "10_to_40_kwp": 0.071, "above_40_kwp": 0.058 }
+  },
+  "battery": { "default_usable_kwh": 10.0, "round_trip_efficiency": 0.9025 },
+  "heat_pump": { "scop": 3.0, "existing_heating_efficiency": 0.85 },
+  "ev": { "kwh_per_100km": 18.0, "charging_efficiency": 0.92, "home_charging_share": 0.8 },
+  "investment_costs": { "pv_eur_per_kwp": 1400.0, "battery_eur_per_kwh": 600.0, "heat_pump_eur_fixed": 12000.0, "ev_charger_eur_fixed": 1200.0 },
+  "financing": { "loan_term_years": 15, "loan_rate_pct": 4.5 },
+  "long_term_price_growth": { "electricity": { "low": 0.01, "central": 0.03, "high": 0.05 }, "...": "..." },
+  "supported": { "country": ["DE"], "heating_fuels": ["gas", "oil"], "vehicle_types": ["petrol", "diesel", "electric", "phev", "hybrid"], "building_types": ["residential"] }
+}
+```
+
+Used by the MCP suggestion tools (`default_assumptions`, `suggest_electricity_price`,
+`estimate_heating_spend`, `estimate_roof_capacity_from_area`, `suggest_battery_kwh`).
+
+## 11. MCP tool contract
+
+The MCP savings tools take a `HouseholdAssessment` (§2; the MCP's `contract.py` is generated
+from the backend schemas) and never compute savings themselves.
 
 | Tool | Input | Output |
 | ---- | ----- | ------ |
-| `start_advisor` | – | onboarding script (string) |
+| `start_advisor` | – | onboarding script (string, from `instructions.py`) |
+| `default_assumptions` | – | `GET /assumptions` (§10) |
 | `geocode_address` | `address` | `{ address, lat, lon }` |
-| `get_roof_geometry` | `lat, lon` | roof segments, `max_array_kwp`, `suggested_system_kwp`, `low_confidence` |
+| `get_roof_geometry` | `lat, lon` | roof segments, `max_array_area_m2`, `max_array_kwp`, `suggested_system_kwp`, `low_confidence` |
 | `estimate_pv_production` | `lat, lon, kwp, tilt_degrees, azimuth_degrees` | `{ annual_kwh, monthly_kwh, specific_yield_kwh_per_kwp }` |
-| `estimate_roof_capacity_from_area` | `floor_area_m2, stories` | roof ceiling estimate |
-| `estimate_heating_spend`, `suggest_battery_kwh`, `suggest_electricity_price` | as today | values based on `GET /assumptions` |
-| `energy_savings_overview` | `HouseholdAssessment` | `PlanResponse` (verbatim from `POST /plan`) |
-| `compare_scenarios` | `HouseholdAssessment` | `recommendation.ranked_scenarios` + headline per scenario |
-| `project_savings` | `HouseholdAssessment` | cumulative series from `forecast.scenarios[].long_term_forecast` |
-| `next_best_upgrade` | `HouseholdAssessment` | best marginal step from `/plan` |
+| `estimate_roof_capacity_from_area` | `floor_area_m2, stories` | `{ usable_area_m2, estimated_max_kwp }` (engine `m2_per_kwp`) |
+| `suggest_electricity_price` | `building_type, monthly_spend_eur` | default tariff + implied annual kWh (residential only) |
+| `estimate_heating_spend` | `living_area_m2, heating_type, building_type` | gas/oil consumption and spend (residential gas/oil only) |
+| `suggest_battery_kwh` | `pv_kwp, annual_electricity_kwh` | battery size proposal + engine default |
+| `energy_savings_overview` | `assessment, metric?` | `PlanResponse` verbatim from `POST /plan` |
+| `compare_scenarios` | `assessment, metric?` | backend ranking with per-scenario summary + headline |
+| `project_savings` | `assessment` | years + cumulative net savings per scenario (central) |
+| `next_best_upgrade` | `assessment, current_scenario_id?` | recommended scenario and what each extra component adds |
+| `recommend_upsell` | as `next_best_upgrade` | deprecated alias |
+| `model_savings` | – | deprecated; points to `energy_savings_overview` |
 
-The MCP never computes savings itself.
+Unsupported inputs (non-residential buildings, heating other than gas/oil) return
+`{ "supported": false, "note": ... }` from the suggestion tools; backend errors (e.g. 422) are
+relayed as tool errors with the backend's `detail`.
 
 ## 12. Errors
 
@@ -364,18 +393,18 @@ Status: **Decided** or **Proposed** (recommendation, awaiting confirmation).
 
 | # | Topic | Decision | Status |
 | - | ----- | -------- | ------ |
-| 1 | Primary ranking metric | `cumulative_central` for best plan; `monthly_net` shown prominently | Proposed |
+| 1 | Primary ranking metric | `cumulative_central` for best plan (configurable, `?metric=monthly_net` per request); `monthly_net` shown prominently in the UI | Decided (implemented) |
 | 2 | Number of engines | One: `compute_model` | Decided |
 | 3 | Type source of truth | Backend Pydantic; frontend + MCP generated/verified from OpenAPI | Decided |
-| 4 | Combined endpoint | Add `POST /plan` | Proposed |
+| 4 | Combined endpoint | Add `POST /plan` | Decided (implemented) |
 | 5 | `upgrade_candidates` filtering | Omit scenarios needing a disabled component | Decided (implemented) |
 | 6 | Multi-vehicle | Sum combustion mileage and spend, mileage-weighted consumption; EVs excluded | Decided (implemented) |
 | 7 | Carbon reduction | Out of scope until emission-factor spec exists | Proposed |
 | 8 | Mock default | `true` in `.env.example` for demos; `false` in CI live smoke | Proposed |
 | 9 | MCP placement | Standalone Railway service `maxergy-mcp` | Decided |
-| 10 | MCP → engine access | HTTP `POST /plan` | Decided |
+| 10 | MCP → engine access | HTTP `POST /plan` | Decided (implemented) |
 | 11 | MCP public domain | New MAXergy domain; old domain kept during transition | Proposed |
 | 12 | `monthly_saving_post_payoff_eur` | Always present in v2 | Decided (implemented) |
 | 15 | Headline monthly figures | 12-month averages (not the first month) to avoid seasonal distortion | Decided (implemented) |
 | 13 | API path prefix | Root paths (no `/api/v1`) — matches routers and frontend client today | Decided |
-| 14 | Commercial buildings in MCP | Disabled until a commercial model exists | Proposed |
+| 14 | Commercial buildings in MCP | Disabled until a commercial model exists | Decided (implemented) |

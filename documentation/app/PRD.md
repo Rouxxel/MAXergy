@@ -116,6 +116,12 @@ Subject to:
 - Roof constraints
 - Financing assumptions
 
+> **Implementation note:** the "best plan" is ranked by cumulative net savings over the
+> forecast horizon (central price scenario), because many upgrades cost slightly more per month
+> while the loan runs and only pay off afterwards. The first-year monthly net saving (the North
+> Star formula above) is still shown prominently and can be used as the ranking metric
+> (`metric=monthly_net`). See decision #1 in `documentation/app/API_CONTRACT.md`.
+
 ### AI Advisor
 
 Generate:

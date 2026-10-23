@@ -2,7 +2,7 @@
 
 > **Legacy.** This model is no longer used by the API; `POST /forecast` runs the production
 > engine `scripts/energy_model` (`compute_model`). It overstates savings compared with the
-> production engine and is kept only for reference and the MCP parity check.
+> production engine and is kept only for reference.
 
 **Script:** `research/legacy/run_baseline_model.py`
 **Input:** `documentation/data/model_input1.json`
