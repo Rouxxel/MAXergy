@@ -63,6 +63,13 @@
             "endpoint_tag": "plan",
             "endpoint_route": ""
         },
+        "maxergy_assumptions": {
+            "request_limit": 30,
+            "unit_of_time_for_limit": "m",
+            "endpoint_prefix": "/assumptions",
+            "endpoint_tag": "assumptions",
+            "endpoint_route": ""
+        },
         "maxergy_advisor_chat": {
             "request_limit": 10,
             "unit_of_time_for_limit": "m",
