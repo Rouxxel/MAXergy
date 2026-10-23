@@ -43,6 +43,8 @@ backend/
 │   │   ├── forecast_schemas.py     # Forecast and assessment schemas
 │   │   └── models_example.py       # Example model patterns
 │   ├── services/                   # Business logic
+│   │   ├── benchmark/
+│   │   │   └── benchmark_service.py # Landing benchmark via forecast + recommendation services
 │   │   ├── mcp/
 │   │   │   ├── mcp_client.py       # JSON-RPC client for the MCP enrichment tools (allow-list)
 │   │   │   └── enrichment_service.py # geocode → roof → PVGIS for /location/enrich
@@ -223,7 +225,7 @@ canonical contract). The MAXergy backend provides the following endpoints:
 | Method | Path | Description | Status |
 |---|---|---|---|
 | `GET` | `/` | Health check | works |
-| `GET` | `/benchmark` | Benchmark data for a typical German household | works; recommendation values hard-coded (engine-computed version planned) |
+| `GET` | `/benchmark` | Average German household benchmark for the landing pages | works; computed by the engine (same services as `/plan`), cached 1 h |
 | `POST` | `/assessment` | Submit household assessment | works (in-memory store) |
 | `POST` | `/forecast` | Generate energy forecast | works; production engine (`scripts/energy_model`); 422 for inputs the engine cannot model (e.g. heating fuel other than gas/oil) |
 | `POST` | `/recommendation` | Ranked scenarios + rationale (`?metric=cumulative_central\|monthly_net`) | works; shared recommendation service, reuses the cached forecast |
@@ -235,38 +237,54 @@ canonical contract). The MAXergy backend provides the following endpoints:
 
 ### Benchmark Endpoint
 
-The `/benchmark` endpoint returns pre-computed energy upgrade results for a typical German household. This data is displayed on the landing page to show users example outputs before they complete their own assessment.
+`GET /benchmark` returns the average German household benchmark shown on the landing pages
+(`src/services/benchmark/benchmark_service.py`).
 
-**Response:**
+- Computed, not hard-coded: `documentation/data/test_profiles/average_german_household.json` (a
+  full `HouseholdAssessment`; path in `config_file.json` → `benchmark.profile_path`) runs through
+  the same forecasting and recommendation services as `POST /plan`, so the scenario, figures and
+  rationale equal `/plan` for that household (tested in `backend/tests/test_benchmark.py`).
+- Cached for `benchmark.cache_ttl_seconds` (3600). Rate limit 25/minute (`maxergy_benchmark`).
+- `forecast_start` is the first forecast month: the engine starts the month after the run date, so
+  the cumulative totals move slightly from month to month (e.g. €24,828 for a July start, about
+  €24,500 for November). Instalment, sizes and the recommended plan do not change.
+- `monthly_saving_eur` is the year-1 monthly net including the instalment (negative during
+  financing for this household); `cumulative_series` holds the recommended plan's cumulative net
+  savings per year (central, low, high) for the landing chart.
+- On failure: 500 (the landing pages then show the last recorded response with its `forecast_start`).
+
+**Response (trimmed):**
 ```json
 {
   "household": {
-    "location": "Cologne (50667)",
-    "occupants": 3,
-    "annual_electricity_kwh": 3500,
-    "heating_type": "gas",
-    "heating_annual_kwh": 14000,
-    "vehicle_type": "petrol",
-    "annual_mileage_km": 12000,
-    "roof_area_m2": 35,
-    "roof_orientation": "south",
-    "roof_tilt_deg": 32
+    "location": "50667, DE", "occupants": 3, "annual_electricity_kwh": 3500.0,
+    "heating_type": "gas", "heating_annual_kwh": 14000.0, "vehicle_type": "petrol",
+    "annual_mileage_km": 12000.0, "roof_area_m2": 35.0, "roof_orientation": "south", "roof_tilt_deg": 32.0
   },
   "recommendation": {
     "scenario": "full_upgrade",
-    "break_even_year": 8,
-    "monthly_instalment_eur": 209,
-    "cumulative_savings_eur": 24828,
-    "description": "Solar panels + battery storage + heat pump + EV charger. Highest projected 20-year cumulative net savings under the central price scenario."
-  }
+    "description": "Solar panels + battery storage + heat pump + EV charger",
+    "rationale": "Solar panels, battery storage, a heat pump and an EV charger (full_upgrade) ranks best by long-term net savings. During the 15-year loan it costs about €29/month more than today (loan instalment €209/month). …",
+    "metric": "cumulative_central",
+    "break_even_year": 9,
+    "monthly_instalment_eur": 209.35,
+    "monthly_saving_eur": -28.73,
+    "monthly_saving_post_payoff_eur": 180.62,
+    "cumulative_savings_eur": 24499.54,
+    "cumulative_savings_low_eur": 9346.57,
+    "cumulative_savings_high_eur": 46082.4
+  },
+  "cumulative_series": [
+    { "year": 2026, "central": -311.54, "low": -333.6, "high": -289.73 },
+    "…",
+    { "year": 2045, "central": 24499.54, "low": 9346.57, "high": 46082.4 }
+  ],
+  "scenarios_count": 6,
+  "projection_years": 20,
+  "model_version": "4.0",
+  "forecast_start": "2026-11"
 }
 ```
-
-**Features:**
-- Caching with 1-hour TTL
-- Rate limiting (25 requests per minute)
-- Error handling with logging
-- Fallback to hardcoded data if JSON file is unavailable
 
 See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for detailed request/response examples.
 

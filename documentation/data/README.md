@@ -29,7 +29,7 @@ where each value comes from (the API ignores it).
 first year's seasonal mix — and the cumulative totals that build on it — change with the date a
 profile is run. Example: the average household's 20-year central net saving is €24,828 in the
 stored July-start run and about €24,500 for a November start. Loan instalments, scenario sizes and
-the best plan do not depend on the run date.
+the best plan do not depend on the run date. `GET /benchmark` reports the month it is based on (`forecast_start`).
 
 ## Recorded API responses used by tests and mocks
 

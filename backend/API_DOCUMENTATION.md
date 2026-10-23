@@ -164,6 +164,15 @@ the supported inputs). Cacheable for one hour; used by the MCP suggestion tools.
 { "tariff": { "arbeitspreis_eur_per_kwh": 0.32, "grundpreis_eur_per_month": 12.5, "...": "..." }, "solar": { "m2_per_kwp": 6.0, "...": "..." }, "supported": { "heating_fuels": ["gas", "oil"], "...": "..." } }
 ```
 
+### GET /benchmark
+
+The average German household (`documentation/data/test_profiles/average_german_household.json`)
+run through the same forecasting and recommendation services as `POST /plan`, cached for an hour.
+Returns the household summary, the recommended plan with year-1 monthly net (incl. instalment),
+after-payoff saving, cumulative net savings (central/low/high), break-even year, rationale, a
+per-year cumulative series, the model version and `forecast_start`. Shape:
+`documentation/app/API_CONTRACT.md` §8.
+
 ### POST /location/enrich
 
 Coordinates, a roof proposal and the site PV yield for a German postcode or address, looked up

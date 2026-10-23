@@ -23,7 +23,7 @@ Routers are mounted at the **root** of the API host (decision #13):
 | `POST` | `/forecast` | `HouseholdAssessment` | `ForecastResult` | **v2** (production engine) |
 | `POST` | `/recommendation` | `HouseholdAssessment` (+ `?metric=`) | `Recommendation` | **v2** |
 | `POST` | `/plan` | `HouseholdAssessment` (+ `?metric=`) | `PlanResponse` | **v2** |
-| `GET` | `/benchmark` | – | `BenchmarkData` | v1 (partly hard-coded) → computed from the engine (planned) |
+| `GET` | `/benchmark` | – | `BenchmarkData` | **v2** (computed by the engine, cached 1 h) |
 | `GET` | `/assumptions` | – | `Assumptions` | **v2** |
 | `POST` | `/location/enrich` | `EnrichmentRequest` | `EnrichmentResponse` | **v2** (via the MCP; 503 when disabled) |
 | `POST` | `/advisor/chat` | `AdvisorChatRequest` | `AdvisorChatResponse` | v1 |
@@ -290,21 +290,47 @@ Mocks must return this exact shape (not `{ "reply": ... }`).
 ```json
 {
   "household": {
-    "location": "50667, DE", "occupants": 3, "annual_electricity_kwh": 3500,
-    "heating_type": "gas", "heating_annual_kwh": 14000, "vehicle_type": "petrol",
-    "annual_mileage_km": 12000, "roof_area_m2": 35, "roof_orientation": "south", "roof_tilt_deg": 32
+    "location": "50667, DE", "occupants": 3, "annual_electricity_kwh": 3500.0,
+    "heating_type": "gas", "heating_annual_kwh": 14000.0, "vehicle_type": "petrol",
+    "annual_mileage_km": 12000.0, "roof_area_m2": 35.0, "roof_orientation": "south", "roof_tilt_deg": 32.0
   },
   "recommendation": {
-    "scenario": "full_upgrade", "break_even_year": 8, "monthly_instalment_eur": 209,
-    "cumulative_savings_eur": 24828, "description": "string"
+    "scenario": "full_upgrade",
+    "description": "Solar panels + battery storage + heat pump + EV charger",
+    "rationale": "Solar panels, battery storage, a heat pump and an EV charger (full_upgrade) ranks best by long-term net savings. During the 15-year loan it costs about €29/month more than today (loan instalment €209/month). …",
+    "metric": "cumulative_central",
+    "break_even_year": 9,
+    "monthly_instalment_eur": 209.35,
+    "monthly_saving_eur": -28.73,
+    "monthly_saving_post_payoff_eur": 180.62,
+    "cumulative_savings_eur": 24499.54,
+    "cumulative_savings_low_eur": 9346.57,
+    "cumulative_savings_high_eur": 46082.4
   },
+  "cumulative_series": [
+    { "year": 2026, "central": -311.54, "low": -333.6, "high": -289.73 },
+    "…",
+    { "year": 2045, "central": 24499.54, "low": 9346.57, "high": 46082.4 }
+  ],
   "scenarios_count": 6,
   "projection_years": 20,
-  "model_version": "4.0"
+  "model_version": "4.0",
+  "forecast_start": "2026-11"
 }
 ```
 
-`recommendation.*` is hard-coded today; it will be computed with the same logic as `/plan` (planned).
+- Computed, not hard-coded: `documentation/data/test_profiles/average_german_household.json` (a
+  full `HouseholdAssessment`; path in `config_file.json` → `benchmark.profile_path`) runs through
+  the same forecasting and recommendation services as `POST /plan`, so the scenario, figures and
+  rationale equal `/plan` for that household (tested in `backend/tests/test_benchmark.py`).
+- Cached for `benchmark.cache_ttl_seconds` (3600). Rate limit 25/minute (`maxergy_benchmark`).
+- `forecast_start` is the first forecast month: the engine starts the month after the run date, so
+  the cumulative totals move slightly from month to month (e.g. €24,828 for a July start, about
+  €24,500 for November). Instalment, sizes and the recommended plan do not change.
+- `monthly_saving_eur` is the year-1 monthly net including the instalment (negative during
+  financing for this household); `cumulative_series` holds the recommended plan's cumulative net
+  savings per year (central, low, high) for the landing chart.
+- On failure: 500 (the landing pages then show the last recorded response with its `forecast_start`).
 
 ## 9. Enrichment (`POST /location/enrich`)
 
