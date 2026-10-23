@@ -227,11 +227,23 @@ def _plan(assessment: HouseholdAssessment, metric: RecommendationMetric | None =
     return plan
 
 
+def _signed(n: float) -> str:
+    return f"{'−' if n < 0 else '+'}€{abs(n):,.0f}"
+
+
 def _headline(s: dict) -> str:
+    """Same sentence as the MAXergy app (frontend services/savings.ts `summarizeSavings`)."""
     now, after = s["monthly_saving_eur"], s["monthly_saving_post_payoff_eur"]
+    f = s.get("financials") or {}
+    tail = (
+        f"; {f['horizon_years']}-year net {_signed(f['cumulative_net_savings_central_eur'])}"
+        if f.get("horizon_years") is not None
+        else ""
+    )
     if now >= 0:
-        return f"saves about €{now:,.0f}/month now (loan included), €{after:,.0f}/month after payoff"
-    return f"costs about €{-now:,.0f}/month more while the loan runs, saves €{after:,.0f}/month after payoff"
+        return f"Saves €{now:,.0f}/month from the start (loan included), €{after:,.0f}/month after payoff{tail}."
+    loan = f"the {round(f['loan_term_months'] / 12)}-year loan" if f.get("loan_term_months") else "the loan"
+    return f"Costs €{-now:,.0f}/month more during {loan}, then saves €{after:,.0f}/month{tail}."
 
 
 def _components(s: dict) -> set[str]:

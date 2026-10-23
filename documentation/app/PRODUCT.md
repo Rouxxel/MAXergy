@@ -47,7 +47,15 @@ The customer sees a single monthly savings figure generated from:
 
 ### Outcome First
 
-Always lead with savings.
+Always lead with savings — honestly. Every result shows the same three numbers:
+
+1. **Monthly net in year 1**, loan instalment included ("During financing: −€X/month" when the
+   instalment outweighs the early savings);
+2. **After payoff**: the monthly saving once the loan is repaid;
+3. **N-year net**: cumulative net savings over the horizon (central prices, with a low/high range).
+
+No unbacked trust claims ("live tariffs", "verified ROI"); results are labelled as model estimates
+with their assumptions shown.
 
 ### Explainability
 
@@ -77,9 +85,12 @@ Generate:
 
 Rank by:
 
-- Monthly Savings
+- Cumulative net savings over the horizon (central price scenario) — default
+- Monthly net savings in year 1 — available as an alternative metric
 
-Select the highest-value scenario.
+Select the highest-value scenario. Long-term ranking is the default because many bundles cost
+slightly more per month while the loan runs and only pay off afterwards (decision #1 in
+`API_CONTRACT.md`).
 
 ## AI Advisor Responsibilities
 
@@ -93,23 +104,23 @@ Generate:
 
 ## Example Output
 
+Example from the production engine for `documentation/data/model_input1.json` (2-person house in
+Berlin, gas heating, one petrol car, 15-year loan at 4.5 %):
+
 Recommended Plan:
 
-Solar + Battery + Heat Pump
+Full upgrade (solar + battery + heat pump + EV charger)
 
-Monthly Savings:
-
-€87/month
+During financing: −€39/month · After payoff: +€179/month · 20-year net: +€21,960
 
 Reason:
 
-Your household currently spends €312/month on electricity, heating, and mobility.
+Your household currently spends about €337/month on electricity, heating and mobility.
 
-Installing a solar system with battery storage reduces grid dependency while a heat pump replaces expensive oil heating.
-
-After financing costs, your expected monthly spending decreases to €225/month, resulting in €87/month savings.
-
-Once financing is completed, savings increase to approximately €218/month.
+The upgrades cut energy costs substantially, but during the 15-year loan the instalment (€218/month)
+is slightly larger than the savings, so you pay about €39/month more than today. Once the loan is
+repaid you save about €179/month at today's prices. Over 20 years the cumulative net saving is
+about €21,960 (€7,243 to €42,855 depending on energy prices), breaking even in year 12.
 
 ## Future Roadmap
 

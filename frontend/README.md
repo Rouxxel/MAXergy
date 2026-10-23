@@ -164,6 +164,20 @@ The app talks to these endpoints of the MAXergy backend (shapes:
 validates every live response with Zod, so a contract change fails with a clear error instead of
 rendering `undefined`.
 
+**Results semantics** (`src/routes/results.tsx`, wording in `src/services/savings.ts`, shared with
+the mobile app and the MCP guidance):
+
+- Hero = `monthly_saving_eur` (year-1 average, loan instalment included). Positive → "You could
+  save €X per month from the start"; negative → "During financing −€X per month compared with
+  today", shown in orange.
+- Chips: "After payoff: +€Y/month" (`monthly_saving_post_payoff_eur`) and "N-year net: €Z"
+  (`financials.cumulative_net_savings_central_eur`), with the low/high range below.
+- "Modeled estimate · Assumptions" disclosure lists solar yield and its source, battery size, heat
+  pump efficiency, loan terms, the price approach and every backend `validation_warning`. There are
+  no "live tariffs" / "verified ROI" badges.
+- Compare shows each scenario's year-1 net and after-payoff figures, the horizon net, and marks the
+  backend's `selected_scenario_id` as Recommended.
+
 Key fields: a scenario's loan instalment is `monthly_cost_eur.financing_installment` (included in
 `monthly_cost_eur.total`); `monthly_saving_eur` is the average monthly net saving in year 1 with the
 instalment (can be negative); `monthly_saving_post_payoff_eur` is the saving after the loan;

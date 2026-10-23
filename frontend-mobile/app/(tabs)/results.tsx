@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, View, Text, Pressable, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
-import { MessageSquare, LineChart as LineChartIcon, Leaf, Clock, TrendingUp, Zap, Flame, Car, DollarSign } from "lucide-react-native";
+import { MessageSquare, LineChart as LineChartIcon, TrendingUp, Zap, Flame, Car, DollarSign } from "lucide-react-native";
 import { LineChart as RNLineChart } from "react-native-chart-kit";
 
 import { Header } from "@/components/header";
@@ -9,11 +9,9 @@ import { MetricCard } from "@/components/metric-card";
 import { Button } from "@/components/ui/Button";
 import { useResultsStore } from "@/stores/resultsStore";
 import { useAssessmentStore } from "@/stores/assessmentStore";
+import { describeAssumptions, euro, signedEuro, summarizeSavings } from "@/services/savings";
+import type { ForecastResult } from "@/types";
 
-const euro = (n: number | undefined | null) =>
-  n !== undefined && n !== null
-    ? `€${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-    : "€0";
 
 const scenarioNames: Record<string, string> = {
   solar_only: "Solar Only",
@@ -76,8 +74,7 @@ export default function Results() {
   // Scenario total includes the loan instalment.
   const scenarioTotal = selectedScenario.monthly_cost_eur.total;
   // North Star: average monthly net saving in year 1 (current spend − future spend − instalment).
-  const monthlySavings = selectedScenario.monthly_saving_eur;
-  const savesNow = monthlySavings >= 0;
+  const summary = summarizeSavings(selectedScenario);
   const isRecommended = selectedScenario.id === recommendation.selected_scenario_id;
   const futurePct = Math.max(
     8,
@@ -113,15 +110,27 @@ export default function Results() {
         {/* You could save card */}
         <View className="rounded-3xl border border-primary/30 bg-gradient-to-b from-primary/10 to-transparent p-6 items-center mb-6">
           <Text className="text-xs uppercase tracking-widest text-primary font-bold">
-            {savesNow ? "You could save" : "While the loan runs you pay"}
+            {summary.primaryLabel}
           </Text>
-          <Text className="mt-2 text-5xl font-extrabold tracking-tight text-primary">
-            {euro(Math.abs(monthlySavings))}
+          <Text
+            className={`mt-2 text-5xl font-extrabold tracking-tight ${summary.savesFromStart ? "text-primary" : "text-orange-400"}`}
+          >
+            {summary.primaryValue}
           </Text>
-          <Text className="mt-1 text-sm text-muted-foreground text-center">
-            {savesNow ? "every month" : "more per month"} ·{" "}
-            {euro(selectedScenario.monthly_saving_post_payoff_eur)}/month saved after payoff
-          </Text>
+          <Text className="mt-1 text-sm text-muted-foreground text-center">{summary.primaryNote}</Text>
+          <View className="mt-4 flex-row flex-wrap justify-center gap-2">
+            <View className="rounded-full bg-primary/15 px-3 py-1">
+              <Text className="text-xs font-semibold text-primary">{summary.afterPayoff}</Text>
+            </View>
+            {summary.longTerm && (
+              <View className="rounded-full bg-primary/15 px-3 py-1">
+                <Text className="text-xs font-semibold text-primary">{summary.longTerm}</Text>
+              </View>
+            )}
+          </View>
+          {summary.longTermRange && (
+            <Text className="mt-2 text-[11px] text-muted-foreground text-center">{summary.longTermRange}</Text>
+          )}
         </View>
 
         {/* Now vs After Bars */}
@@ -199,10 +208,10 @@ export default function Results() {
             </View>
             <View className="w-[48%]">
               <MetricCard
-                label="Monthly saving"
-                value={euro(selectedScenario.monthly_saving_eur)}
+                label="Monthly net (year 1)"
+                value={signedEuro(selectedScenario.monthly_saving_eur)}
                 accent="primary"
-                hint="Savings"
+                hint="Loan included"
               />
             </View>
           </View>
@@ -364,31 +373,7 @@ export default function Results() {
             </Text>
           )}
 
-          {selectedScenario.monthly_saving_eur < 0 && (
-            <View className="rounded-2xl border border-border bg-card p-4">
-              <Text className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                Post-payoff savings
-              </Text>
-              <Text className="mt-2 text-lg font-bold text-primary">
-                {euro(selectedScenario.monthly_saving_post_payoff_eur)}/month
-              </Text>
-              <Text className="mt-1 text-xs text-muted-foreground">
-                After loan is paid off
-              </Text>
-            </View>
-          )}
-
-          <View className="flex-row justify-between space-x-1 pt-2">
-            <View className="flex-1 mr-1">
-              <Detail icon={<LineChartIcon size={14} className="text-muted-foreground" />} label="Modeled" />
-            </View>
-            <View className="flex-1 mx-1">
-              <Detail icon={<Clock size={14} className="text-muted-foreground" />} label="Tariffs" />
-            </View>
-            <View className="flex-1 ml-1">
-              <Detail icon={<Leaf size={14} className="text-muted-foreground" />} label="ROI verified" />
-            </View>
-          </View>
+          <AssumptionsPanel forecast={forecast} />
         </View>
 
         {/* Navigation CTAs */}
@@ -442,11 +427,30 @@ function Bar({
   );
 }
 
-function Detail({ icon, label }: { icon: React.ReactNode; label: string }) {
+function AssumptionsPanel({ forecast }: { forecast: ForecastResult }) {
+  const [open, setOpen] = useState(false);
+  const items = [...describeAssumptions(forecast.assumptions_used), ...forecast.validation_warnings];
   return (
-    <View className="flex-row items-center justify-center space-x-1.5 rounded-lg border border-border bg-card/50 px-2 py-1.5">
-      {icon}
-      <Text className="text-[10px] text-muted-foreground ml-1">{label}</Text>
+    <View className="rounded-2xl border border-border bg-card p-4">
+      <Pressable onPress={() => setOpen((v) => !v)} className="flex-row items-center">
+        <LineChartIcon size={14} className="text-muted-foreground" />
+        <Text className="ml-2 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+          Modeled estimate · Assumptions {open ? "▲" : "▼"}
+        </Text>
+      </Pressable>
+      {open && (
+        <View className="mt-3 space-y-1">
+          {items.map((a) => (
+            <Text key={a} className="text-xs text-muted-foreground">
+              • {a}
+            </Text>
+          ))}
+          <Text className="mt-2 text-[11px] text-muted-foreground">
+            {forecast.model ? `${forecast.model.name} v${forecast.model.version}. ` : ""}
+            Forecasts are model estimates, not offers or guaranteed savings.
+          </Text>
+        </View>
+      )}
     </View>
   );
 }

@@ -6,16 +6,12 @@ import { AppShell, BrandMark } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useResultsStore } from "@/stores/resultsStore";
 import type { Scenario } from "@/types";
+import { euro, signedEuro } from "@/services/savings";
 
 export const Route = createFileRoute("/compare")({
   head: () => ({ meta: [{ title: "Compare scenarios — MAXergy" }] }),
   component: Compare,
 });
-
-const euro = (n: number | undefined | null) =>
-  n !== undefined && n !== null
-    ? `€${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-    : "€0";
 
 const scenarioNames: Record<string, string> = {
   solar_only: "Solar Only",
@@ -141,10 +137,13 @@ function Compare() {
                   <div
                     className={`text-lg font-bold tabular-nums ${isNegativeSavings ? "text-orange-500" : "text-primary"}`}
                   >
-                    {euro(s.monthly_saving_eur)}
+                    {signedEuro(s.monthly_saving_eur)}
                   </div>
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    /month
+                    /month · year 1
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    after payoff {signedEuro(s.monthly_saving_post_payoff_eur)}
                   </div>
                 </div>
               </button>
@@ -173,7 +172,7 @@ function Compare() {
                       )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="grid grid-cols-2 gap-3 text-center">
                     <Stat
                       label="Monthly payment"
                       value={euro(s.monthly_cost_eur.financing_installment)}
@@ -186,6 +185,12 @@ function Compare() {
                       label="Payback"
                       value={s.payback_month ? `${(s.payback_month / 12).toFixed(1)} yr` : "N/A"}
                     />
+                    {s.financials && (
+                      <Stat
+                        label={`${s.financials.horizon_years}-yr net`}
+                        value={signedEuro(s.financials.cumulative_net_savings_central_eur)}
+                      />
+                    )}
                   </div>
                   <Button
                     onClick={() => selectScenario(s.id)}

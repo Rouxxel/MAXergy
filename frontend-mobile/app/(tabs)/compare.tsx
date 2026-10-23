@@ -8,11 +8,8 @@ import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/ui/Button";
 import { useResultsStore } from "@/stores/resultsStore";
 import type { Scenario } from "@/types";
+import { euro, signedEuro } from "@/services/savings";
 
-const euro = (n: number | undefined | null) =>
-  n !== undefined && n !== null
-    ? `€${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-    : "€0";
 
 const scenarioNames: Record<string, string> = {
   solar_only: "Solar Only",
@@ -136,10 +133,13 @@ export default function Compare() {
                   </View>
                   <View className="items-end shrink-0">
                     <Text className={`text-lg font-bold ${isNegativeSavings ? "text-orange-500" : "text-primary"}`}>
-                      {euro(s.monthly_saving_eur)}
+                      {signedEuro(s.monthly_saving_eur)}
                     </Text>
                     <Text className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                      /month
+                      /month · year 1
+                    </Text>
+                    <Text className="text-[9px] text-muted-foreground">
+                      after payoff {signedEuro(s.monthly_saving_post_payoff_eur)}
                     </Text>
                   </View>
                 </Pressable>
@@ -178,6 +178,12 @@ export default function Compare() {
                       </View>
                       <View className="flex-1">
                         <Stat label="Payback" value={s.payback_month ? `${(s.payback_month / 12).toFixed(1)} yr` : "N/A"} />
+                        {s.financials && (
+                          <Stat
+                            label={`${s.financials.horizon_years}-yr net`}
+                            value={signedEuro(s.financials.cumulative_net_savings_central_eur)}
+                          />
+                        )}
                       </View>
                     </View>
 

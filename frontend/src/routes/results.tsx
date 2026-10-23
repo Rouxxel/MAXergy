@@ -1,15 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import {
-  MessageSquare,
-  LineChart,
-  Leaf,
-  Clock,
-  TrendingUp,
-  Zap,
-  Flame,
-  Car,
-  DollarSign,
-} from "lucide-react";
+import { MessageSquare, LineChart, TrendingUp, Zap, Flame, Car, DollarSign } from "lucide-react";
 import {
   LineChart as RechartsLineChart,
   Line,
@@ -27,16 +17,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useResultsStore } from "@/stores/resultsStore";
 import { useAssessmentStore } from "@/stores/assessmentStore";
+import { describeAssumptions, euro, signedEuro, summarizeSavings } from "@/services/savings";
 
 export const Route = createFileRoute("/results")({
   head: () => ({ meta: [{ title: "Your savings — MAXergy" }] }),
   component: Results,
 });
-
-const euro = (n: number | undefined | null) =>
-  n !== undefined && n !== null
-    ? `€${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-    : "€0";
 
 const scenarioNames: Record<string, string> = {
   solar_only: "Solar Only",
@@ -103,8 +89,7 @@ function Results() {
   // Scenario total includes the loan instalment.
   const scenarioTotal = selectedScenario.monthly_cost_eur.total;
   // North Star: average monthly net saving in year 1 (current spend − future spend − instalment).
-  const monthlySavings = selectedScenario.monthly_saving_eur;
-  const savesNow = monthlySavings >= 0;
+  const summary = summarizeSavings(selectedScenario);
   const isRecommended = selectedScenario.id === recommendation.selected_scenario_id;
   const futurePct = Math.max(
     8,
@@ -130,17 +115,32 @@ function Results() {
       </header>
 
       <section className="rounded-3xl border border-primary/30 bg-gradient-to-b from-primary/15 to-transparent p-6 text-center">
-        <div className="text-xs uppercase tracking-widest text-primary">
-          {savesNow ? "You could save" : "While the loan runs you pay"}
+        <div className="text-xs uppercase tracking-widest text-primary">{summary.primaryLabel}</div>
+        <div
+          className={
+            "mt-2 text-6xl font-extrabold tracking-tight tabular-nums " +
+            (summary.savesFromStart ? "text-primary" : "text-orange-400")
+          }
+        >
+          {summary.primaryValue}
         </div>
-        <div className="mt-2 text-6xl font-extrabold tracking-tight text-primary tabular-nums">
-          {euro(Math.abs(monthlySavings))}
+        <div className="mt-1 text-sm text-muted-foreground">{summary.primaryNote}</div>
+        <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs">
+          <span className="rounded-full bg-primary/15 px-3 py-1 font-semibold text-primary">
+            {summary.afterPayoff}
+          </span>
+          {summary.longTerm && (
+            <span
+              className="rounded-full bg-primary/15 px-3 py-1 font-semibold text-primary"
+              title={summary.longTermRange ?? undefined}
+            >
+              {summary.longTerm}
+            </span>
+          )}
         </div>
-        <div className="mt-1 text-sm text-muted-foreground">
-          {savesNow ? "every month" : "more per month"}
-          {" · "}
-          {euro(selectedScenario.monthly_saving_post_payoff_eur)}/month saved after payoff
-        </div>
+        {summary.longTermRange && (
+          <div className="mt-2 text-[11px] text-muted-foreground">{summary.longTermRange}</div>
+        )}
       </section>
 
       <section className="mt-6 space-y-3">
@@ -241,8 +241,9 @@ function Results() {
             }
           />
           <MetricCard
-            label="Monthly saving"
-            value={euro(selectedScenario.monthly_saving_eur)}
+            label="Monthly net (year 1)"
+            value={signedEuro(selectedScenario.monthly_saving_eur)}
+            hint="Loan instalment included"
             accent="primary"
           />
         </div>
@@ -399,23 +400,23 @@ function Results() {
           )}
         </div>
 
-        {selectedScenario.monthly_saving_eur < 0 && (
-          <div className="rounded-2xl border border-border bg-card p-4">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">
-              Post-payoff savings
-            </div>
-            <div className="mt-2 text-lg font-semibold text-primary">
-              {euro(selectedScenario.monthly_saving_post_payoff_eur)}/month
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">After loan is paid off</p>
-          </div>
-        )}
-
-        <div className="grid grid-cols-3 gap-2 pt-2 text-xs text-muted-foreground">
-          <Detail icon={<LineChart className="h-3.5 w-3.5" />} label="Modeled" />
-          <Detail icon={<Clock className="h-3.5 w-3.5" />} label="Live tariffs" />
-          <Detail icon={<Leaf className="h-3.5 w-3.5" />} label="Verified ROI" />
-        </div>
+        <details className="rounded-2xl border border-border bg-card p-4 text-sm">
+          <summary className="flex cursor-pointer items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+            <LineChart className="h-3.5 w-3.5" /> Modeled estimate · Assumptions
+          </summary>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+            {describeAssumptions(forecast.assumptions_used).map((a) => (
+              <li key={a}>{a}</li>
+            ))}
+            {forecast.validation_warnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            {forecast.model ? `${forecast.model.name} v${forecast.model.version}. ` : ""}
+            Forecasts are model estimates, not offers or guaranteed savings.
+          </p>
+        </details>
       </section>
 
       <div className="mt-8 flex flex-col gap-3">
@@ -455,15 +456,6 @@ function Bar({
           style={{ width: `${pct}%` }}
         />
       </div>
-    </div>
-  );
-}
-
-function Detail({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card/50 px-2 py-1.5">
-      {icon}
-      <span>{label}</span>
     </div>
   );
 }

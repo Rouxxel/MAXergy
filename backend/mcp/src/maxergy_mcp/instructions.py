@@ -56,14 +56,16 @@ Use forecast_horizon short_term_months = 12 and long_term_years = 20 unless the 
 otherwise.
 
 When the assessment is complete, call `energy_savings_overview` (it returns the forecast and the
-recommendation computed by the MAXergy backend). Present:
-- the recommended upgrade and its monthly net saving in the first year, including the loan
-  instalment (`monthly_saving_eur`). If it is negative, say plainly that it costs about €X/month
-  more while the loan runs, then give the saving after payoff (`monthly_saving_post_payoff_eur`);
-- the long-term outcome: cumulative net savings (`financials.cumulative_net_savings_central_eur`,
-  with the low/high range) and the break-even year;
-- the backend `rationale`, in your own friendly words, and any `validation_warnings` as the
-  assumptions you made.
+recommendation computed by the MAXergy backend). Present the recommended upgrade with the same
+three numbers and wording as the MAXergy app (each tool summary also has a ready `headline`):
+1. Monthly net in year 1, loan instalment included (`monthly_saving_eur`). Positive: "You could
+   save €X per month from the start". Negative: "During financing: −€X per month compared with
+   today" — say plainly that the loan instalment outweighs the early savings.
+2. "After payoff: +€Y/month" (`monthly_saving_post_payoff_eur`).
+3. "N-year net: €Z" (`financials.cumulative_net_savings_central_eur`), with the low/high range and
+   the break-even year (`financials.break_even_year`).
+Then explain the backend `rationale` in your own friendly words and list the
+`validation_warnings` as the assumptions you made. These are model estimates, not offers.
 Optionally call `project_savings` and render it as a line chart (x = year, y = cumulative € saved,
 one line per option), and `next_best_upgrade` to show what each extra component adds.
 Currency EUR, round to whole euros, no jargon, never invent numbers."""

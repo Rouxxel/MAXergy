@@ -46,6 +46,12 @@ see exactly the same figures and the same recommendation.
 | `recommend_upsell` | — | deprecated alias of `next_best_upgrade` (will be removed) |
 | `model_savings` | — | deprecated; points to `energy_savings_overview` (will be removed) |
 
+**Presentation:** results are presented with the same three numbers and wording as the MAXergy app
+— year-1 monthly net with the loan ("During financing: −€X/month" when negative), "After payoff:
++€Y/month", and "N-year net: €Z" with the low/high range (`instructions.py`; each summary in
+`compare_scenarios` / `next_best_upgrade` carries a ready `headline`, e.g. "Costs €39/month more
+during the 15-year loan, then saves €179/month; 20-year net +€21,960.").
+
 The savings tools take a `HouseholdAssessment` (same shape as the app,
 [`documentation/app/API_CONTRACT.md`](../../documentation/app/API_CONTRACT.md) §2) and optional
 `metric` (`cumulative_central` default, or `monthly_net`). The prompt `maxergy_advisor` returns

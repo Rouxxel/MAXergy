@@ -28,6 +28,10 @@ match — including a negative monthly figure while the loan runs.
 
 Persisted results use store version 2; results saved by older app versions are discarded.
 
+**Results:** same three numbers and wording as the web app (`services/savings.ts`, tested in
+`__tests__/savings.test.ts`): year-1 monthly net with the loan ("During financing" when negative),
+after-payoff saving, horizon net with range, and an "Assumptions" panel instead of trust badges.
+
 **Assessment:** same steps, defaults (`ENGINE_DEFAULTS` = backend `GET /assumptions`) and rules as
 the web app (`frontend/README.md` §7): Germany only, gas/oil heating only (other options are hidden
 because the mobile `Select` has no disabled items), canonical vehicle types with required mileage,

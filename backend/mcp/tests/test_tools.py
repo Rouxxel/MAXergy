@@ -35,7 +35,9 @@ def test_compare_scenarios_uses_backend_ranking(backend, assessment):
     scenario = next(s for s in plan["forecast"]["scenarios"] if s["id"] == "full_upgrade")
     assert full["monthly_saving_eur"] == scenario["monthly_saving_eur"]
     assert full["financing_installment_eur"] == scenario["monthly_cost_eur"]["financing_installment"]
-    assert "more while the loan runs" in full["headline"]
+    assert full["headline"] == "Costs €39/month more during the 15-year loan, then saves €179/month; 20-year net +€21,960."
+    pv_ev = next(r for r in out["ranked"] if r["id"] == "pv_ev")
+    assert pv_ev["headline"].startswith("Saves €39/month from the start (loan included)")
 
 
 def test_project_savings_series(backend, assessment):
