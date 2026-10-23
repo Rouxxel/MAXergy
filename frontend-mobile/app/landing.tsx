@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ScrollView, View, Text, Image, Pressable, Animated } from "react-native";
+import { ScrollView, View, Text, Image, Pressable, Animated, Dimensions } from "react-native";
+import { LineChart as RNLineChart } from "react-native-chart-kit";
 import { Link, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react-native";
@@ -10,6 +11,9 @@ import { getBenchmark } from "@/services/endpoints";
 import { FeatureCard, StepCard, SummaryCard, FAQItem } from "@/components/landing";
 import { trackPageView, trackCTAClick, trackBenchmarkLoad } from "@/services/analytics";
 import useScrollAnimation from "@/lib/useScrollAnimation";
+import benchmarkFallback from "@/services/fixtures/benchmark.json";
+import { euro, signedEuro } from "@/services/savings";
+import { validateBenchmarkData } from "@/services/validation";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -38,30 +42,9 @@ export default function LandingPage() {
     }
   }, [benchmarkLoading, benchmarkError, benchmarkData]);
 
-  // Fallback data if API fails
-  const fallbackData = {
-    household: {
-      location: "Cologne (50667)",
-      occupants: 3,
-      annual_electricity_kwh: 3500,
-      heating_type: "gas",
-      heating_annual_kwh: 14000,
-      vehicle_type: "petrol",
-      annual_mileage_km: 12000,
-      roof_area_m2: 35,
-      roof_orientation: "south",
-      roof_tilt_deg: 32,
-    },
-    recommendation: {
-      scenario: "full_upgrade",
-      break_even_year: 8,
-      monthly_instalment_eur: 209,
-      cumulative_savings_eur: 24828,
-      description:
-        "Solar panels + battery storage + heat pump + EV charger. Highest projected 20-year cumulative net savings under the central price scenario.",
-    },
-  };
-
+  // If the API is unavailable, show the last recorded engine run (same shape, with its
+  // forecast start month) instead of hand-written numbers.
+  const fallbackData = validateBenchmarkData(benchmarkFallback);
   const data = benchmarkData || fallbackData;
 
   const handleStartAssessment = () => {
@@ -221,7 +204,13 @@ export default function LandingPage() {
               <Text className="text-xs font-semibold text-primary">Typical German household benchmark</Text>
             </View>
             <Text className="text-2xl font-bold tracking-tight text-foreground text-center leading-tight">
-              Save around €{data.recommendation.cumulative_savings_eur.toLocaleString('de-DE')} over 20 years
+              Save around {euro(data.recommendation.cumulative_savings_eur)} over {data.projection_years} years
+            </Text>
+            <Text className="text-sm font-semibold text-foreground text-center">
+              {data.recommendation.monthly_saving_eur >= 0
+                ? `Saves ${euro(data.recommendation.monthly_saving_eur)}/month from the start (loan included)`
+                : `During financing: ${signedEuro(data.recommendation.monthly_saving_eur)}/month`}
+              {" · "}After payoff: {signedEuro(data.recommendation.monthly_saving_post_payoff_eur)}/month
             </Text>
             <Text className="text-xs text-muted-foreground text-center leading-relaxed">
               This estimate is based on a representative {data.household.occupants}-person household in {data.household.location.split(',')[0]} with {data.household.heating_type} heating, a {data.household.vehicle_type} car, and a {data.household.roof_orientation}-facing roof.
@@ -253,34 +242,68 @@ export default function LandingPage() {
             <Text className="text-xs text-muted-foreground leading-relaxed">
               {data.recommendation.description}
             </Text>
+            <Text className="text-xs text-muted-foreground leading-relaxed">
+              {data.recommendation.rationale}
+            </Text>
             
             <View className="border-t border-border pt-4 grid gap-2 flex-row flex-wrap justify-between">
               <View className="w-[30%] space-y-1">
                 <Text className="text-[10px] text-muted-foreground">Break-even</Text>
-                <Text className="text-sm font-extrabold text-foreground">Year {data.recommendation.break_even_year}</Text>
+                <Text className="text-sm font-extrabold text-foreground">
+                  {data.recommendation.break_even_year ? `Year ${data.recommendation.break_even_year}` : "Not reached"}
+                </Text>
               </View>
               <View className="w-[30%] space-y-1">
                 <Text className="text-[10px] text-muted-foreground">Monthly pay</Text>
-                <Text className="text-sm font-extrabold text-foreground">€{data.recommendation.monthly_instalment_eur}</Text>
+                <Text className="text-sm font-extrabold text-foreground">{euro(data.recommendation.monthly_instalment_eur)}</Text>
               </View>
               <View className="w-[30%] space-y-1">
-                <Text className="text-[10px] text-muted-foreground">20-yr savings</Text>
-                <Text className="text-sm font-extrabold text-primary">€{data.recommendation.cumulative_savings_eur.toLocaleString('de-DE')}</Text>
+                <Text className="text-[10px] text-muted-foreground">{data.projection_years}-yr net</Text>
+                <Text className="text-sm font-extrabold text-primary">{signedEuro(data.recommendation.cumulative_savings_eur)}</Text>
               </View>
             </View>
           </View>
 
           {/* Cumulative Savings Chart */}
           <View className="rounded-lg border border-border bg-card p-5 space-y-3">
-            <Text className="text-sm font-semibold text-foreground">Cumulative Net Savings Over 20 Years</Text>
-            <Image
-              source={require("../assets/cumulative_net_savings.png")}
-              className="w-full h-48 rounded-lg"
-              resizeMode="contain"
+            <Text className="text-sm font-semibold text-foreground">
+              Cumulative Net Savings Over {data.projection_years} Years
+            </Text>
+            <RNLineChart
+              data={{
+                labels: data.cumulative_series.map((p, i) => (i % 5 === 0 ? String(p.year) : "")),
+                datasets: [
+                  { data: data.cumulative_series.map((p) => p.central ?? 0), color: () => "#B8FF5A", strokeWidth: 2 },
+                  { data: data.cumulative_series.map((p) => p.low ?? 0), color: () => "rgba(148,163,184,0.6)", strokeWidth: 1 },
+                  { data: data.cumulative_series.map((p) => p.high ?? 0), color: () => "rgba(148,163,184,0.6)", strokeWidth: 1 },
+                ],
+                legend: ["Central prices", "Low", "High"],
+              }}
+              width={Dimensions.get("window").width - 72}
+              height={200}
+              yLabelsOffset={4}
+              formatYLabel={(v) => `€${Math.round(Number(v) / 1000)}k`}
+              withDots={false}
+              chartConfig={{
+                backgroundColor: "#111827",
+                backgroundGradientFrom: "#111827",
+                backgroundGradientTo: "#111827",
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(148, 163, 184, ${opacity})`,
+              }}
+              style={{ borderRadius: 12 }}
             />
+            <Text className="text-[10px] text-muted-foreground">
+              Recommended plan vs. today, loan instalments included. MAXergy engine (model v{data.model_version}),
+              forecast starting {data.forecast_start ?? "next month"}; low/high = energy-price scenarios.
+            </Text>
           </View>
 
-          {/* Household Comparison Charts */}
+          {/* Household Comparison Charts (reference run of the three documented profiles) */}
+          <Text className="text-[10px] text-muted-foreground">
+            Reference run of three example households (forecast starting July 2026).
+          </Text>
           <View className="space-y-4">
             <View className="rounded-lg border border-border bg-card p-4 space-y-2">
               <Text className="text-xs font-semibold text-center text-foreground">Average German Household</Text>

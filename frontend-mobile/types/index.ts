@@ -279,18 +279,36 @@ export interface BenchmarkHousehold {
   roof_tilt_deg: number;
 }
 
+/** GET /benchmark: the average German household run through the same engine as POST /plan. */
 export interface BenchmarkRecommendation {
   scenario: string;
-  break_even_year: number;
-  monthly_instalment_eur: number;
-  cumulative_savings_eur: number;
   description: string;
+  rationale: string;
+  metric: RecommendationMetric;
+  break_even_year: number | null;
+  monthly_instalment_eur: number;
+  /** Year-1 monthly net incl. the loan instalment (can be negative). */
+  monthly_saving_eur: number;
+  monthly_saving_post_payoff_eur: number;
+  cumulative_savings_eur: number;
+  cumulative_savings_low_eur: number;
+  cumulative_savings_high_eur: number;
+}
+
+export interface BenchmarkSeriesPoint {
+  year: number;
+  central: number | null;
+  low: number | null;
+  high: number | null;
 }
 
 export interface BenchmarkData {
   household: BenchmarkHousehold;
   recommendation: BenchmarkRecommendation;
+  cumulative_series: BenchmarkSeriesPoint[];
   scenarios_count: number;
   projection_years: number;
   model_version: string;
+  /** First forecast month ("YYYY-MM"); totals depend on it. */
+  forecast_start: string | null;
 }

@@ -10,6 +10,7 @@
 import type {
   AdvisorChatResponse,
   AssessmentResponse,
+  BenchmarkData,
   EnrichmentResponse,
   ForecastResult,
   HouseholdAssessment,
@@ -17,7 +18,8 @@ import type {
   Recommendation,
 } from "@/types";
 import planFixture from "./fixtures/plan_model_input1.json";
-import { validatePlanResponse } from "./validation";
+import benchmarkFixture from "./fixtures/benchmark.json";
+import { validateBenchmarkData, validatePlanResponse } from "./validation";
 
 let plan: PlanResponse | undefined;
 
@@ -73,3 +75,6 @@ export const mockAdvisorReply = (msg: string): AdvisorChatResponse => {
     suggestions: ["What happens after the loan is repaid?", "Why this bundle?"],
   };
 };
+
+/** Recorded GET /benchmark response (engine output; see `forecast_start` for its run month). */
+export const mockBenchmark = (): BenchmarkData => validateBenchmarkData(benchmarkFixture);
