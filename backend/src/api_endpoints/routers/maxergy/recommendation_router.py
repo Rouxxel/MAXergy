@@ -9,16 +9,18 @@
 POST /recommendation endpoint for generating upgrade recommendations.
 """
 
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 
 from src.utils.custom_logger import log_handler
 from src.utils.limiter import limiter as SlowLimiter
 from src.core_specs.configuration.config_loader import config_loader
-from src.models.forecast_schemas import (
-    HouseholdAssessment,
-    ForecastResult,
-    Recommendation,
-)
+from src.models.forecast_schemas import HouseholdAssessment, RecommendationMetric
+from src.services.forecasting.baseline_service import get_forecasting_service
+from src.services.recommendation.recommendation_service import build_recommendation
+from src.utils.timeout import timeout
 
 router = APIRouter(
     prefix=config_loader["endpoints"]["maxergy_recommendation"]["endpoint_prefix"],
@@ -31,85 +33,50 @@ router = APIRouter(
     f"{config_loader['endpoints']['maxergy_recommendation']['request_limit']}/"
     f"{config_loader['endpoints']['maxergy_recommendation']['unit_of_time_for_limit']}"
 )
+@timeout(seconds=30)
 async def generate_recommendation(
     request: Request,
-    assessment: HouseholdAssessment
+    assessment: HouseholdAssessment,
+    metric: Optional[RecommendationMetric] = None,
 ) -> Response:
     """
-    Generate upgrade recommendation based on household assessment.
-    
-    This endpoint analyzes forecast scenarios and recommends the best
-    upgrade option based on monthly savings and other factors.
-    
+    Generate an upgrade recommendation for a household assessment.
+
+    Runs (or reuses the cached) forecast and ranks its scenarios with the shared
+    recommendation service.
+
     Parameters:
         request (Request): Incoming HTTP request (required by rate limiter).
         assessment (HouseholdAssessment): Household assessment data.
-    
+        metric (RecommendationMetric | None): Ranking metric; config default when omitted.
+
     Returns:
-        Response: Recommended scenario with rationale.
+        Response: Recommendation with ranked scenarios and rationale.
 
     Raises:
-        HTTPException: If recommendation generation fails.
+        HTTPException: 422 if the assessment cannot be modelled, 500 on failure.
     """
+    log_handler.info(
+        "[recommendation_router] Generating recommendation for location %s, %s",
+        assessment.location.postcode,
+        assessment.location.country,
+    )
     try:
-        # Import forecast router to reuse forecast generation
-        from src.api_endpoints.routers.maxergy.forecast_router import generate_forecast
-        
-        log_handler.info(
-            "[recommendation_router] Generating recommendation for location %s, %s",
-            assessment.location.postcode,
-            assessment.location.country,
-        )
-        
-        # Generate forecast first
-        forecast = await generate_forecast(request, assessment)
-        
-        # Rank scenarios by monthly savings
-        ranked_scenarios = sorted(
-            [(s.id, s.monthly_saving_eur) for s in forecast.scenarios],
-            key=lambda x: x[1],
-            reverse=True,
-        )
-        
-        # Select top recommendation
-        if not ranked_scenarios:
-            raise HTTPException(status_code=400, detail="No scenarios available for recommendation")
-        
-        top_scenario_id, top_savings = ranked_scenarios[0]
-        selected_scenario = next(s for s in forecast.scenarios if s.id == top_scenario_id)
-        
-        # Generate rationale
-        if top_savings > 0:
-            rationale = (
-                f"Based on your household profile, the {top_scenario_id} scenario offers "
-                f"the highest monthly savings of €{top_savings:.2f}. "
-                f"This configuration includes {', '.join([k for k, v in selected_scenario.components.model_dump().items() if v])}. "
-                f"Expected payback period: {selected_scenario.payback_month} months if applicable."
-            )
-        else:
-            rationale = (
-                f"Based on your household profile, all scenarios show negative short-term savings "
-                f"due to financing costs. However, the {top_scenario_id} scenario offers the best "
-                f"long-term value with post-payoff savings of "
-                f"€{selected_scenario.monthly_saving_post_payoff_eur:.2f}/month."
-            )
-        
-        log_handler.info(
-            "[recommendation_router] Recommendation generated: %s with €%.2f/month savings",
-            top_scenario_id,
-            top_savings,
-        )
-        
-        return JSONResponse(
-            content=Recommendation(
-                selected_scenario_id=top_scenario_id,
-                selected_scenario=selected_scenario,
-                ranked_scenarios=ranked_scenarios,
-                rationale=rationale,
-            ).model_dump(),
-            headers={"Cache-Control": "no-store"}
-        )
-        
+        forecast = get_forecasting_service().generate_forecast(assessment)
+        recommendation = build_recommendation(forecast, metric)
+    except ValueError as e:
+        log_handler.warning("[recommendation_router] Assessment cannot be modelled: %s", str(e))
+        raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         log_handler.error("[recommendation_router] Recommendation generation failed: %s", str(e))
         raise HTTPException(status_code=500, detail="Recommendation generation failed")
+
+    log_handler.info(
+        "[recommendation_router] Recommendation generated: %s (metric %s)",
+        recommendation.selected_scenario_id,
+        recommendation.metric_used.value,
+    )
+    return JSONResponse(
+        content=recommendation.model_dump(mode="json"),
+        headers={"Cache-Control": "no-store"},
+    )

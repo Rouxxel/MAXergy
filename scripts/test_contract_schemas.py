@@ -82,9 +82,11 @@ def test_recommendation_schema():
     sample_recommendation = Recommendation(
         selected_scenario_id="test_scenario",
         selected_scenario=sample_scenario,
-        ranked_scenarios=[("test_scenario", 50.0)],
+        ranked_scenarios=[{"id": "test_scenario", "score_eur": 50.0, "metric": "monthly_net"}],
+        metric_used="monthly_net",
         rationale="Test recommendation",
     )
+    assert sample_recommendation.ranked_scenarios[0].id == "test_scenario"
     
     print("✓ Recommendation schema validation passed")
     return True

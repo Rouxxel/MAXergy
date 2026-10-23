@@ -8,6 +8,7 @@ Canonical contract: documentation/app/API_CONTRACT.md
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any, Optional
 from pydantic import BaseModel, Field
 
@@ -266,12 +267,32 @@ class ForecastResult(BaseModel):
 # RECOMMENDATION SCHEMAS
 # ============================================================================
 
+class RecommendationMetric(str, Enum):
+    """Metric used to rank scenarios."""
+    MONTHLY_NET = "monthly_net"
+    CUMULATIVE_CENTRAL = "cumulative_central"
+
+
+class RankedScenarioItem(BaseModel):
+    """One scenario in the ranking."""
+    id: str = Field(..., description="Scenario ID")
+    score_eur: float = Field(..., description="Value of the ranking metric for this scenario")
+    metric: RecommendationMetric = Field(..., description="Metric the score refers to")
+
+
 class Recommendation(BaseModel):
     """Recommended upgrade scenario."""
-    selected_scenario_id: str = Field(..., description="ID of recommended scenario")
-    selected_scenario: Scenario = Field(..., description="Complete scenario details")
-    ranked_scenarios: list[tuple[str, float]] = Field(..., description="Scenarios ranked by monthly savings (id, savings)")
-    rationale: str = Field(..., description="Explanation of recommendation")
+    selected_scenario_id: Optional[str] = Field(None, description="ID of recommended scenario (null when no scenario is available)")
+    selected_scenario: Optional[Scenario] = Field(None, description="Complete scenario details")
+    ranked_scenarios: list[RankedScenarioItem] = Field(..., description="Scenarios ranked best-first by metric_used")
+    metric_used: RecommendationMetric = Field(..., description="Ranking metric")
+    rationale: str = Field(..., description="Explanation built only from forecast fields")
+
+
+class PlanResponse(BaseModel):
+    """Forecast and recommendation computed from one engine run."""
+    forecast: ForecastResult = Field(..., description="Forecast result")
+    recommendation: Recommendation = Field(..., description="Recommendation derived from the forecast")
 
 
 class AssessmentResponse(BaseModel):

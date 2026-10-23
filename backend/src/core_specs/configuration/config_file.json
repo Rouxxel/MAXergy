@@ -22,6 +22,10 @@
         "proxy_headers": true
     },
 
+    "recommendation": {
+        "default_metric": "cumulative_central"
+    },
+
     "endpoints": {
         "root_directory_endpoint":{
             "request_limit":25,
@@ -50,6 +54,13 @@
             "unit_of_time_for_limit": "m",
             "endpoint_prefix": "/recommendation",
             "endpoint_tag": "recommendation",
+            "endpoint_route": ""
+        },
+        "maxergy_plan": {
+            "request_limit": 5,
+            "unit_of_time_for_limit": "m",
+            "endpoint_prefix": "/plan",
+            "endpoint_tag": "plan",
             "endpoint_route": ""
         },
         "maxergy_advisor_chat": {
