@@ -153,7 +153,7 @@ The app talks to these endpoints of the MAXergy backend (shapes:
 
 | Method | Path                | Request body          | Response type         | Used by |
 | ------ | ------------------- | --------------------- | --------------------- | ------- |
-| GET    | `/benchmark`        | N/A                   | `BenchmarkData`       | landing |
+| GET    | `/benchmark`        | N/A                   | `BenchmarkData`       | landing (engine-computed benchmark; chart from `cumulative_series`; falls back to the recorded `fixtures/benchmark.json`) |
 | POST   | `/assessment`       | `HouseholdAssessment` | `AssessmentResponse`  | onboarding (`assessment_id` → advisor context) |
 | POST   | `/plan`             | `HouseholdAssessment` | `PlanResponse`        | loading → results / compare |
 | POST   | `/location/enrich`  | `EnrichmentRequest`   | `EnrichmentResponse`  | `postLocationEnrich` (roof/yield pre-fill; 503 when the MCP is off) |
