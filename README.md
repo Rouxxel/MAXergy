@@ -206,9 +206,9 @@ The frontend is a **mobile-first PWA shell** with mocked data, designed to be ea
 
 A milestone is marked ✅ only once it works end to end and is verified.
 
-**Shipped:** UI shell (web + mobile) with mock data, landing page, FastAPI backend, production energy model package (`scripts/energy_model/`) serving `POST /forecast`, recommendation service (`/recommendation`, `/plan`), engine defaults (`/assumptions`), MCP service on the production engine (via `/plan`), location enrichment via the MCP (`/location/enrich`), service-token auth between the services, Railway two-service config (`.railway/railway.ts`), price-model research.
+**Shipped:** UI shell (web + mobile) with mock data, landing page, FastAPI backend, production energy model package (`scripts/energy_model/`) serving `POST /forecast`, recommendation service (`/recommendation`, `/plan`), engine defaults (`/assumptions`), MCP service on the production engine (via `/plan`), location enrichment via the MCP (`/location/enrich`), service-token auth between the services, Railway two-service config (`.railway/railway.ts`), web and mobile frontends on the live API (`POST /plan`, Zod-validated responses, mock mode replays a recorded backend response), price-model research.
 
-**Known limitations today:** the frontend's live mode (`VITE_USE_MOCKS=false`) has type mismatches; the two-service Railway config is written but not yet applied/verified on Railway (owner action, see `documentation/app/DEPLOYMENT.md`); the assessment UI does not use `/location/enrich` yet; the landing page benchmark recommendation is hard-coded.
+**Known limitations today:** the two-service Railway config is written but not yet applied/verified on Railway (owner action, see `documentation/app/DEPLOYMENT.md`); the assessment UI does not use `/location/enrich` yet; the advisor welcome text and the results trust badges ("Live tariffs", "Verified ROI") still overstate what is shipped; the landing page benchmark recommendation is hard-coded.
 
 | Milestone | Status |
 | --------- | ------ |
@@ -217,7 +217,7 @@ A milestone is marked ✅ only once it works end to end and is verified.
 | Recommendation service + `/plan` | ✅ done |
 | MCP rebased onto the production engine | ✅ done |
 | MCP ↔ backend wiring + Railway two-service deploy | ✅ done in code (Railway apply + staging smoke pending) |
-| Frontend & mobile live API alignment | ⏳ planned |
+| Frontend & mobile live API alignment | ✅ done |
 | Assessment input quality (roof/yield pre-fill) | ⏳ planned |
 | Honest savings UX | ⏳ planned |
 | Benchmark & landing computed by the engine | ⏳ planned |

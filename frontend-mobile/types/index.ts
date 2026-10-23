@@ -1,4 +1,10 @@
-// Types matching backend Pydantic schemas from documentation/app/API_CONTRACT.md (model_input1.json / model_output_v2.json)
+// Types matching the backend Pydantic schemas (backend/src/models/forecast_schemas.py),
+// documented in documentation/app/API_CONTRACT.md. Example input: model_input1.json;
+// example output: model_output_v2.json.
+
+// ---------------------------------------------------------------------------
+// Request — HouseholdAssessment
+// ---------------------------------------------------------------------------
 
 export interface Location {
   postcode: string;
@@ -19,6 +25,8 @@ export interface HouseholdRoof {
   orientation: string | null;
   tilt_deg: number | null;
   shading_factor: number | null;
+  /** Site PV yield (e.g. from POST /location/enrich); null → engine regional table. */
+  specific_yield_kwh_per_kwp?: number | null;
 }
 
 export interface Household {
@@ -64,7 +72,7 @@ export interface UpgradeCandidates {
 export interface Financing {
   loan_term_years: number;
   loan_rate_pct: number;
-  known_subsidy_eur: number;
+  known_subsidy_eur: number | null;
 }
 
 export interface ForecastHorizon {
@@ -82,11 +90,20 @@ export interface HouseholdAssessment {
   forecast_horizon: ForecastHorizon;
 }
 
+// ---------------------------------------------------------------------------
+// Response — ForecastResult
+// ---------------------------------------------------------------------------
+
 export interface MonthlyCostEur {
   electricity: number;
   heating: number;
   mobility: number;
   total: number;
+}
+
+/** Scenario costs: `total` includes the loan instalment. */
+export interface ScenarioMonthlyCostEur extends MonthlyCostEur {
+  financing_installment: number;
 }
 
 export interface ShortTermForecastPoint {
@@ -97,6 +114,16 @@ export interface ShortTermForecastPoint {
 export interface LongTermForecastPoint {
   year: number;
   annual_total_eur: number;
+}
+
+export interface ScenarioShortTermForecastPoint extends ShortTermForecastPoint {
+  saving_eur: number;
+}
+
+export interface ScenarioLongTermForecastPoint extends LongTermForecastPoint {
+  annual_saving_eur: number;
+  cumulative_saving_eur?: number | null;
+  scenario?: string | null;
 }
 
 export interface Baseline {
@@ -118,35 +145,95 @@ export interface ScenarioSizing {
   heat_pump_kw: number | null;
 }
 
+export interface LongTermBand {
+  low: ScenarioLongTermForecastPoint[];
+  high: ScenarioLongTermForecastPoint[];
+}
+
+export interface ScenarioFinancials {
+  gross_investment_eur: number;
+  subsidy_eur: number;
+  financed_principal_eur: number;
+  loan_term_months: number;
+  horizon_years: number;
+  cumulative_net_savings_central_eur: number;
+  cumulative_net_savings_low_eur: number;
+  cumulative_net_savings_high_eur: number;
+  break_even_year: number | null;
+}
+
 export interface Scenario {
   id: string;
   components: ScenarioComponents;
   sizing: ScenarioSizing;
-  monthly_cost_eur: MonthlyCostEur;
-  financing_installment_eur: number;
+  monthly_cost_eur: ScenarioMonthlyCostEur;
+  /** Average monthly net saving in year 1, loan instalment included (can be negative). */
   monthly_saving_eur: number;
+  /** Average monthly saving once the loan is repaid (today's prices). */
   monthly_saving_post_payoff_eur: number;
   self_consumption_ratio: number;
   payback_month: number | null;
-  short_term_forecast: ShortTermForecastPoint[];
-  long_term_forecast: LongTermForecastPoint[];
+  short_term_forecast: ScenarioShortTermForecastPoint[];
+  long_term_forecast: ScenarioLongTermForecastPoint[];
+  long_term_band?: LongTermBand | null;
+  financials?: ScenarioFinancials | null;
+}
+
+export interface ModelInfo {
+  name: string;
+  version: string;
+  engine: string;
 }
 
 export interface ForecastResult {
+  model?: ModelInfo | null;
+  assumptions_used?: Record<string, unknown> | null;
+  validation_warnings: string[];
   baseline: Baseline;
   scenarios: Scenario[];
 }
 
+// ---------------------------------------------------------------------------
+// Response — Recommendation / PlanResponse
+// ---------------------------------------------------------------------------
+
+export type RecommendationMetric = "monthly_net" | "cumulative_central";
+
+export interface RankedScenarioItem {
+  id: string;
+  score_eur: number;
+  metric: RecommendationMetric;
+}
+
 export interface Recommendation {
-  selected_scenario: Scenario;
-  ranked_scenarios: Scenario[];
-  reasoning: string;
+  /** null when no scenario is available (e.g. no usable roof). */
+  selected_scenario_id: string | null;
+  selected_scenario: Scenario | null;
+  ranked_scenarios: RankedScenarioItem[];
+  metric_used: RecommendationMetric;
+  rationale: string;
+}
+
+export interface PlanResponse {
+  forecast: ForecastResult;
+  recommendation: Recommendation;
+}
+
+// ---------------------------------------------------------------------------
+// Assessment, advisor, enrichment, benchmark
+// ---------------------------------------------------------------------------
+
+export interface AssessmentResponse {
+  assessment_id: string;
+  status: string;
+  message: string;
 }
 
 export interface AdvisorChatRequest {
   user_message: string;
-  forecast_result: ForecastResult | null;
-  assessment_id: string;
+  forecast_result?: ForecastResult | null;
+  assessment_id?: string | null;
+  conversation_history?: Array<Record<string, unknown>>;
 }
 
 export interface AdvisorChatResponse {
@@ -155,9 +242,28 @@ export interface AdvisorChatResponse {
   suggestions: string[];
 }
 
-export interface AssessmentResponse {
-  id: string;
-  status: string;
+export interface EnrichmentRequest {
+  postcode?: string | null;
+  address?: string | null;
+  country?: "DE";
+}
+
+export interface EnrichmentRoof {
+  usable_area_m2: number | null;
+  tilt_deg: number | null;
+  azimuth_deg: number | null;
+  orientation: string | null;
+  max_array_kwp: number | null;
+  low_confidence: boolean;
+}
+
+export interface EnrichmentResponse {
+  lat: number;
+  lon: number;
+  roof: EnrichmentRoof | null;
+  specific_yield_kwh_per_kwp: number | null;
+  source: { roof: string; pv_yield: string };
+  warnings: string[];
 }
 
 export interface BenchmarkHousehold {

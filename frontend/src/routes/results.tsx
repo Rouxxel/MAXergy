@@ -48,7 +48,7 @@ const scenarioNames: Record<string, string> = {
 };
 
 function Results() {
-  const { forecast, recommendation } = useResultsStore();
+  const { forecast, recommendation, getSelected } = useResultsStore();
   const reset = useAssessmentStore((state) => state.reset);
   const router = useRouter();
 
@@ -79,11 +79,38 @@ function Results() {
     );
   }
 
+  // The scenario picked on the compare screen, else the recommended one.
+  const selectedScenario = getSelected() ?? recommendation.selected_scenario;
+
+  if (!selectedScenario) {
+    return (
+      <AppShell>
+        <header className="mb-6 flex items-center justify-between">
+          <BrandMark />
+        </header>
+        <div className="rounded-2xl border border-border bg-card p-6 text-center">
+          <h1 className="text-lg font-semibold">No upgrade scenario available</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{recommendation.rationale}</p>
+          <Button onClick={handleCreateNewScenario} className="mt-5">
+            Change my answers
+          </Button>
+        </div>
+      </AppShell>
+    );
+  }
+
   const baselineTotal = forecast.baseline.monthly_cost_eur.total;
-  const selectedScenario = recommendation.selected_scenario;
+  // Scenario total includes the loan instalment.
   const scenarioTotal = selectedScenario.monthly_cost_eur.total;
-  const monthlySavings = baselineTotal - scenarioTotal;
-  const futurePct = Math.max(8, Math.round((scenarioTotal / baselineTotal) * 100));
+  // North Star: average monthly net saving in year 1 (current spend − future spend − instalment).
+  const monthlySavings = selectedScenario.monthly_saving_eur;
+  const savesNow = monthlySavings >= 0;
+  const isRecommended = selectedScenario.id === recommendation.selected_scenario_id;
+  const futurePct = Math.max(
+    8,
+    Math.min(100, Math.round((scenarioTotal / Math.max(baselineTotal, 1)) * 100)),
+  );
+  const financials = selectedScenario.financials;
 
   return (
     <AppShell>
@@ -103,11 +130,17 @@ function Results() {
       </header>
 
       <section className="rounded-3xl border border-primary/30 bg-gradient-to-b from-primary/15 to-transparent p-6 text-center">
-        <div className="text-xs uppercase tracking-widest text-primary">You could save</div>
-        <div className="mt-2 text-6xl font-extrabold tracking-tight text-primary tabular-nums">
-          {euro(monthlySavings)}
+        <div className="text-xs uppercase tracking-widest text-primary">
+          {savesNow ? "You could save" : "While the loan runs you pay"}
         </div>
-        <div className="mt-1 text-sm text-muted-foreground">every month</div>
+        <div className="mt-2 text-6xl font-extrabold tracking-tight text-primary tabular-nums">
+          {euro(Math.abs(monthlySavings))}
+        </div>
+        <div className="mt-1 text-sm text-muted-foreground">
+          {savesNow ? "every month" : "more per month"}
+          {" · "}
+          {euro(selectedScenario.monthly_saving_post_payoff_eur)}/month saved after payoff
+        </div>
       </section>
 
       <section className="mt-6 space-y-3">
@@ -175,7 +208,7 @@ function Results() {
             <CostRow
               icon={<DollarSign className="h-4 w-4" />}
               label="Financing"
-              value={euro(selectedScenario.financing_installment_eur)}
+              value={euro(selectedScenario.monthly_cost_eur.financing_installment)}
             />
             <div className="mt-2 border-t border-border pt-2">
               <CostRow
@@ -191,7 +224,7 @@ function Results() {
         <div className="grid grid-cols-2 gap-3">
           <MetricCard
             label="Monthly payment"
-            value={euro(selectedScenario.financing_installment_eur)}
+            value={euro(selectedScenario.monthly_cost_eur.financing_installment)}
             hint="Financing"
           />
           <MetricCard
@@ -216,7 +249,8 @@ function Results() {
 
         <div className="rounded-2xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-            <TrendingUp className="h-3.5 w-3.5" /> Recommended bundle
+            <TrendingUp className="h-3.5 w-3.5" />{" "}
+            {isRecommended ? "Recommended bundle" : "Selected bundle"}
           </div>
           <div className="mt-2 text-lg font-semibold">
             {scenarioNames[selectedScenario.id] || selectedScenario.id}
@@ -243,7 +277,27 @@ function Results() {
               </span>
             )}
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">{recommendation.reasoning}</p>
+          {isRecommended && (
+            <p className="mt-3 text-sm text-muted-foreground">{recommendation.rationale}</p>
+          )}
+          {financials && (
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+              <div>
+                {financials.horizon_years}-year net saving:{" "}
+                <span className="font-semibold text-foreground">
+                  {euro(financials.cumulative_net_savings_central_eur)}
+                </span>
+              </div>
+              <div>
+                Break-even:{" "}
+                <span className="font-semibold text-foreground">
+                  {financials.break_even_year
+                    ? `year ${financials.break_even_year}`
+                    : "not reached"}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-4">

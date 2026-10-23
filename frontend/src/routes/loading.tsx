@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAssessmentStore } from "@/stores/assessmentStore";
 import { useResultsStore } from "@/stores/resultsStore";
 import { useUiStore } from "@/stores/uiStore";
-import { postAssessment, postForecast, postRecommendation } from "@/services/endpoints";
+import { postPlan } from "@/services/endpoints";
 
 export const Route = createFileRoute("/loading")({
   head: () => ({ meta: [{ title: "Calculating — MAXergy" }] }),
@@ -24,25 +24,20 @@ const STAGES = [
 function LoadingScreen() {
   const navigate = useNavigate();
   const getCompleted = useAssessmentStore((s) => s.getCompleted);
-  const setForecast = useResultsStore((s) => s.setForecast);
-  const setRecommendation = useResultsStore((s) => s.setRecommendation);
+  const setPlan = useResultsStore((s) => s.setPlan);
   const setError = useUiStore((s) => s.setError);
   const [stage, setStage] = useState(0);
 
+  // The assessment was already stored by the onboarding screen; one /plan call returns the
+  // forecast and the recommendation from a single engine run.
   const mutation = useMutation({
     mutationFn: async () => {
       const data = getCompleted();
       if (!data) throw new Error("Assessment incomplete");
-      await postAssessment(data);
-      const [forecast, recommendation] = await Promise.all([
-        postForecast(data),
-        postRecommendation(data),
-      ]);
-      return { forecast, recommendation };
+      return postPlan(data);
     },
-    onSuccess: ({ forecast, recommendation }) => {
-      setForecast(forecast);
-      setRecommendation(recommendation);
+    onSuccess: (plan) => {
+      setPlan(plan);
       navigate({ to: "/results" });
     },
     onError: (err: Error) => {

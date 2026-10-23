@@ -1,12 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { ForecastResult, Recommendation, Scenario } from "@/types";
+import type { ForecastResult, PlanResponse, Recommendation, Scenario } from "@/types";
 import { zustandStorage } from "@/lib/storage";
 
 interface ResultsState {
   forecast?: ForecastResult;
   recommendation?: Recommendation;
   selectedScenarioId?: string;
+  setPlan: (plan: PlanResponse) => void;
   setForecast: (f: ForecastResult) => void;
   setRecommendation: (r: Recommendation) => void;
   selectScenario: (id: string) => void;
@@ -14,14 +15,21 @@ interface ResultsState {
   reset: () => void;
 }
 
-type PersistedResultsState = Pick<ResultsState, "forecast" | "recommendation" | "selectedScenarioId">;
-
 export const useResultsStore = create<ResultsState>()(
   persist(
     (set, get) => ({
+      setPlan: ({ forecast, recommendation }) =>
+        set({
+          forecast,
+          recommendation,
+          selectedScenarioId: recommendation.selected_scenario_id ?? undefined,
+        }),
       setForecast: (forecast) => set({ forecast }),
       setRecommendation: (recommendation) =>
-        set({ recommendation, selectedScenarioId: recommendation.selected_scenario.id }),
+        set({
+          recommendation,
+          selectedScenarioId: recommendation.selected_scenario_id ?? undefined,
+        }),
       selectScenario: (selectedScenarioId) => set({ selectedScenarioId }),
       getSelected: () => {
         const { forecast, selectedScenarioId } = get();
@@ -37,7 +45,11 @@ export const useResultsStore = create<ResultsState>()(
     {
       name: "maxergy-results-storage",
       storage: zustandStorage,
-      partialize: (state): PersistedResultsState => ({
+      // v2 = API contract with nested financing, financials and structured ranking.
+      // Results stored by older versions have a different shape and are discarded.
+      version: 2,
+      migrate: () => ({}),
+      partialize: (state) => ({
         forecast: state.forecast,
         recommendation: state.recommendation,
         selectedScenarioId: state.selectedScenarioId,

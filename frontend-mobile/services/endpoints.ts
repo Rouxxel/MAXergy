@@ -2,49 +2,89 @@ import { apiRequest, USE_MOCKS } from "./apiClient";
 import {
   mockAdvisorReply,
   mockAssessmentResponse,
+  mockEnrichment,
   mockForecast,
+  mockPlan,
   mockRecommendation,
 } from "./mocks";
+import {
+  validateAdvisorChatResponse,
+  validateAssessmentResponse,
+  validateEnrichmentResponse,
+  validateForecastResult,
+  validatePlanResponse,
+  validateRecommendation,
+} from "./validation";
 import type {
   AdvisorChatRequest,
   AdvisorChatResponse,
   AssessmentResponse,
+  EnrichmentRequest,
+  EnrichmentResponse,
   ForecastResult,
   HouseholdAssessment,
+  PlanResponse,
   Recommendation,
+  RecommendationMetric,
   BenchmarkData,
 } from "@/types";
 
-const mockDelay = <T,>(value: T, ms = 600) =>
+const mockDelay = <T>(value: T | Promise<T>, ms = 600) =>
   new Promise<T>((r) => setTimeout(() => r(value), ms));
 
-export const postAssessment = (
-  data: HouseholdAssessment,
-): Promise<AssessmentResponse> =>
+const metricQuery = (metric?: RecommendationMetric) => (metric ? `?metric=${metric}` : "");
+
+// Live responses are validated with Zod, so contract drift fails loudly instead of rendering
+// `undefined` fields.
+
+export const postAssessment = (data: HouseholdAssessment): Promise<AssessmentResponse> =>
   USE_MOCKS
     ? mockDelay(mockAssessmentResponse(data), 400)
-    : apiRequest<AssessmentResponse>("/assessment", { method: "POST", body: data });
+    : apiRequest<unknown>("/assessment", { method: "POST", body: data }).then(
+        validateAssessmentResponse,
+      );
 
-export const postForecast = (
+/** Forecast + recommendation from one engine run — what the results flow uses. */
+export const postPlan = (
   data: HouseholdAssessment,
-): Promise<ForecastResult> =>
+  metric?: RecommendationMetric,
+): Promise<PlanResponse> =>
+  USE_MOCKS
+    ? mockDelay(mockPlan(data), 900)
+    : apiRequest<unknown>(`/plan${metricQuery(metric)}`, { method: "POST", body: data }).then(
+        validatePlanResponse,
+      );
+
+export const postForecast = (data: HouseholdAssessment): Promise<ForecastResult> =>
   USE_MOCKS
     ? mockDelay(mockForecast(data), 900)
-    : apiRequest<ForecastResult>("/forecast", { method: "POST", body: data });
+    : apiRequest<unknown>("/forecast", { method: "POST", body: data }).then(validateForecastResult);
 
 export const postRecommendation = (
   data: HouseholdAssessment,
+  metric?: RecommendationMetric,
 ): Promise<Recommendation> =>
   USE_MOCKS
     ? mockDelay(mockRecommendation(data), 700)
-    : apiRequest<Recommendation>("/recommendation", { method: "POST", body: data });
+    : apiRequest<unknown>(`/recommendation${metricQuery(metric)}`, {
+        method: "POST",
+        body: data,
+      }).then(validateRecommendation);
 
-export const postAdvisorChat = (
-  data: AdvisorChatRequest,
-): Promise<AdvisorChatResponse> =>
+/** Coordinates, roof proposal and site PV yield (503 when the MCP service is disabled). */
+export const postLocationEnrich = (data: EnrichmentRequest): Promise<EnrichmentResponse> =>
+  USE_MOCKS
+    ? mockDelay(mockEnrichment(), 500)
+    : apiRequest<unknown>("/location/enrich", { method: "POST", body: data }).then(
+        validateEnrichmentResponse,
+      );
+
+export const postAdvisorChat = (data: AdvisorChatRequest): Promise<AdvisorChatResponse> =>
   USE_MOCKS
     ? mockDelay(mockAdvisorReply(data.user_message), 700)
-    : apiRequest<AdvisorChatResponse>("/advisor/chat", { method: "POST", body: data });
+    : apiRequest<unknown>("/advisor/chat", { method: "POST", body: data }).then(
+        validateAdvisorChatResponse,
+      );
 
 export const getBenchmark = (): Promise<BenchmarkData> =>
   USE_MOCKS

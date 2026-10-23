@@ -1,7 +1,54 @@
+# MAXergy mobile (Expo)
 
+React Native / Expo Router port of the web app (`frontend/`). Types, stores and services mirror
+the web app and the backend API contract
+([`documentation/app/API_CONTRACT.md`](../documentation/app/API_CONTRACT.md)).
 
+## Environment
 
-## commands to run
+| Variable | Purpose |
+| --- | --- |
+| `EXPO_PUBLIC_API_BASE_URL` | Backend base URL (default `http://localhost:8000`; use your machine's LAN IP on a device) |
+| `EXPO_PUBLIC_USE_MOCKS` | `"false"` to call the backend; anything else (or unset) uses mocks |
+| `EXPO_PUBLIC_ENABLE_ANALYTICS` | Analytics toggle |
+
+Same meaning as the web app's `VITE_API_BASE_URL` / `VITE_USE_MOCKS`.
+
+## Data flow
+
+Onboarding posts `POST /assessment` (keeps `assessment_id` for the advisor), the loading screen
+calls **`POST /plan` once** (forecast + recommendation from one engine run) and stores it with
+`resultsStore.setPlan`; results and compare read from the store. Live responses are validated
+with Zod (`services/validation.ts`, Zod 4). `postLocationEnrich` is available for roof/yield
+pre-fill (`POST /location/enrich`).
+
+**Mock mode** replays a recorded backend `/plan` response for the example household
+(`services/fixtures/plan_model_input1.json`, same file as the web app), so mock and live numbers
+match — including a negative monthly figure while the loan runs.
+
+Persisted results use store version 2; results saved by older app versions are discarded.
+
+## Tests
+
+```bash
+npx jest                     # unit tests (__tests__/); Detox e2e tests are excluded
+npx tsc --noEmit --ignoreDeprecations 6.0   # type-check (TS 6, see below)
+```
+
+- `__tests__/planContract.test.ts` validates the recorded `/plan` response and the mocks against
+  the Zod schemas and rejects the old v1 recommendation shape.
+- `__tests__/resultsStore.test.ts` covers `setPlan`, selection and the no-scenario case.
+- Jest uses `tsconfig.jest.json` (JSX `react-jsx`, TS 6 deprecation silenced).
+- Known issue: the component tests (`Button`, `FAQItem`, `FeatureCard`, `StepCard`, `SummaryCard`)
+  fail because `@testing-library/react-native` 14 needs its peer dependency `test-renderer`, which
+  is not installed (and `jest.config.js` maps `test-renderer` to `react-test-renderer`, which lacks
+  `createRoot`).
+- `tsc` needs `"ignoreDeprecations": "6.0"` with TypeScript 6 (Expo's base config uses
+  `moduleResolution: node10` and `baseUrl`): run `npx tsc --noEmit --ignoreDeprecations 6.0`.
+- Detox e2e: `e2e/jest.config.js` (needs a built app and a simulator/emulator).
+
+## Commands used to set up the project
+
 ```bash
     npx expo install expo-router react-native-safe-area-context react-native-screens
     bun add nativewind tailwindcss zustand @tanstack/react-query zod

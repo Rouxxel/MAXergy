@@ -1,153 +1,76 @@
+/**
+ * Mock responses for VITE_USE_MOCKS=true.
+ *
+ * The plan mock is a real backend response: POST /plan for documentation/data/model_input1.json,
+ * recorded from the production engine (fixtures/plan_model_input1.json, same file as
+ * backend/mcp/tests/fixtures/). Mock mode therefore shows the same honest numbers as live mode
+ * for that example household — including negative savings while the loan runs — whatever the
+ * user entered. Re-record the fixture when the API contract changes.
+ */
 import type {
   AdvisorChatResponse,
   AssessmentResponse,
+  EnrichmentResponse,
   ForecastResult,
   HouseholdAssessment,
+  PlanResponse,
   Recommendation,
-  Scenario,
-  ShortTermForecastPoint,
-  LongTermForecastPoint,
-  MonthlyCostEur,
-  Baseline,
 } from "@/types";
+import { validatePlanResponse } from "./validation";
 
-const createForecastPoints = (months: number, baseCost: number): ShortTermForecastPoint[] =>
-  Array.from({ length: months }, (_, i) => ({
-    month: `${2026 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}`,
-    total_eur: baseCost * (1 + 0.03 * (i / 12)), // 3% annual escalation
-  }));
+let planFixture: Promise<PlanResponse> | undefined;
 
-const createLongTermForecastPoints = (years: number, baseCost: number): LongTermForecastPoint[] =>
-  Array.from({ length: years }, (_, i) => ({
-    year: 2026 + i,
-    annual_total_eur: baseCost * 12 * (1 + 0.03 * i), // 3% annual escalation
-  }));
+/** Loaded on first use so the fixture is only bundled into the mock-mode chunk. */
+const loadPlanFixture = (): Promise<PlanResponse> =>
+  (planFixture ??= import("./fixtures/plan_model_input1.json").then((m) =>
+    validatePlanResponse(m.default),
+  ));
 
-const createMonthlyCost = (total: number): MonthlyCostEur => ({
-  electricity: total * 0.4,
-  heating: total * 0.35,
-  mobility: total * 0.25,
-  total,
-});
+export const mockPlan = (_a: HouseholdAssessment): Promise<PlanResponse> => loadPlanFixture();
 
-const scenarios: Scenario[] = [
-  {
-    id: "solar_only",
-    components: { solar_pv: true, battery: false, heat_pump: false, ev_charger: false },
-    sizing: { solar_pv_kwp: 5, battery_kwh: null, heat_pump_kw: null },
-    monthly_cost_eur: createMonthlyCost(245),
-    financing_installment_eur: 120,
-    monthly_saving_eur: 92,
-    monthly_saving_post_payoff_eur: 212,
-    self_consumption_ratio: 0.3,
-    payback_month: 90,
-    short_term_forecast: createForecastPoints(12, 245),
-    long_term_forecast: createLongTermForecastPoints(20, 245),
-  },
-  {
-    id: "pv_battery",
-    components: { solar_pv: true, battery: true, heat_pump: false, ev_charger: false },
-    sizing: { solar_pv_kwp: 5, battery_kwh: 7.5, heat_pump_kw: null },
-    monthly_cost_eur: createMonthlyCost(199),
-    financing_installment_eur: 198,
-    monthly_saving_eur: 138,
-    monthly_saving_post_payoff_eur: 336,
-    self_consumption_ratio: 0.65,
-    payback_month: 85,
-    short_term_forecast: createForecastPoints(12, 199),
-    long_term_forecast: createLongTermForecastPoints(20, 199),
-  },
-  {
-    id: "pv_heatpump",
-    components: { solar_pv: true, battery: false, heat_pump: true, ev_charger: false },
-    sizing: { solar_pv_kwp: 5, battery_kwh: null, heat_pump_kw: 9 },
-    monthly_cost_eur: createMonthlyCost(123),
-    financing_installment_eur: 250,
-    monthly_saving_eur: 214,
-    monthly_saving_post_payoff_eur: 464,
-    self_consumption_ratio: 0.45,
-    payback_month: 77,
-    short_term_forecast: createForecastPoints(12, 123),
-    long_term_forecast: createLongTermForecastPoints(20, 123),
-  },
-  {
-    id: "pv_ev",
-    components: { solar_pv: true, battery: false, heat_pump: false, ev_charger: true },
-    sizing: { solar_pv_kwp: 5, battery_kwh: null, heat_pump_kw: null },
-    monthly_cost_eur: createMonthlyCost(161),
-    financing_installment_eur: 180,
-    monthly_saving_eur: 176,
-    monthly_saving_post_payoff_eur: 356,
-    self_consumption_ratio: 0.4,
-    payback_month: 82,
-    short_term_forecast: createForecastPoints(12, 161),
-    long_term_forecast: createLongTermForecastPoints(20, 161),
-  },
-  {
-    id: "pv_battery_heatpump",
-    components: { solar_pv: true, battery: true, heat_pump: true, ev_charger: false },
-    sizing: { solar_pv_kwp: 5, battery_kwh: 7.5, heat_pump_kw: 9 },
-    monthly_cost_eur: createMonthlyCost(77),
-    financing_installment_eur: 318,
-    monthly_saving_eur: 260,
-    monthly_saving_post_payoff_eur: 578,
-    self_consumption_ratio: 0.75,
-    payback_month: 72,
-    short_term_forecast: createForecastPoints(12, 77),
-    long_term_forecast: createLongTermForecastPoints(20, 77),
-  },
-  {
-    id: "full_upgrade",
-    components: { solar_pv: true, battery: true, heat_pump: true, ev_charger: true },
-    sizing: { solar_pv_kwp: 5, battery_kwh: 7.5, heat_pump_kw: 9 },
-    monthly_cost_eur: createMonthlyCost(41),
-    financing_installment_eur: 439,
-    monthly_saving_eur: 296,
-    monthly_saving_post_payoff_eur: 735,
-    self_consumption_ratio: 0.8,
-    payback_month: 68,
-    short_term_forecast: createForecastPoints(12, 41),
-    long_term_forecast: createLongTermForecastPoints(20, 41),
-  },
-];
+export const mockForecast = async (a: HouseholdAssessment): Promise<ForecastResult> =>
+  (await mockPlan(a)).forecast;
+
+export const mockRecommendation = async (a: HouseholdAssessment): Promise<Recommendation> =>
+  (await mockPlan(a)).recommendation;
 
 export const mockAssessmentResponse = (_a: HouseholdAssessment): AssessmentResponse => ({
-  id: "mock_" + Date.now(),
+  assessment_id: "mock_" + Date.now(),
   status: "created",
+  message: "Assessment stored (mock mode)",
 });
 
-export const mockForecast = (_a: HouseholdAssessment): ForecastResult => {
-  const baseline: Baseline = {
-    monthly_cost_eur: createMonthlyCost(337),
-    short_term_forecast: createForecastPoints(12, 337),
-    long_term_forecast: createLongTermForecastPoints(20, 337),
-  };
+export const mockEnrichment = (): EnrichmentResponse => ({
+  lat: 52.53,
+  lon: 13.38,
+  roof: {
+    usable_area_m2: 40,
+    tilt_deg: 30,
+    azimuth_deg: 180,
+    orientation: "south",
+    max_array_kwp: 6.7,
+    low_confidence: false,
+  },
+  specific_yield_kwh_per_kwp: 980,
+  source: { roof: "google_solar", pv_yield: "pvgis" },
+  warnings: ["Mock mode: example values, not looked up."],
+});
 
-  return {
-    baseline,
-    scenarios,
-  };
+const advisorReplies = {
+  financing:
+    "A longer loan term lowers the monthly instalment but adds interest. Your plan shows the monthly figure while the loan runs and the saving once it is repaid — compare both before choosing a term.",
+  why: "The recommended bundle is the one with the highest long-term net savings in your forecast. Check the rationale on the results page: it lists the instalment, the saving after payoff and the break-even year.",
+  default:
+    "Your recommendation combines the upgrades with the best long-term outcome for your household. If the monthly figure is negative, that is the loan instalment outweighing early savings — the saving after payoff and the cumulative total show the longer view.",
 };
-
-export const mockRecommendation = (_a: HouseholdAssessment): Recommendation => {
-  const selected = scenarios[4]; // pv_battery_heatpump
-  return {
-    selected_scenario: selected,
-    ranked_scenarios: scenarios.sort((a, b) => b.monthly_saving_eur - a.monthly_saving_eur),
-    reasoning:
-      "Based on your household profile, the Solar + Battery + Heat Pump combination offers the best balance of monthly savings and payback period. The battery increases self-consumption to 75%, while the heat pump replaces your most expensive heating fuel.",
-  };
-};
-
-const advisorReplies = [
-  "Your recommendation pairs rooftop solar with a battery and a heat pump. Solar covers daytime load, the battery shifts excess to evening, and the heat pump replaces your most expensive fuel — together they cut your bill by an estimated €260/month.",
-  "We chose this configuration because your heating spend is the largest single line item. Electrifying it with a heat pump powered by your own solar gives the highest return per euro financed.",
-  "Extending your financing term lowers the monthly payment but increases total interest. Most households break even faster on a 6-year term because savings outpace the slightly higher payment.",
-];
 
 export const mockAdvisorReply = (msg: string): AdvisorChatResponse => {
   const lower = msg.toLowerCase();
-  if (lower.includes("financing") || lower.includes("term")) return { reply: advisorReplies[2] };
-  if (lower.includes("why") || lower.includes("config")) return { reply: advisorReplies[1] };
-  return { reply: advisorReplies[0] };
+  const reply =
+    lower.includes("financing") || lower.includes("term") || lower.includes("loan")
+      ? advisorReplies.financing
+      : lower.includes("why") || lower.includes("config")
+        ? advisorReplies.why
+        : advisorReplies.default;
+  return { advisor_message: reply, context_used: ["mock"], suggestions: [] };
 };

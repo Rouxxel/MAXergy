@@ -26,7 +26,7 @@ const scenarioNames: Record<string, string> = {
 
 export default function Results() {
   const router = useRouter();
-  const { forecast, recommendation } = useResultsStore();
+  const { forecast, recommendation, getSelected } = useResultsStore();
   const reset = useAssessmentStore((state) => state.reset);
 
   const handleCreateNewScenario = () => {
@@ -54,11 +54,36 @@ export default function Results() {
     );
   }
 
+  // The scenario picked on the compare screen, else the recommended one.
+  const selectedScenario = getSelected() ?? recommendation.selected_scenario;
+
+  if (!selectedScenario) {
+    return (
+      <View className="flex-1 bg-background">
+        <Header />
+        <View className="flex-1 items-center justify-center p-6 text-center space-y-4">
+          <Text className="text-lg font-semibold text-foreground">No upgrade scenario available</Text>
+          <Text className="text-sm text-muted-foreground text-center">{recommendation.rationale}</Text>
+          <Button onPress={handleCreateNewScenario} className="bg-primary text-primary-foreground mt-4">
+            Change my answers
+          </Button>
+        </View>
+      </View>
+    );
+  }
+
   const baselineTotal = forecast.baseline.monthly_cost_eur.total;
-  const selectedScenario = recommendation.selected_scenario;
+  // Scenario total includes the loan instalment.
   const scenarioTotal = selectedScenario.monthly_cost_eur.total;
-  const monthlySavings = baselineTotal - scenarioTotal;
-  const futurePct = Math.max(8, Math.round((scenarioTotal / baselineTotal) * 100));
+  // North Star: average monthly net saving in year 1 (current spend − future spend − instalment).
+  const monthlySavings = selectedScenario.monthly_saving_eur;
+  const savesNow = monthlySavings >= 0;
+  const isRecommended = selectedScenario.id === recommendation.selected_scenario_id;
+  const futurePct = Math.max(
+    8,
+    Math.min(100, Math.round((scenarioTotal / Math.max(baselineTotal, 1)) * 100)),
+  );
+  const financials = selectedScenario.financials;
 
   return (
     <View className="flex-1 bg-background">
@@ -88,12 +113,15 @@ export default function Results() {
         {/* You could save card */}
         <View className="rounded-3xl border border-primary/30 bg-gradient-to-b from-primary/10 to-transparent p-6 items-center mb-6">
           <Text className="text-xs uppercase tracking-widest text-primary font-bold">
-            You could save
+            {savesNow ? "You could save" : "While the loan runs you pay"}
           </Text>
           <Text className="mt-2 text-5xl font-extrabold tracking-tight text-primary">
-            {euro(monthlySavings)}
+            {euro(Math.abs(monthlySavings))}
           </Text>
-          <Text className="mt-1 text-sm text-muted-foreground">every month</Text>
+          <Text className="mt-1 text-sm text-muted-foreground text-center">
+            {savesNow ? "every month" : "more per month"} ·{" "}
+            {euro(selectedScenario.monthly_saving_post_payoff_eur)}/month saved after payoff
+          </Text>
         </View>
 
         {/* Now vs After Bars */}
@@ -139,7 +167,7 @@ export default function Results() {
               <CostRow icon={<Zap size={15} className="text-muted-foreground" />} label="Electricity" value={euro(selectedScenario.monthly_cost_eur.electricity)} />
               <CostRow icon={<Flame size={15} className="text-muted-foreground" />} label="Heating" value={euro(selectedScenario.monthly_cost_eur.heating)} />
               <CostRow icon={<Car size={15} className="text-muted-foreground" />} label="Mobility" value={euro(selectedScenario.monthly_cost_eur.mobility)} />
-              <CostRow icon={<DollarSign size={15} className="text-muted-foreground" />} label="Financing" value={euro(selectedScenario.financing_installment_eur)} />
+              <CostRow icon={<DollarSign size={15} className="text-muted-foreground" />} label="Financing" value={euro(selectedScenario.monthly_cost_eur.financing_installment)} />
               <View className="mt-2 border-t border-border pt-2">
                 <CostRow icon={<DollarSign size={15} className="text-foreground" />} label="Total" value={euro(selectedScenario.monthly_cost_eur.total)} bold />
               </View>
@@ -151,7 +179,7 @@ export default function Results() {
             <View className="w-[48%] mb-3">
               <MetricCard
                 label="Monthly payment"
-                value={euro(selectedScenario.financing_installment_eur)}
+                value={euro(selectedScenario.monthly_cost_eur.financing_installment)}
                 hint="Financing"
               />
             </View>
@@ -184,7 +212,7 @@ export default function Results() {
             <View className="flex-row items-center space-x-1.5 mb-2">
               <TrendingUp size={15} className="text-muted-foreground" />
               <Text className="text-xs uppercase tracking-wider text-muted-foreground font-semibold ml-1">
-                Recommended bundle
+                {isRecommended ? "Recommended bundle" : "Selected bundle"}
               </Text>
             </View>
             <Text className="text-lg font-bold text-foreground">
@@ -220,9 +248,18 @@ export default function Results() {
                 </View>
               )}
             </View>
-            <Text className="mt-3 text-sm text-muted-foreground leading-relaxed">
-              {recommendation.reasoning}
-            </Text>
+            {isRecommended && (
+              <Text className="mt-3 text-sm text-muted-foreground leading-relaxed">
+                {recommendation.rationale}
+              </Text>
+            )}
+            {financials && (
+              <Text className="mt-3 text-xs text-muted-foreground">
+                {financials.horizon_years}-year net saving:{" "}
+                {euro(financials.cumulative_net_savings_central_eur)} · Break-even:{" "}
+                {financials.break_even_year ? `year ${financials.break_even_year}` : "not reached"}
+              </Text>
+            )}
           </View>
 
           {/* Short term forecast chart */}

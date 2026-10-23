@@ -1,6 +1,6 @@
 # MAXergy - Energy Transition Planner (Frontend)
 
-MAXergy is an AI-powered home-energy upgrade planner for German households. This repository is the **mobile-first web shell** of the product: a fully navigable UI built with mocked data, ready to be wired to a real backend and later ported to React Native.
+MAXergy is an AI-powered home-energy upgrade planner for German households. This folder is the **mobile-first web app**: a fully navigable UI wired to the MAXergy FastAPI backend (`POST /plan`), with a mock mode that replays a recorded backend response.
 
 The shell intentionally keeps all business logic out of components. Data fetching goes through a thin service layer, state lives in Zustand stores, and types are centralized — so swapping mocks for a real API (or porting to Expo) is a localized change.
 
@@ -50,8 +50,16 @@ npm run preview            # serve the production build locally
 
 | Variable            | Default                 | Purpose                                                          |
 | ------------------- | ----------------------- | ---------------------------------------------------------------- |
-| `VITE_API_BASE_URL` | `http://localhost:8000` | Base URL of the FastAPI (or any) backend, no trailing slash.     |
-| `VITE_USE_MOCKS`    | `true`                  | When `true`, all endpoints resolve from `src/services/mocks.ts`. |
+| `VITE_API_BASE_URL` | `http://localhost:8000` | Base URL of the FastAPI backend, no trailing slash.              |
+| `VITE_DEPLOYED_API_BASE_URL` | unset          | Deployed backend URL; overrides `VITE_API_BASE_URL` when set.    |
+| `VITE_USE_MOCKS`    | `true` (when unset)     | When `true`, all endpoints resolve from `src/services/mocks.ts`. |
+
+**Mock policy:** mock mode replays a real `POST /plan` response for the example household
+(`documentation/data/model_input1.json`), stored in `src/services/fixtures/plan_model_input1.json`
+(loaded lazily, so it is only bundled into the mock-mode chunk). It shows the same numbers as the
+live backend for that household — including a negative monthly figure while the loan runs —
+regardless of what was entered. Re-record the fixture when the API contract changes (POST
+`backend/tests/fixtures/model_input1.json` to `/plan` and save the JSON).
 
 Deploying to Render / Railway: set the same two env vars in the host's
 dashboard. Anything prefixed `VITE_` is inlined at build time, so rebuild
@@ -67,7 +75,7 @@ src/
 │   ├── __root.tsx           # HTML shell, fonts, global providers
 │   ├── index.tsx            # / — onboarding (9-step assessment)
 │   ├── landing.tsx          # /landing — marketing landing page
-│   ├── loading.tsx          # /loading — runs forecast mutation
+│   ├── loading.tsx          # /loading — one POST /plan (forecast + recommendation)
 │   ├── results.tsx          # /results — savings + ROI summary
 │   ├── compare.tsx          # /compare — scenario comparison
 │   └── advisor.tsx          # /advisor — chat with the AI advisor
@@ -84,12 +92,14 @@ src/
 │   └── ui/                  # shadcn primitives (button, slider, …)
 ├── services/
 │   ├── apiClient.ts         # fetch wrapper, retries, USE_MOCKS flag
-│   ├── endpoints.ts         # 5 typed methods (the API surface)
+│   ├── endpoints.ts         # typed API methods; live responses validated with Zod
 │   ├── analytics.ts         # Analytics tracking service
-│   └── mocks.ts             # Local fixtures used when VITE_USE_MOCKS=true
+│   ├── validation.ts        # Zod schemas (assessment steps + every response)
+│   ├── fixtures/            # Recorded backend responses for mock mode
+│   └── mocks.ts             # Mock responses used when VITE_USE_MOCKS=true
 ├── stores/
 │   ├── assessmentStore.ts   # Onboarding draft + validation
-│   ├── resultsStore.ts      # Forecast result + selected scenario
+│   ├── resultsStore.ts      # Plan (forecast + recommendation) + selected scenario
 │   └── uiStore.ts           # Global error/toast state
 ├── types/index.ts           # All cross-cutting TS types
 ├── styles.css               # Tailwind v4 theme tokens (MAXergy palette)
@@ -118,11 +128,18 @@ The MAXergy palette is defined as CSS variables in `src/styles.css`:
          ┌────────────┴────────────┐
          ▼                         ▼
   services/mocks.ts        services/apiClient.ts
-   (USE_MOCKS=true)         (real backend fetch)
+   (USE_MOCKS=true;         (real backend fetch)
+    recorded /plan)                │
+                                   ▼
+                          MAXergy FastAPI backend
                                    │
                                    ▼
-                          FastAPI / your backend
+                     services/validation.ts (Zod) → stores → screens
 ```
+
+Results flow: onboarding submits `POST /assessment` (stores `assessment_id`), `/loading` calls
+**`POST /plan` once** (forecast + recommendation from a single engine run) and saves both in
+`resultsStore`; `/results` and `/compare` read from the store.
 
 Screens never call `fetch` directly. They call functions from
 `services/endpoints.ts` (usually through `useMutation` / `useQuery`).
@@ -131,19 +148,28 @@ Screens never call `fetch` directly. They call functions from
 
 ## 5. Wiring the real backend
 
-The shell talks to five endpoints. Implement them in your backend and the UI
-lights up — no component changes required.
+The app talks to these endpoints of the MAXergy backend (shapes:
+[`documentation/app/API_CONTRACT.md`](../documentation/app/API_CONTRACT.md)):
 
-| Method | Path              | Request body          | Response type         |
-| ------ | ----------------- | --------------------- | --------------------- |
-| GET    | `/benchmark`      | N/A                   | `BenchmarkData`       |
-| POST   | `/assessment`     | `HouseholdAssessment` | `AssessmentResponse`  |
-| POST   | `/forecast`       | `HouseholdAssessment` | `ForecastResult`      |
-| POST   | `/recommendation` | `HouseholdAssessment` | `Recommendation`      |
-| POST   | `/advisor/chat`   | `AdvisorChatRequest`  | `AdvisorChatResponse` |
+| Method | Path                | Request body          | Response type         | Used by |
+| ------ | ------------------- | --------------------- | --------------------- | ------- |
+| GET    | `/benchmark`        | N/A                   | `BenchmarkData`       | landing |
+| POST   | `/assessment`       | `HouseholdAssessment` | `AssessmentResponse`  | onboarding (`assessment_id` → advisor context) |
+| POST   | `/plan`             | `HouseholdAssessment` | `PlanResponse`        | loading → results / compare |
+| POST   | `/location/enrich`  | `EnrichmentRequest`   | `EnrichmentResponse`  | `postLocationEnrich` (roof/yield pre-fill; 503 when the MCP is off) |
+| POST   | `/advisor/chat`     | `AdvisorChatRequest`  | `AdvisorChatResponse` | advisor |
 
-All request/response shapes live in `src/types/index.ts` — treat that file as
-the contract between FE and BE.
+`postForecast` and `postRecommendation` still exist for single calls, but the results flow uses
+`postPlan`. `src/types/index.ts` mirrors the backend Pydantic schemas and `src/services/validation.ts`
+validates every live response with Zod, so a contract change fails with a clear error instead of
+rendering `undefined`.
+
+Key fields: a scenario's loan instalment is `monthly_cost_eur.financing_installment` (included in
+`monthly_cost_eur.total`); `monthly_saving_eur` is the average monthly net saving in year 1 with the
+instalment (can be negative); `monthly_saving_post_payoff_eur` is the saving after the loan;
+`financials` holds cumulative net savings and the break-even year. The recommendation provides
+`selected_scenario_id` (null when no scenario is possible), `ranked_scenarios` (`{id, score_eur,
+metric}`), `metric_used` and `rationale`.
 
 ### Switching mocks off
 
@@ -155,21 +181,23 @@ the contract between FE and BE.
    ```
 3. Restart the dev server.
 
-`apiClient.ts` handles JSON encoding, error parsing, and one retry on network
-failure. CORS must be enabled on the backend for the frontend origin.
+`apiClient.ts` handles JSON encoding, error parsing, and retries on network/5xx
+failure. The backend's `CORS_ORIGINS` must include the frontend origin.
 
 ### Adding/changing an endpoint
 
 1. Add or update the type in `src/types/index.ts`.
-2. Add a mock in `src/services/mocks.ts` (so the UI keeps working offline).
-3. Add a wrapper in `src/services/endpoints.ts`:
+2. Add a Zod schema in `src/services/validation.ts` (`satisfies z.ZodType<FooResponse, …>`).
+3. Add a mock in `src/services/mocks.ts` (so the UI keeps working offline), ideally a recorded
+   backend response.
+4. Add a wrapper in `src/services/endpoints.ts`:
    ```ts
    export const postFoo = (data: FooRequest): Promise<FooResponse> =>
      USE_MOCKS
        ? mockDelay(mockFoo(data))
-       : apiRequest<FooResponse>("/foo", { method: "POST", body: data });
+       : apiRequest<unknown>("/foo", { method: "POST", body: data }).then(validateFoo);
    ```
-4. Consume it from a screen with `useMutation` / `useQuery`.
+5. Consume it from a screen with `useMutation` / `useQuery`.
 
 ---
 
@@ -294,7 +322,7 @@ Pages that don't belong in the tab bar (modals, full-screen flows like
 | Store             | Holds                                      | When to use              |
 | ----------------- | ------------------------------------------ | ------------------------ |
 | `assessmentStore` | Draft onboarding answers + validity        | Anywhere in the wizard   |
-| `resultsStore`    | Latest `ForecastResult`, selected scenario | Results / Compare        |
+| `resultsStore`    | Latest plan (`forecast`, `recommendation`), selected scenario (persisted, version 2) | Results / Compare |
 | `uiStore`         | Global error banner                        | Top-level error handling |
 
 Create new stores in `src/stores/` and follow the same pattern:

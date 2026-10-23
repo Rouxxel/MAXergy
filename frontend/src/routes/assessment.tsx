@@ -109,7 +109,7 @@ function Onboarding() {
   const submitAssessment = useMutation({
     mutationFn: postAssessment,
     onSuccess: (data) => {
-      setSubmittedId(data.id);
+      setSubmittedId(data.assessment_id);
       navigate({ to: "/loading" });
     },
     onError: (error) => {

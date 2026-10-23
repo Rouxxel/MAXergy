@@ -96,7 +96,7 @@ export default function Onboarding() {
   const submitAssessment = useMutation({
     mutationFn: postAssessment,
     onSuccess: (data) => {
-      setSubmittedId(data.id);
+      setSubmittedId(data.assessment_id);
       router.push("/loading");
     },
     onError: (error) => {

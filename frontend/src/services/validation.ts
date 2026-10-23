@@ -3,9 +3,11 @@ import type {
   HouseholdAssessment,
   ForecastResult,
   Recommendation,
+  PlanResponse,
   AdvisorChatRequest,
   AdvisorChatResponse,
   AssessmentResponse,
+  EnrichmentResponse,
 } from "@/types";
 
 // Location schema
@@ -174,7 +176,7 @@ const UpgradeCandidatesSchema = z.object({
 const FinancingSchema = z.object({
   loan_term_years: z.number().min(1).max(30),
   loan_rate_pct: z.number().min(0).max(100),
-  known_subsidy_eur: z.number().min(0),
+  known_subsidy_eur: z.number().min(0).nullable(),
 });
 
 // Forecast horizon schema
@@ -194,12 +196,16 @@ export const HouseholdAssessmentSchema = z.object({
   forecast_horizon: ForecastHorizonSchema,
 }) satisfies z.ZodType<HouseholdAssessment>;
 
-// Forecast result schemas
+// Forecast result schemas (backend ForecastResult; unknown keys are stripped)
 const MonthlyCostEurSchema = z.object({
   electricity: z.number(),
   heating: z.number(),
   mobility: z.number(),
   total: z.number(),
+});
+
+const ScenarioMonthlyCostEurSchema = MonthlyCostEurSchema.extend({
+  financing_installment: z.number(),
 });
 
 const ShortTermForecastPointSchema = z.object({
@@ -210,6 +216,16 @@ const ShortTermForecastPointSchema = z.object({
 const LongTermForecastPointSchema = z.object({
   year: z.number(),
   annual_total_eur: z.number(),
+});
+
+const ScenarioShortTermForecastPointSchema = ShortTermForecastPointSchema.extend({
+  saving_eur: z.number(),
+});
+
+const ScenarioLongTermForecastPointSchema = LongTermForecastPointSchema.extend({
+  annual_saving_eur: z.number(),
+  cumulative_saving_eur: z.number().nullish(),
+  scenario: z.string().nullish(),
 });
 
 const BaselineSchema = z.object({
@@ -231,57 +247,103 @@ const ScenarioSizingSchema = z.object({
   heat_pump_kw: z.number().nullable(),
 });
 
+const ScenarioFinancialsSchema = z.object({
+  gross_investment_eur: z.number(),
+  subsidy_eur: z.number(),
+  financed_principal_eur: z.number(),
+  loan_term_months: z.number(),
+  horizon_years: z.number(),
+  cumulative_net_savings_central_eur: z.number(),
+  cumulative_net_savings_low_eur: z.number(),
+  cumulative_net_savings_high_eur: z.number(),
+  break_even_year: z.number().nullable(),
+});
+
 const ScenarioSchema = z.object({
   id: z.string(),
   components: ScenarioComponentsSchema,
   sizing: ScenarioSizingSchema,
-  monthly_cost_eur: MonthlyCostEurSchema,
-  financing_installment_eur: z.number(),
+  monthly_cost_eur: ScenarioMonthlyCostEurSchema,
   monthly_saving_eur: z.number(),
   monthly_saving_post_payoff_eur: z.number(),
   self_consumption_ratio: z.number(),
   payback_month: z.number().nullable(),
-  short_term_forecast: z.array(ShortTermForecastPointSchema),
-  long_term_forecast: z.array(LongTermForecastPointSchema),
+  short_term_forecast: z.array(ScenarioShortTermForecastPointSchema),
+  long_term_forecast: z.array(ScenarioLongTermForecastPointSchema),
+  long_term_band: z
+    .object({
+      low: z.array(ScenarioLongTermForecastPointSchema),
+      high: z.array(ScenarioLongTermForecastPointSchema),
+    })
+    .nullish(),
+  financials: ScenarioFinancialsSchema.nullish(),
 });
 
 export const ForecastResultSchema = z.object({
+  model: z.object({ name: z.string(), version: z.string(), engine: z.string() }).nullish(),
+  assumptions_used: z.record(z.unknown()).nullish(),
+  validation_warnings: z.array(z.string()).default([]),
   baseline: BaselineSchema,
   scenarios: z.array(ScenarioSchema),
-}) satisfies z.ZodType<ForecastResult>;
+}) satisfies z.ZodType<ForecastResult, z.ZodTypeDef, unknown>;
 
-// Recommendation schema
+// Recommendation / plan schemas
+const RecommendationMetricSchema = z.enum(["monthly_net", "cumulative_central"]);
+
 export const RecommendationSchema = z.object({
-  selected_scenario: ScenarioSchema,
-  ranked_scenarios: z.array(ScenarioSchema),
-  reasoning: z.string(),
-}) satisfies z.ZodType<Recommendation>;
+  selected_scenario_id: z.string().nullable(),
+  selected_scenario: ScenarioSchema.nullable(),
+  ranked_scenarios: z.array(
+    z.object({ id: z.string(), score_eur: z.number(), metric: RecommendationMetricSchema }),
+  ),
+  metric_used: RecommendationMetricSchema,
+  rationale: z.string(),
+}) satisfies z.ZodType<Recommendation, z.ZodTypeDef, unknown>;
+
+export const PlanResponseSchema = z.object({
+  forecast: ForecastResultSchema,
+  recommendation: RecommendationSchema,
+}) satisfies z.ZodType<PlanResponse, z.ZodTypeDef, unknown>;
 
 // Advisor chat schemas
-const AdvisorMessageSchema = z.object({
-  id: z.string(),
-  role: z.enum(["user", "assistant"]),
-  content: z.string(),
-  createdAt: z.number(),
-});
-
 export const AdvisorChatRequestSchema = z.object({
-  user_message: z.string().min(1),
-  forecast_result: z.null(),
-  assessment_id: z.string(),
-}) satisfies z.ZodType<AdvisorChatRequest>;
+  user_message: z.string().min(1).max(1000),
+  forecast_result: ForecastResultSchema.nullish(),
+  assessment_id: z.string().nullish(),
+  conversation_history: z.array(z.record(z.unknown())).max(20).optional(),
+}) satisfies z.ZodType<AdvisorChatRequest, z.ZodTypeDef, unknown>;
 
 export const AdvisorChatResponseSchema = z.object({
   advisor_message: z.string(),
-  context_used: z.array(z.string()),
-  suggestions: z.array(z.string()),
-}) satisfies z.ZodType<AdvisorChatResponse>;
+  context_used: z.array(z.string()).default([]),
+  suggestions: z.array(z.string()).default([]),
+}) satisfies z.ZodType<AdvisorChatResponse, z.ZodTypeDef, unknown>;
 
 // Assessment response schema
 export const AssessmentResponseSchema = z.object({
-  id: z.string(),
+  assessment_id: z.string(),
   status: z.string(),
-}) satisfies z.ZodType<AssessmentResponse>;
+  message: z.string(),
+}) satisfies z.ZodType<AssessmentResponse, z.ZodTypeDef, unknown>;
+
+// Location enrichment schema
+export const EnrichmentResponseSchema = z.object({
+  lat: z.number(),
+  lon: z.number(),
+  roof: z
+    .object({
+      usable_area_m2: z.number().nullable(),
+      tilt_deg: z.number().nullable(),
+      azimuth_deg: z.number().nullable(),
+      orientation: z.string().nullable(),
+      max_array_kwp: z.number().nullable(),
+      low_confidence: z.boolean(),
+    })
+    .nullable(),
+  specific_yield_kwh_per_kwp: z.number().nullable(),
+  source: z.object({ roof: z.string(), pv_yield: z.string() }),
+  warnings: z.array(z.string()).default([]),
+}) satisfies z.ZodType<EnrichmentResponse, z.ZodTypeDef, unknown>;
 
 // Validation functions
 export function validateHouseholdAssessment(data: unknown): HouseholdAssessment {
@@ -296,6 +358,10 @@ export function validateRecommendation(data: unknown): Recommendation {
   return RecommendationSchema.parse(data);
 }
 
+export function validatePlanResponse(data: unknown): PlanResponse {
+  return PlanResponseSchema.parse(data);
+}
+
 export function validateAdvisorChatRequest(data: unknown): AdvisorChatRequest {
   return AdvisorChatRequestSchema.parse(data);
 }
@@ -306,4 +372,8 @@ export function validateAdvisorChatResponse(data: unknown): AdvisorChatResponse 
 
 export function validateAssessmentResponse(data: unknown): AssessmentResponse {
   return AssessmentResponseSchema.parse(data);
+}
+
+export function validateEnrichmentResponse(data: unknown): EnrichmentResponse {
+  return EnrichmentResponseSchema.parse(data);
 }

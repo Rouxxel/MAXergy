@@ -25,7 +25,7 @@ const scenarioNames: Record<string, string> = {
 
 export default function Compare() {
   const router = useRouter();
-  const { forecast, selectedScenarioId, selectScenario } = useResultsStore();
+  const { forecast, recommendation, selectedScenarioId, selectScenario } = useResultsStore();
   const [sortDesc, setSortDesc] = useState(true);
   const [openId, setOpenId] = useState<string | undefined>(selectedScenarioId);
 
@@ -38,11 +38,8 @@ export default function Compare() {
     );
   }, [forecast, sortDesc]);
 
-  const recommendedId = useMemo(() => {
-    if (!forecast) return undefined;
-    const top = [...forecast.scenarios].sort((a, b) => b.monthly_saving_eur - a.monthly_saving_eur)[0];
-    return top?.id;
-  }, [forecast]);
+  // Same pick as the backend ranking (default: long-term net savings), not re-derived here.
+  const recommendedId = recommendation?.selected_scenario_id ?? undefined;
 
   if (!forecast) {
     return (
@@ -174,7 +171,7 @@ export default function Compare() {
                     
                     <View className="flex-row justify-between space-x-2">
                       <View className="flex-1">
-                        <Stat label="Monthly pay" value={euro(s.financing_installment_eur)} />
+                        <Stat label="Monthly pay" value={euro(s.monthly_cost_eur.financing_installment)} />
                       </View>
                       <View className="flex-1 mx-1">
                         <Stat label="Self-use" value={`${(s.self_consumption_ratio * 100).toFixed(0)}%`} />
