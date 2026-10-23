@@ -8,6 +8,6 @@
 builder = "railpack"
 
 [deploy]
-startCommand = "uv run maxergy-mcp"
+startCommand = "uv run --no-dev maxergy-mcp"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
