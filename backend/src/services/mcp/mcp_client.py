@@ -34,6 +34,9 @@ ALLOWED_TOOLS = frozenset({
 })
 
 
+ALLOWED_PROMPTS = frozenset({"maxergy_advisor"})
+
+
 class McpUnavailable(RuntimeError):
     """The MCP is disabled, unreachable, or rejected our credentials."""
 
@@ -63,22 +66,18 @@ class McpClient:
         self._session = session or requests.Session()
         self._ids = itertools.count(1)
 
-    def call_tool(self, name: str, arguments: dict) -> dict:
-        """Call an allow-listed MCP tool and return its structured result."""
-        if name not in ALLOWED_TOOLS:
-            raise ValueError(f"MCP tool '{name}' is not allowed from the backend")
+    def _rpc(self, method: str, params: dict, label: str) -> dict:
+        """One JSON-RPC request to the MCP; returns the `result` object."""
         if not self.enabled:
             raise McpUnavailable("MCP enrichment is disabled (MCP_ENABLED / MCP_BASE_URL)")
-
         headers = {"Accept": "application/json, text/event-stream", "Content-Type": "application/json"}
         if self.token:
             headers["Authorization"] = f"Bearer {self.token}"
-        payload = {"jsonrpc": "2.0", "id": next(self._ids), "method": "tools/call",
-                   "params": {"name": name, "arguments": arguments}}
+        payload = {"jsonrpc": "2.0", "id": next(self._ids), "method": method, "params": params}
         try:
             resp = self._session.post(self.url, json=payload, headers=headers, timeout=self.timeout)
         except requests.RequestException as e:
-            log_handler.warning("[mcp_client] %s unreachable: %s", name, type(e).__name__)
+            log_handler.warning("[mcp_client] %s unreachable: %s", label, type(e).__name__)
             raise McpUnavailable("MCP service unreachable") from e
 
         if resp.status_code in (401, 403):
@@ -89,7 +88,28 @@ class McpClient:
         message = self._parse(resp)
         if "error" in message:
             raise McpToolError(message["error"].get("message", "MCP error"))
-        result = message.get("result", {})
+        return message.get("result", {})
+
+    def get_prompt(self, name: str) -> str:
+        """Text of an allow-listed MCP prompt (e.g. the shared onboarding script)."""
+        if name not in ALLOWED_PROMPTS:
+            raise ValueError(f"MCP prompt '{name}' is not allowed from the backend")
+        result = self._rpc("prompts/get", {"name": name, "arguments": {}}, f"prompt {name}")
+        texts = [
+            m.get("content", {}).get("text", "")
+            for m in result.get("messages", [])
+            if isinstance(m.get("content"), dict)
+        ]
+        text = "\n".join(t for t in texts if t)
+        if not text:
+            raise McpToolError(f"MCP prompt '{name}' is empty")
+        return text
+
+    def call_tool(self, name: str, arguments: dict) -> dict:
+        """Call an allow-listed MCP tool and return its structured result."""
+        if name not in ALLOWED_TOOLS:
+            raise ValueError(f"MCP tool '{name}' is not allowed from the backend")
+        result = self._rpc("tools/call", {"name": name, "arguments": arguments}, name)
         text = " ".join(c.get("text", "") for c in result.get("content", []) if c.get("type") == "text")
         if result.get("isError"):
             raise McpToolError(text or f"MCP tool '{name}' failed")

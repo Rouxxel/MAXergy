@@ -9,8 +9,9 @@
 POST /advisor/chat endpoint for AI advisor interactions.
 """
 
-import os
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import JSONResponse
 
 from src.utils.custom_logger import log_handler
 from src.utils.limiter import endpoint_limit, limiter as SlowLimiter
@@ -18,8 +19,10 @@ from src.core_specs.configuration.config_loader import config_loader
 from src.models.forecast_schemas import (
     AdvisorChatRequest,
     AdvisorChatResponse,
+    PlanResponse,
 )
-from src.services.llm.gemini_service import get_gemini_service
+from src.services.llm.gemini_service import AdvisorUnavailable, get_gemini_service
+from src.services.recommendation.recommendation_service import build_recommendation
 from src.utils.timeout import timeout
 from src.utils.sanitize import sanitize_prompt
 
@@ -29,55 +32,58 @@ router = APIRouter(
 )
 
 
+def _plan_for(chat_request: AdvisorChatRequest) -> PlanResponse | None:
+    """The plan to ground the answer in; the deprecated `forecast_result` gets its recommendation here."""
+    if chat_request.plan is not None:
+        return chat_request.plan
+    if chat_request.forecast_result is not None:
+        forecast = chat_request.forecast_result
+        return PlanResponse(forecast=forecast, recommendation=build_recommendation(forecast))
+    return None
+
+
 @router.post(config_loader["endpoints"]["maxergy_advisor_chat"]["endpoint_route"])
 @SlowLimiter.limit(endpoint_limit("maxergy_advisor_chat"))
-@timeout(seconds=20)
-async def advisor_chat(request: Request, chat_request: AdvisorChatRequest) -> Response:
+@timeout(seconds=45)
+async def advisor_chat(request: Request, chat_request: AdvisorChatRequest) -> JSONResponse:
     """
-    Chat with the AI advisor about energy upgrades.
-    
-    This endpoint provides AI-powered advice on energy efficiency upgrades,
-    financing options, and optimization strategies.
-    
+    Chat with the AI advisor.
+
+    With `plan`, the advisor explains that plan (numbers only from the plan). Without a plan it
+    runs the shared onboarding script and, once the answers are complete, returns the computed
+    `assessment` and `plan` (same services as POST /plan).
+
     Parameters:
         request (Request): Incoming HTTP request (required by rate limiter).
-        chat_request (AdvisorChatRequest): Chat request with context.
-    
+        chat_request (AdvisorChatRequest): Message, optional plan and conversation history.
+
     Returns:
-        Response: AI advisor response with suggestions.
+        JSONResponse: AdvisorChatResponse.
 
     Raises:
-        HTTPException: If advisor API is not configured or request fails.
+        HTTPException: 503 when the advisor is not configured or Gemini is unavailable; 500 otherwise.
     """
+    log_handler.info("[advisor_router] AI advisor chat request for assessment %s", chat_request.assessment_id)
+    message = sanitize_prompt(chat_request.user_message, max_length=1000)
     try:
-        gemini_service = get_gemini_service()
-
-        log_handler.info("[advisor_router] AI advisor chat request for assessment %s", chat_request.assessment_id)
-
-        # Sanitize user message to prevent injection attacks
-        sanitized_message = sanitize_prompt(chat_request.user_message, max_length=1000)
-
-        # Convert forecast_result to dict if it's a Pydantic model
-        forecast_dict = None
-        if chat_request.forecast_result:
-            forecast_dict = chat_request.forecast_result.model_dump() if hasattr(chat_request.forecast_result, 'model_dump') else chat_request.forecast_result
-
-        response = gemini_service.generate_advice(
-            user_message=sanitized_message,
-            forecast_result=forecast_dict,
+        result = await run_in_threadpool(
+            get_gemini_service().generate_advice,
+            user_message=message,
+            plan=_plan_for(chat_request),
+            history=chat_request.conversation_history,
             assessment_id=chat_request.assessment_id,
         )
-
-        from fastapi.responses import JSONResponse
-        return JSONResponse(
-            content=AdvisorChatResponse(
-                advisor_message=response.advisor_message,
-                context_used=response.context_used,
-                suggestions=response.suggestions,
-            ).model_dump(),
-            headers={"Cache-Control": "no-store"}
-        )
-
+    except AdvisorUnavailable as e:
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         log_handler.error("[advisor_router] Advisor chat failed: %s", str(e))
         raise HTTPException(status_code=500, detail="Advisor chat failed")
+
+    body = AdvisorChatResponse(
+        advisor_message=result.advisor_message,
+        context_used=result.context_used,
+        suggestions=result.suggestions,
+        assessment=result.assessment,
+        plan=result.plan,
+    )
+    return JSONResponse(content=body.model_dump(mode="json"), headers={"Cache-Control": "no-store"})

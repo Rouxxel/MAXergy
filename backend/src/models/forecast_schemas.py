@@ -9,7 +9,7 @@ Canonical contract: documentation/app/API_CONTRACT.md
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Optional
+from typing import Literal, Any, Optional
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -351,12 +351,27 @@ class AssessmentResponse(BaseModel):
 # AI ADVISOR SCHEMAS
 # ============================================================================
 
+class AdvisorChatMessage(BaseModel):
+    """One earlier turn of the advisor conversation."""
+    role: Literal["user", "assistant"] = Field(..., description="Who wrote the message")
+    content: str = Field(..., max_length=4000, description="Message text")
+
+
 class AdvisorChatRequest(BaseModel):
     """Request to AI advisor."""
     assessment_id: Optional[str] = Field(None, description="Assessment ID for context")
-    forecast_result: Optional[ForecastResult] = Field(None, description="Forecast result for context")
+    plan: Optional[PlanResponse] = Field(
+        None, description="Plan (forecast + recommendation) the user is looking at; null → chat onboarding"
+    )
+    forecast_result: Optional[ForecastResult] = Field(
+        None,
+        description="Deprecated alias: a forecast without recommendation (the backend derives the "
+        "recommendation). Use `plan`.",
+    )
     user_message: str = Field(..., min_length=1, max_length=1000, description="User's question")
-    conversation_history: list[dict] = Field(default_factory=list, max_length=20, description="Previous conversation")
+    conversation_history: list[AdvisorChatMessage] = Field(
+        default_factory=list, max_length=20, description="Previous conversation, oldest first"
+    )
 
     model_config = {"extra": "ignore"}
 
@@ -366,3 +381,9 @@ class AdvisorChatResponse(BaseModel):
     advisor_message: str = Field(..., description="AI advisor's response")
     context_used: list[str] = Field(default_factory=list, description="Context sources used")
     suggestions: list[str] = Field(default_factory=list, description="Additional suggestions")
+    assessment: Optional[HouseholdAssessment] = Field(
+        None, description="Assessment collected in chat onboarding (set when the advisor ran a plan)"
+    )
+    plan: Optional[PlanResponse] = Field(
+        None, description="Plan computed in chat onboarding (same services as POST /plan)"
+    )
