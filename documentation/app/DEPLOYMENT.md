@@ -35,7 +35,8 @@ secret lives on one service; the other service references it.
 | `FORWARDED_ALLOW_IPS` | `*` | Trust Railway's proxy so rate limits are per client IP |
 | `ALLOWED_HOSTS` | `${{RAILWAY_PUBLIC_DOMAIN}},${{RAILWAY_PRIVATE_DOMAIN}},healthcheck.railway.app` | Add custom domains here |
 | `CORS_ORIGINS` | secret-like, set manually | Comma-separated frontend origins |
-| `GEMINI_API_KEY` | secret | Advisor (mock replies without it) |
+| `GEMINI_API_KEY` | secret | AI advisor; without it `/advisor/chat` returns 503 (canned replies only when `ENVIRONMENT=development`). Chat onboarding also needs the MCP (`MCP_ENABLED`) for the shared onboarding script and lookups |
+| `GEMINI_MODEL` | optional | Gemini model (default `gemini-3.5-flash`) |
 | `MCP_ENABLED` | `true` | `false` → `/location/enrich` returns 503; everything else keeps working |
 | `MCP_BASE_URL` | `http://${{maxergy-mcp.RAILWAY_PRIVATE_DOMAIN}}:8080` | |
 | `MAXERGY_MCP_TOKEN` | secret | Sent to the MCP; the MCP lists it in `MAXERGY_INTERNAL_TOKENS` |

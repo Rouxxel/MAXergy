@@ -26,7 +26,7 @@ Routers are mounted at the **root** of the API host (decision #13):
 | `GET` | `/benchmark` | – | `BenchmarkData` | **v2** (computed by the engine, cached 1 h) |
 | `GET` | `/assumptions` | – | `Assumptions` | **v2** |
 | `POST` | `/location/enrich` | `EnrichmentRequest` | `EnrichmentResponse` | **v2** (via the MCP; 503 when disabled) |
-| `POST` | `/advisor/chat` | `AdvisorChatRequest` | `AdvisorChatResponse` | v1 |
+| `POST` | `/advisor/chat` | `AdvisorChatRequest` | `AdvisorChatResponse` | **v2** (grounded in `plan`; chat onboarding via MCP script + `run_plan`) |
 | `POST` | `/visualization/forecast-chart` | `HouseholdAssessment` | chart payload | v1 |
 
 Local: `http://localhost:8000`. Production: the public domain of the Railway service
@@ -270,18 +270,34 @@ Frontends must read `assessment_id` (not `id`).
 ```json
 {
   "assessment_id": "uuid or null",
-  "forecast_result": { "...": "ForecastResult or null (to be deprecated in favour of plan)" },
-  "plan": { "...": "PlanResponse or null (v2, planned)" },
+  "plan": { "...": "PlanResponse the user is looking at, or null → chat onboarding" },
+  "forecast_result": { "...": "deprecated alias (ForecastResult); the backend derives the recommendation" },
   "user_message": "string (1–1000 chars)",
-  "conversation_history": [ { "role": "user", "content": "..." } ]
+  "conversation_history": [ { "role": "user | assistant", "content": "string (≤ 4000)" } ]
 }
 ```
 
 `AdvisorChatResponse`:
 
 ```json
-{ "advisor_message": "string", "context_used": ["user_question"], "suggestions": ["string"] }
+{
+  "advisor_message": "string",
+  "context_used": ["user_question", "plan"],
+  "suggestions": ["string"],
+  "assessment": "HouseholdAssessment or null — set when chat onboarding finished",
+  "plan": "PlanResponse or null — set when chat onboarding finished (same services as POST /plan)"
+}
 ```
+
+- With `plan`: the advisor answers grounded in that plan only (recommended scenario, the three
+  numbers, instalment, break-even, top-3 ranked, rationale, warnings).
+- Without a plan: the advisor runs the shared onboarding script (MCP prompt `maxergy_advisor`) and
+  may call the MCP lookup tools and the in-process `run_plan`; when `run_plan` succeeds the response
+  carries `assessment` and `plan`, which the frontends store as the current results.
+- `context_used` lists the sources: `plan`, `onboarding_script` / `onboarding_unavailable`,
+  `tool:<name>` for every tool called, `development_mock` for canned development replies.
+- Errors: 503 when the advisor is not configured (`GEMINI_API_KEY` missing; production) or Gemini
+  is unavailable/rate-limited (message in `detail`); 504 after 45 s.
 
 Mocks must return this exact shape (not `{ "reply": ... }`).
 

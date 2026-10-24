@@ -82,17 +82,19 @@ Responsibilities:
 - Calculate monthly savings
 - Rank configurations
 
-### LLM Service
+### LLM Service (AI advisor, `backend/src/services/llm/`)
 
 Responsibilities:
 
-- Generate explanations
-- Upsell suggestions
-- Proposal generation
+- Explain the user's plan, grounded only in the plan's numbers (same three-number wording as the
+  app and the MCP)
+- Chat onboarding when no plan exists: shared onboarding script from the MCP prompt
+  `maxergy_advisor`, MCP lookup tools, and the in-process `run_plan` tool (forecasting +
+  recommendation services) — the result equals `POST /plan` for the collected assessment
 
 Provider:
 
-- Gemini
+- Gemini (`google-genai`, function calling); 503 when not configured in production
 
 ### MCP Service (`backend/mcp`)
 

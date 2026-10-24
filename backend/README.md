@@ -7,7 +7,7 @@ FastAPI backend for the MAXergy energy forecasting and recommendation system.
 - **FastAPI Framework**: Modern, fast web framework for building APIs
 - **Production Forecasting**: Runs the repo's energy model (`scripts/energy_model`, `compute_model`) for 6 upgrade scenarios
 - **Recommendation Engine**: Shared ranking service (default: cumulative net savings, central prices) with a rationale built from forecast numbers; exposed via `/recommendation` and `/plan`
-- **AI Advisor Integration**: Gemini LLM for personalized energy advice
+- **AI Advisor Integration**: Gemini advisor grounded in the user's plan, with chat onboarding via the MCP
 - **Docker Support**: Multi-stage Dockerfile and docker-compose for easy deployment
 - **Rate Limiting**: Built-in request rate limiting with SlowAPI
 - **Logging**: Comprehensive logging system with file and console output
@@ -57,7 +57,9 @@ backend/
 │   │   │   ├── input_normalizer.py # HouseholdAssessment → engine input (fuels, upgrade candidates)
 │   │   │   └── model_adapter.py    # Engine output → ForecastResult
 │   │   └── llm/
-│   │       ├── gemini_service.py    # Gemini AI advisor service
+│   │       ├── gemini_service.py    # Gemini AI advisor (function calling)
+│   │       ├── advisor_context.py   # Grounding text from the plan
+│   │       ├── advisor_tools.py     # MCP lookups + run_plan + shared onboarding script
 │   │       └── __init__.py
 │   └── utils/
 │       ├── custom_logger.py        # Logging configuration (log_handler)
@@ -232,7 +234,7 @@ canonical contract). The MAXergy backend provides the following endpoints:
 | `POST` | `/plan` | Forecast + recommendation from one engine run | works; preferred by frontends and the MCP |
 | `GET` | `/assumptions` | Engine default assumptions (tariff, solar, battery, heat pump, EV, capex, financing, supported inputs) | works; used by the MCP suggestion tools |
 | `POST` | `/location/enrich` | Coordinates, roof proposal and site PV yield for a postcode/address | works via the MCP service; 503 when `MCP_ENABLED=false` or the MCP is unreachable |
-| `POST` | `/advisor/chat` | Chat with AI advisor | works (mock replies without `GEMINI_API_KEY`) |
+| `POST` | `/advisor/chat` | Chat with AI advisor (grounded in `plan`; chat onboarding) | works; 503 without `GEMINI_API_KEY` in production |
 | `POST` | `/visualization/forecast-chart` | Forecast chart payload | works |
 
 ### Benchmark Endpoint
@@ -350,13 +352,23 @@ proxy's `X-Forwarded-For`.
 
 ### Gemini AI Advisor Service
 
-Located in `src/services/llm/gemini_service.py`, this service:
-- Integrates with Google Gemini API
-- Generates personalized energy advice
-- Provides recommendation summaries
-- Explains savings calculations
-- Detects upsell opportunities
-- Falls back to mock responses when API key is not configured
+`src/services/llm/` — SDK `google-genai` (pinned in `requirements.txt`), model `GEMINI_MODEL`
+(default `gemini-3.5-flash`):
+
+- `gemini_service.py` — one chat turn with Gemini function calling (manual loop, max 6 tool
+  rounds); system prompt forbids invented numbers and prescribes the app's three-number wording.
+- `advisor_context.py` — grounding text from the `plan`: current costs, recommended scenario and
+  its three numbers, instalment, investment, break-even, low/high range, top-3 ranked, rationale and
+  warnings.
+- `advisor_tools.py` — tools: the MCP lookups (`geocode_address`, `get_roof_geometry`,
+  `estimate_pv_production`, `estimate_roof_capacity_from_area`, `estimate_heating_spend`,
+  `suggest_battery_kwh`, `suggest_electricity_price`; only when `MCP_ENABLED`) and the in-process
+  `run_plan` (forecasting + recommendation services, never via the MCP). The onboarding script is
+  the MCP prompt `maxergy_advisor` (cached 1 h), so web chat and claude.ai ask the same questions;
+  without the MCP the advisor points to the assessment form.
+- No `GEMINI_API_KEY`: **503** in production; canned replies (with the plan's numbers) only when
+  `ENVIRONMENT=development`. Gemini errors → 503 ("busy" for rate limits). Tests use a fake
+  client (`backend/tests/test_advisor.py`) and never call the API.
 
 ## Models (`src/models/`)
 

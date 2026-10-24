@@ -32,6 +32,9 @@ Persisted results use store version 2; results saved by older app versions are d
 `__tests__/savings.test.ts`): year-1 monthly net with the loan ("During financing" when negative),
 after-payoff saving, horizon net with range, and an "Assumptions" panel instead of trust badges.
 
+**Advisor:** same as the web app — sends the current `plan` and the last 20 messages; without a
+plan the advisor onboards in chat and a returned `plan` is stored ("See your results").
+
 **Assessment:** same steps, defaults (`ENGINE_DEFAULTS` = backend `GET /assumptions`) and rules as
 the web app (`frontend/README.md` §7): Germany only, gas/oil heating only (other options are hidden
 because the mobile `Select` has no disabled items), canonical vehicle types with required mileage,

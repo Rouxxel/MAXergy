@@ -356,8 +356,12 @@ Pages that don't belong in the tab bar (modals, full-screen flows like
   `src/stores/assessmentStore.ts`, then add the UI step.
 - **Results & Compare**: read from `resultsStore`. To change visuals, only
   the JSX needs editing — the data shape is fixed by `ForecastResult`.
-- **Advisor chat**: messages are local component state, sent through
-  `postAdvisorChat`. To persist conversations, lift them into a new store.
+- **Advisor chat** (`src/routes/advisor.tsx`): messages are local component state. Each request
+  sends the current `plan` from `resultsStore` (or `null`) and the last 20 messages as
+  `conversation_history`. Without a plan the advisor runs the onboarding in chat; when the response
+  carries a `plan` it is stored with `setPlan` and a "See your results" button appears. Backend
+  error details (e.g. 503 "not configured" / "busy") are shown in the chat. To persist
+  conversations, lift them into a new store.
 
 ---
 
