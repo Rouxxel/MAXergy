@@ -11,7 +11,7 @@ POST /plan endpoint: forecast and recommendation from one engine run.
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
 from src.utils.custom_logger import log_handler
@@ -20,6 +20,7 @@ from src.utils.service_auth import verify_service_token
 from src.core_specs.configuration.config_loader import config_loader
 from src.models.forecast_schemas import HouseholdAssessment, PlanResponse, RecommendationMetric
 from src.services.forecasting.baseline_service import get_forecasting_service
+from src.services.persistence.assessment_repository import get_assessment
 from src.services.recommendation.recommendation_service import build_recommendation
 from src.utils.timeout import timeout
 
@@ -35,23 +36,32 @@ router = APIRouter(
 @timeout(seconds=30)
 async def generate_plan(
     request: Request,
-    assessment: HouseholdAssessment,
+    assessment: Optional[HouseholdAssessment] = Body(None),
     metric: Optional[RecommendationMetric] = None,
+    assessment_id: Optional[str] = None,
 ) -> Response:
     """
     Generate the forecast and the recommendation for a household in one call.
 
     Parameters:
         request (Request): Incoming HTTP request (required by rate limiter).
-        assessment (HouseholdAssessment): Household assessment data.
+        assessment (HouseholdAssessment | None): Household assessment data (request body).
         metric (RecommendationMetric | None): Ranking metric; config default when omitted.
+        assessment_id (str | None): Use a stored assessment (from POST /assessment) instead of a body.
 
     Returns:
         Response: PlanResponse with `forecast` and `recommendation`.
 
     Raises:
-        HTTPException: 422 if the assessment cannot be modelled, 500 on failure.
+        HTTPException: 404 for an unknown assessment_id, 422 if neither (or both) inputs are given
+        or the assessment cannot be modelled, 500 on failure.
     """
+    if (assessment is None) == (assessment_id is None):
+        raise HTTPException(status_code=422, detail="Send either an assessment body or ?assessment_id=, not both")
+    if assessment is None:
+        assessment = get_assessment(assessment_id)
+        if assessment is None:
+            raise HTTPException(status_code=404, detail="Unknown assessment_id")
     log_handler.info(
         "[plan_router] Generating plan for location %s, %s",
         assessment.location.postcode,

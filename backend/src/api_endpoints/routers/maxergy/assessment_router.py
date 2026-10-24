@@ -9,9 +9,6 @@
 POST /assessment endpoint for submitting household assessments.
 """
 
-import uuid
-from typing import Dict
-
 from fastapi import APIRouter, Request, Response
 
 from src.utils.custom_logger import log_handler
@@ -21,9 +18,7 @@ from src.models.forecast_schemas import (
     HouseholdAssessment,
     AssessmentResponse,
 )
-
-# In-memory store for demo purposes; replace with database in production
-_assessments_store: Dict[str, HouseholdAssessment] = {}
+from src.services.persistence.assessment_repository import save_assessment
 
 router = APIRouter(
     prefix=config_loader["endpoints"]["maxergy_assessment"]["endpoint_prefix"],
@@ -49,10 +44,8 @@ async def submit_assessment(request: Request, assessment: HouseholdAssessment) -
         assessment.location.postcode,
         assessment.location.country,
     )
-    assessment_id = str(uuid.uuid4())
-
-    # Store assessment (in-memory for demo)
-    _assessments_store[assessment_id] = assessment
+    # Persisted (DATABASE_URL), so the id survives restarts for /plan and the advisor.
+    assessment_id = save_assessment(assessment)
 
     log_handler.info(
         "[assessment_router] Assessment submitted: %s for location %s, %s",

@@ -20,6 +20,17 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _test_database(tmp_path_factory):
+    """Every test session uses a fresh SQLite database with the Alembic migrations applied."""
+    db = tmp_path_factory.mktemp("db") / "maxergy-test.db"
+    os.environ["DATABASE_URL"] = f"sqlite:///{db.as_posix()}"
+    from src.services.persistence.database import run_migrations
+
+    run_migrations()
+    yield
+
+
 @pytest.fixture(autouse=True)
 def _reset_rate_limits():
     """Rate limits are real (per-IP, in memory); start every test with empty buckets."""

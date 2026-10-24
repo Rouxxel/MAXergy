@@ -48,6 +48,7 @@ from src.api_endpoints.routers.maxergy.location_router import router as location
 from src.api_endpoints.routers.maxergy.advisor_router import router as advisor_router
 from src.api_endpoints.routers.maxergy.visualization_router import router as visualization_router
 from src.api_endpoints.routers.maxergy.benchmark_router import router as benchmark_router
+from src.services.persistence.database import run_migrations
 
 """API APP-----------------------------------------------------------"""
 #Lifespan event manager (startup and shutdown)
@@ -55,6 +56,8 @@ from src.api_endpoints.routers.maxergy.benchmark_router import router as benchma
 async def lifespan(app: FastAPI):
     port = os.getenv("PORT", config_loader["network"]["server_port"])
     log_handler.info(f"MAXergy server starting on port {port}")
+    # Persistence: apply Alembic migrations (Postgres on Railway, SQLite locally). Fails loudly.
+    run_migrations()
     yield
     log_handler.info("MAXergy server shutting down")
 
