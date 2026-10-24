@@ -135,15 +135,17 @@ jobs:
       - name: Build image
         run: docker build -f backend/DOCKERFILE -t maxergy-backend:ci .
 
-      - name: Container smoke test (/plan)
+      # The Railway layout locally (API image + Postgres + MCP) and the staging smoke test, so
+      # anything missing from the image (engine, data, benchmark profile, migrations) fails here.
+      # Checks needing Google/Gemini keys report EXTERNAL (no keys in CI) and do not fail the job.
+      - name: Container smoke test (staging stack)
         run: |
           set -euo pipefail
-          docker run -d --name api -p 8000:8000 -e ENVIRONMENT=production maxergy-backend:ci
-          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8000/ >/dev/null && break; sleep 2; done
-          curl -sf -X POST http://127.0.0.1:8000/plan -H "Content-Type: application/json" \
-            --data @backend/tests/fixtures/model_input1.json \
-            | python -c "import json,sys; r=json.load(sys.stdin)['recommendation']; assert r['selected_scenario_id']=='full_upgrade', r; print('plan ok:', r['selected_scenario_id'])"
-          docker rm -f api
+          docker compose -f backend/docker-compose.staging.yml up -d --build
+          pip install requests
+          python scripts/staging_smoke.py --api http://localhost:18000 --mcp http://localhost:18080 \
+            --service-token staging-service-token --mcp-token staging-mcp-token --wait 240
+          docker compose -f backend/docker-compose.staging.yml down -v
 
       - name: Scan image libraries
         uses: aquasecurity/trivy-action@v0.36.0
