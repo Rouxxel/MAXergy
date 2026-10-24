@@ -4,19 +4,25 @@ on:
   pull_request:
     paths:
       - "backend/**"
+      - "!backend/mcp/**"
       - "scripts/**"
       - "tests/**"
       - "documentation/data/**"
       - "data/**"
+      - "frontend/src/services/fixtures/**"
+      - "frontend-mobile/services/fixtures/**"
       - ".github/workflows/backend.yml"
   push:
     branches: [main]
     paths:
       - "backend/**"
+      - "!backend/mcp/**"
       - "scripts/**"
       - "tests/**"
       - "documentation/data/**"
       - "data/**"
+      - "frontend/src/services/fixtures/**"
+      - "frontend-mobile/services/fixtures/**"
       - ".github/workflows/backend.yml"
   workflow_dispatch:
 
@@ -30,6 +36,11 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-24.04
+    env:
+      PYTHONPATH: ${{ github.workspace }}/backend:${{ github.workspace }}/scripts
+      # The advisor tests use a fake Gemini client; make sure nothing can reach the real API.
+      GEMINI_API_KEY: ""
+      MCP_ENABLED: "false"
     steps:
       - uses: actions/checkout@v4
 
@@ -45,23 +56,45 @@ jobs:
           pip install -r backend/requirements.txt pytest
 
       - name: Production energy-model tests
-        env:
-          PYTHONPATH: ${{ github.workspace }}/backend:${{ github.workspace }}/scripts
         run: |
           pytest tests/ \
             --ignore=tests/test_destatis_loader.py \
             --ignore=tests/test_price_backtesting.py \
             -q
 
-      - name: Backend service and contract tests
-        env:
-          PYTHONPATH: ${{ github.workspace }}/backend:${{ github.workspace }}/scripts
+      - name: Backend API tests (incl. recorded-fixture drift checks)
+        run: pytest backend/tests backend/src/tests -q
+
+      - name: Backend service and contract scripts
         run: |
           pytest \
             scripts/test_forecasting_service.py \
             scripts/test_visualization_service.py \
             scripts/test_contract_schemas.py \
             -q
+
+  guards:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Repository guards
+        run: |
+          set -euo pipefail
+          fail=0
+          # Old product spelling (documentation/archive keeps the historical handoff note).
+          if git grep -n -i "maxnergy" -- . ':!documentation/archive/**' ':!.github/workflows/backend.yml'; then
+            echo "::error::Old product name found (use MAXergy)."; fail=1
+          fi
+          # The legacy engine lives in research/legacy only.
+          if git grep -n "run_baseline_model" -- backend scripts; then
+            echo "::error::Legacy engine referenced from backend/scripts."; fail=1
+          fi
+          # No machine-specific absolute paths in the backend.
+          if git grep -n "/Users/" -- backend; then
+            echo "::error::Absolute /Users/ path in backend."; fail=1
+          fi
+          exit $fail
 
   supply-chain:
     runs-on: ubuntu-24.04
@@ -98,8 +131,19 @@ jobs:
             exit 1
           fi
 
+      # Build context = repo root (the image needs backend/, scripts/ and data/), as on Railway.
       - name: Build image
-        run: docker build -f backend/DOCKERFILE -t maxergy-backend:ci backend
+        run: docker build -f backend/DOCKERFILE -t maxergy-backend:ci .
+
+      - name: Container smoke test (/plan)
+        run: |
+          set -euo pipefail
+          docker run -d --name api -p 8000:8000 -e ENVIRONMENT=production maxergy-backend:ci
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8000/ >/dev/null && break; sleep 2; done
+          curl -sf -X POST http://127.0.0.1:8000/plan -H "Content-Type: application/json" \
+            --data @backend/tests/fixtures/model_input1.json \
+            | python -c "import json,sys; r=json.load(sys.stdin)['recommendation']; assert r['selected_scenario_id']=='full_upgrade', r; print('plan ok:', r['selected_scenario_id'])"
+          docker rm -f api
 
       - name: Scan image libraries
         uses: aquasecurity/trivy-action@v0.36.0

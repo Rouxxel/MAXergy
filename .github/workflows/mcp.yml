@@ -1,0 +1,47 @@
+name: MCP
+
+on:
+  pull_request:
+    paths:
+      - "backend/mcp/**"
+      # The MCP contract is generated from the backend schemas (drift check below).
+      - "backend/src/models/**"
+      - ".github/workflows/mcp.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/mcp/**"
+      - "backend/src/models/**"
+      - ".github/workflows/mcp.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mcp-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend/mcp
+
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/mcp/uv.lock
+
+      - name: Install (locked)
+        run: uv sync --locked
+
+      # test_contract.py fails when contract.py differs from what scripts/gen_contract.py produces
+      # from the backend schemas, or PROMPT.md differs from instructions.py (gen_prompt.py).
+      - name: Tests (tools, auth, contract + PROMPT.md drift)
+        run: uv run pytest tests -q
