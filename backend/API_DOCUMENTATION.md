@@ -196,17 +196,18 @@ Chat with the AI advisor about energy upgrades.
 **Request Body:**
 ```json
 {
-  "user_message": "Why is solar PV recommended?",
-  "forecast_result": null,
-  "assessment_id": null
+  "user_message": "Why this bundle?",
+  "plan": { "forecast": { "...": "ForecastResult" }, "recommendation": { "...": "Recommendation" } },
+  "assessment_id": null,
+  "conversation_history": []
 }
 ```
 
 **Response:**
 ```json
 {
-  "advisor_message": "Solar PV is recommended because it provides the highest return on investment for your household profile...",
-  "context_used": ["user_question"],
+  "advisor_message": "The full upgrade ranks best by long-term net savings. During financing: −€39 per month …",
+  "context_used": ["user_question", "plan"],
   "suggestions": [
     "Check your roof orientation and shading",
     "Consider adding battery storage",

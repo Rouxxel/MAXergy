@@ -43,8 +43,6 @@ see exactly the same figures and the same recommendation.
 | `compare_scenarios` | backend `POST /plan` | all options with monthly figures and headline, in the backend's ranking order |
 | `project_savings` | backend `POST /plan` | cumulative net savings per option per year, for a line chart |
 | `next_best_upgrade` | backend `POST /plan` | what each extra component adds (or the best step from `current_scenario_id`) |
-| `recommend_upsell` | — | deprecated alias of `next_best_upgrade` (will be removed) |
-| `model_savings` | — | deprecated; points to `energy_savings_overview` (will be removed) |
 
 **Presentation:** results are presented with the same three numbers and wording as the MAXergy app
 — year-1 monthly net with the loan ("During financing: −€X/month" when negative), "After payoff:
@@ -150,6 +148,21 @@ keys are never logged and secret-looking arguments are masked to `***`.
 [INFO] ... maxergy.providers [8cd59828] - pvgis http=200 458ms kwp=1.0 tilt=35 az=180 -> annual=1075kWh yield=1075 (keyless)
 [INFO] ... maxergy.tools     [8cd59828] - ← estimate_pv_production ok 460ms out=dict(keys=[annual_kwh, monthly_kwh, ...])
 ```
+
+## Demo (claude.ai connector)
+
+1. Add the connector `https://<maxergy-mcp-domain>/mcp` in claude.ai (Settings → Connectors) and
+   unlock it with the passphrase (`MAXERGY_AUTH_PASSPHRASE`).
+2. Say "I'd like to see what I could save with MAXergy". Claude calls `start_advisor` and asks the
+   onboarding questions one at a time (same order as the web form); with an address it calls
+   `geocode_address` → `get_roof_geometry` → `estimate_pv_production` for the roof and site yield.
+3. Answer with the average household (postcode 50667, 3 people, 3,500 kWh, south roof 35 m² / 32°,
+   gas 14,000 kWh, one petrol car 12,000 km, all four upgrades, 15 years at 4.5 %). Claude calls
+   `energy_savings_overview` → `maxergy-api` `POST /plan` and presents: "During financing −€29/month
+   … After payoff +€181/month … 20-year net about +€24,500".
+4. "Show it as a chart" → `project_savings`; "What does the EV charger add?" → `next_best_upgrade`.
+5. Cross-check with the app or `python scripts/demo_plan.py --profile average_german_household`:
+   the numbers are identical (both come from `/plan`).
 
 ## Deploy to Railway
 

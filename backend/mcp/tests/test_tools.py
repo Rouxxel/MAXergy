@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 
 import pytest
@@ -77,9 +78,12 @@ def test_backend_error_is_relayed(backend, assessment):
         call_tool("energy_savings_overview", {"assessment": assessment})
 
 
-def test_deprecated_aliases(backend, assessment):
-    assert call_tool("recommend_upsell", {"assessment": assessment})["next_best_upgrade"]["id"] == "full_upgrade"
-    assert call_tool("model_savings")["use_instead"] == "energy_savings_overview"
+def test_deprecated_aliases_are_removed():
+    from maxergy_mcp.server import mcp
+
+    names = {t.name for t in asyncio.run(mcp.list_tools())}
+    assert {"recommend_upsell", "model_savings"}.isdisjoint(names)
+    assert {"energy_savings_overview", "compare_scenarios", "project_savings", "next_best_upgrade"} <= names
 
 
 def test_suggestions_use_engine_assumptions(backend):

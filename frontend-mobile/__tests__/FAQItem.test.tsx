@@ -19,27 +19,27 @@ describe('FAQItem component', () => {
   const testQuestion = 'Test Question?';
   const testAnswer = 'This is a test answer';
 
-  it('renders question', () => {
-    const { getByText } = render(
+  it('renders question', async () => {
+    const { getByText } = await render(
       <FAQItem question={testQuestion} answer={testAnswer} />
-    ) as any;
+    );
     expect(getByText(testQuestion)).toBeTruthy();
   });
 
-  it('toggles answer visibility when pressed', () => {
-    const { getByText, queryByText } = render(
+  it('toggles answer visibility when pressed', async () => {
+    const { getByText, queryByText } = await render(
       <FAQItem question={testQuestion} answer={testAnswer} />
-    ) as any;
+    );
     
     // Initially answer should not be visible
     expect(queryByText(testAnswer)).toBeNull();
     
     // Press to expand
-    fireEvent.press(getByText(testQuestion));
+    await fireEvent.press(getByText(testQuestion));
     expect(getByText(testAnswer)).toBeTruthy();
     
     // Press to collapse
-    fireEvent.press(getByText(testQuestion));
+    await fireEvent.press(getByText(testQuestion));
     expect(queryByText(testAnswer)).toBeNull();
   });
 });

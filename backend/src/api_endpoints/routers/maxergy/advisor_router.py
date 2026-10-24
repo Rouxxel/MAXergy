@@ -16,13 +16,8 @@ from fastapi.responses import JSONResponse
 from src.utils.custom_logger import log_handler
 from src.utils.limiter import endpoint_limit, limiter as SlowLimiter
 from src.core_specs.configuration.config_loader import config_loader
-from src.models.forecast_schemas import (
-    AdvisorChatRequest,
-    AdvisorChatResponse,
-    PlanResponse,
-)
+from src.models.forecast_schemas import AdvisorChatRequest, AdvisorChatResponse
 from src.services.llm.gemini_service import AdvisorUnavailable, get_gemini_service
-from src.services.recommendation.recommendation_service import build_recommendation
 from src.utils.timeout import timeout
 from src.utils.sanitize import sanitize_prompt
 
@@ -30,16 +25,6 @@ router = APIRouter(
     prefix=config_loader["endpoints"]["maxergy_advisor_chat"]["endpoint_prefix"],
     tags=[config_loader["endpoints"]["maxergy_advisor_chat"]["endpoint_tag"]],
 )
-
-
-def _plan_for(chat_request: AdvisorChatRequest) -> PlanResponse | None:
-    """The plan to ground the answer in; the deprecated `forecast_result` gets its recommendation here."""
-    if chat_request.plan is not None:
-        return chat_request.plan
-    if chat_request.forecast_result is not None:
-        forecast = chat_request.forecast_result
-        return PlanResponse(forecast=forecast, recommendation=build_recommendation(forecast))
-    return None
 
 
 @router.post(config_loader["endpoints"]["maxergy_advisor_chat"]["endpoint_route"])
@@ -69,7 +54,7 @@ async def advisor_chat(request: Request, chat_request: AdvisorChatRequest) -> JS
         result = await run_in_threadpool(
             get_gemini_service().generate_advice,
             user_message=message,
-            plan=_plan_for(chat_request),
+            plan=chat_request.plan,
             history=chat_request.conversation_history,
             assessment_id=chat_request.assessment_id,
         )

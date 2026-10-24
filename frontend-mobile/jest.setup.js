@@ -6,8 +6,15 @@ jest.mock('react-native', () => {
     View: 'View',
     Text: 'Text',
     TouchableOpacity: 'TouchableOpacity',
+    Pressable: 'Pressable',
+    ActivityIndicator: 'ActivityIndicator',
     StyleSheet: {
-      create: jest.fn(obj => obj)
+      create: jest.fn(obj => obj),
+      // Used by @testing-library/react-native to check accessibility (display: none etc.)
+      flatten: (style) =>
+        Array.isArray(style)
+          ? Object.assign({}, ...style.flat(Infinity).filter(Boolean))
+          : style || {},
     },
     Animated: {
       View: 'Animated.View',

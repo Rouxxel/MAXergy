@@ -472,22 +472,6 @@ def next_best_upgrade(assessment: HouseholdAssessment, current_scenario_id: str 
     return _next_best_upgrade(_plan(assessment), current_scenario_id)
 
 
-@mcp.tool
-def recommend_upsell(assessment: HouseholdAssessment, current_scenario_id: str | None = None) -> dict:
-    """Deprecated alias of `next_best_upgrade` (kept for existing clients; will be removed)."""
-    return _next_best_upgrade(_plan(assessment), current_scenario_id)
-
-
-@mcp.tool
-def model_savings() -> dict:
-    """Deprecated: replaced by `energy_savings_overview` (will be removed)."""
-    return {
-        "deprecated": True,
-        "use_instead": "energy_savings_overview",
-        "note": "Per-scenario savings now come from the MAXergy backend; call "
-        "energy_savings_overview with the household assessment.",
-    }
-
 
 def main() -> None:
     """Run over stdio locally, or streamable HTTP when a PORT is present (Railway/cloud).

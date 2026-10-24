@@ -271,7 +271,6 @@ Frontends must read `assessment_id` (not `id`).
 {
   "assessment_id": "uuid or null",
   "plan": { "...": "PlanResponse the user is looking at, or null → chat onboarding" },
-  "forecast_result": { "...": "deprecated alias (ForecastResult); the backend derives the recommendation" },
   "user_message": "string (1–1000 chars)",
   "conversation_history": [ { "role": "user | assistant", "content": "string (≤ 4000)" } ]
 }
@@ -425,8 +424,6 @@ from the backend schemas) and never compute savings themselves.
 | `compare_scenarios` | `assessment, metric?` | backend ranking with per-scenario summary + headline |
 | `project_savings` | `assessment` | years + cumulative net savings per scenario (central) |
 | `next_best_upgrade` | `assessment, current_scenario_id?` | recommended scenario and what each extra component adds |
-| `recommend_upsell` | as `next_best_upgrade` | deprecated alias |
-| `model_savings` | – | deprecated; points to `energy_savings_overview` |
 
 Unsupported inputs (non-residential buildings, heating other than gas/oil) return
 `{ "supported": false, "note": ... }` from the suggestion tools; backend errors (e.g. 422) are

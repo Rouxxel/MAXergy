@@ -363,11 +363,6 @@ class AdvisorChatRequest(BaseModel):
     plan: Optional[PlanResponse] = Field(
         None, description="Plan (forecast + recommendation) the user is looking at; null → chat onboarding"
     )
-    forecast_result: Optional[ForecastResult] = Field(
-        None,
-        description="Deprecated alias: a forecast without recommendation (the backend derives the "
-        "recommendation). Use `plan`.",
-    )
     user_message: str = Field(..., min_length=1, max_length=1000, description="User's question")
     conversation_history: list[AdvisorChatMessage] = Field(
         default_factory=list, max_length=20, description="Previous conversation, oldest first"

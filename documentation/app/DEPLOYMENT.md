@@ -111,6 +111,19 @@ In claude.ai (connector at `https://<maxergy-mcp-domain>/mcp`), run `energy_savi
 it calls `maxergy-api` over the private network. With `MCP_ENABLED=false` on the API, `/plan`
 must still return 200.
 
+## CI/CD (GitHub Actions)
+
+| Workflow | Runs | Jobs |
+| -------- | ---- | ---- |
+| `backend.yml` | `backend/**` (not `backend/mcp`), `scripts/**`, `tests/**`, data and recorded fixtures | engine tests, backend API tests (incl. fixture drift: recorded `/plan`, `/benchmark`, `/assumptions` vs. the live API), contract scripts; repository guards (old product name, legacy engine, absolute paths); image build from the repo root + container `/plan` smoke test; pip-audit/Trivy (advisory) |
+| `mcp.yml` | `backend/mcp/**`, `backend/src/models/**` | `uv sync --locked`; tool/auth tests; `contract.py` drift vs. the backend schemas and `PROMPT.md` drift vs. `instructions.py` |
+| `frontend.yml` | `frontend/**` | type-check, lint, build (mocks); audit (advisory) |
+| `mobile.yml` | `frontend-mobile/**`, backend schemas/fixtures | type-check, Jest (unit + component); **live smoke**: backend started in the job, mobile service layer without mocks |
+| `security.yml` | every PR / push, weekly | gitleaks, dependency review |
+
+Deployments are not triggered from CI: Railway builds each service on push to the connected branch
+(watch patterns below). Run the smoke test above against staging before promoting.
+
 ## Rebuild triggers
 
 Set in `railway.ts` (`watchPatterns`): `maxergy-api` rebuilds on `backend/**`, `scripts/**` and

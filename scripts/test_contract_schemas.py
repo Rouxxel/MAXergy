@@ -101,7 +101,7 @@ def test_advisor_schemas():
     
     sample_response = AdvisorChatResponse(
         advisor_message="I recommend starting with solar PV",
-        context_used=["forecast_result"],
+        context_used=["user_question", "plan"],
         suggestions=["Add battery for better self-consumption"],
     )
     

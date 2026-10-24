@@ -111,12 +111,14 @@ def test_chat_with_plan_is_grounded(client, mcp):
     assert "=== USER ===\nWhy this bundle?" in fake.requests[0].contents[-1].parts[0].text
 
 
-def test_deprecated_forecast_result_gets_backend_recommendation(client, mcp):
+def test_removed_forecast_result_is_ignored(client, mcp):
+    """`forecast_result` (removed alias) no longer counts as a plan: the advisor onboards instead."""
     fake = FakeGemini(_reply("ok"))
     set_gemini_service(GeminiService(client=fake, environment="production"))
     r = client.post("/advisor/chat", json={"user_message": "Why?", "forecast_result": PLAN["forecast"]})
     assert r.status_code == 200
-    assert "Recommended scenario: full_upgrade" in _system(fake)
+    assert r.json()["context_used"] == ["user_question", "onboarding_script"]
+    assert "Recommended scenario" not in _system(fake)
 
 
 def test_history_is_passed_in_order(client, mcp):

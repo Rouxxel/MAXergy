@@ -13,6 +13,5 @@ module.exports = {
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
-    'test-renderer': 'react-test-renderer',
   },
 };

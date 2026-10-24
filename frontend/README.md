@@ -414,6 +414,29 @@ and `src/services/` move over as-is. Only `src/routes/` and
 
 ---
 
+## Demo
+
+1. Start the backend (`cd backend && uvicorn main:app --port 8000`) and set `VITE_USE_MOCKS=false`
+   in `frontend/.env`, then `npm run dev`.
+2. Same numbers without the UI — the three documented households through `POST /plan`:
+   ```bash
+   python scripts/demo_plan.py                     # or --api https://<maxergy-api-domain>
+   ```
+   - **High-benefit household** (Munich, oil heating, long commute): positive hero — "You could
+     save €315/month from the start", after payoff +€507/month.
+   - **Average household** (Cologne, gas): honest negative — "During financing −€29/month" (loan
+     €209/month), after payoff +€181/month, 20-year net about +€24,500, break-even year 9.
+   - Figures move slightly with the month the forecast starts (see `documentation/data/README.md`).
+3. In the app: **Assessment** with the values of
+   `documentation/data/test_profiles/average_german_household.json` (postcode 50667, 3 people,
+   3,500 kWh at €0.31 + €12/month, south roof 35 m² / 32° / shading 0.1, gas 14,000 kWh / €1,540,
+   one petrol car 12,000 km at 7 l/100 km / €1,100, 15 years at 4.5 %) → results show the
+   average-household numbers above; **Compare** marks the recommended bundle; **Advisor** → "Why this bundle?"
+   (needs `GEMINI_API_KEY` on the backend).
+4. Landing page (`/landing`): the benchmark and its chart come from `GET /benchmark`.
+
+---
+
 ## 13. Conventions & gotchas
 
 - **Never edit `src/routeTree.gen.ts`** — it's regenerated on every build.

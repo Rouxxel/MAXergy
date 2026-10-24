@@ -238,8 +238,6 @@ export interface AdvisorChatRequest {
   user_message: string;
   /** Plan the user is looking at; null → the advisor runs the onboarding in chat. */
   plan?: PlanResponse | null;
-  /** @deprecated use `plan` */
-  forecast_result?: ForecastResult | null;
   assessment_id?: string | null;
   /** Earlier turns, oldest first (max 20). */
   conversation_history?: AdvisorChatMessage[];
