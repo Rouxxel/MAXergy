@@ -123,11 +123,13 @@ Set in `railway.ts` (`watchPatterns`): `maxergy-api` rebuilds on `backend/**`, `
 2. Redeploy both services. For a zero-downtime MCP token rotation, temporarily put both tokens in
    `MAXERGY_INTERNAL_TOKENS` (comma-separated) before switching the API.
 
-## Migrating from `MAXNERGY_*`
+## Migrating from the pre-rename variables
 
-The MCP still reads the pre-rename `MAXNERGY_*` variables as a fallback (with a deprecation
-warning). After the `MAXERGY_*` variables above are set, delete the `MAXNERGY_*` ones. The old
-public MCP domain (`maxnergy-production.up.railway.app`) only matters for claude.ai connectors
+The MCP reads **only** `MAXERGY_*` variables; the fallback for the old product spelling (the
+`MAX…ERGY_*` names with an extra "N") was removed. **Before the next MCP deploy**, set every
+`MAXERGY_*` variable listed above on `maxergy-mcp`, then delete the old-spelling variables —
+otherwise the MCP starts without its auth passphrase, API URL and service token. The old public
+MCP domain (old spelling, `…-production.up.railway.app`) only matters for claude.ai connectors
 registered against it; keep it until those are re-registered against the new domain (decision
 #11 in `API_CONTRACT.md`).
 

@@ -123,9 +123,9 @@ Misconfigured modes fall back to `bearer` with a warning.
 `MultiAuth` composes them with the public provider), so the backend never needs the OAuth flow.
 With no public auth configured, the internal tokens alone are required.
 
-**Env-var migration:** the pre-rename names `MAXNERGY_*` are still read as a fallback (with a
-deprecation warning on stderr) by `src/maxergy_mcp/config.py`. Set the `MAXERGY_*` names on
-Railway; the fallback will be removed once all deployments use the new names.
+**Env vars:** only the `MAXERGY_*` names are read (`src/maxergy_mcp/config.py`); the pre-rename
+names are no longer supported — see `documentation/app/DEPLOYMENT.md` (Migrating from the
+pre-rename variables).
 
 ```
 bearer: no/wrong token -> 401, correct -> 200
