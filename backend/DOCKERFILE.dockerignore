@@ -4,6 +4,7 @@
 !backend/
 !scripts/
 !data/
+!documentation/data/test_profiles/
 
 # Not part of the API image
 backend/mcp

@@ -41,10 +41,11 @@ RUN apt-get update && apt-get install -y \
 # Copy Python packages from builder stage
 COPY --from=builder /root/.local /home/appuser/.local
 
-# Copy application code: backend, production engine, engine data
+# Copy application code: backend, production engine, engine data, benchmark household (GET /benchmark)
 COPY backend/ /app/backend/
 COPY scripts/ /app/scripts/
 COPY data/ /app/data/
+COPY documentation/data/test_profiles/ /app/documentation/data/test_profiles/
 
 # Create logs directory
 RUN mkdir -p logs && chown -R appuser:appuser logs

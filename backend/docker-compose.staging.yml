@@ -1,0 +1,73 @@
+# Local stand-in for the Railway project (maxergy-api + maxergy-mcp + maxergy-db) on a private
+# network, with the same variables as .railway/railway.ts. Used for smoke tests without Railway:
+#
+#   docker compose -f backend/docker-compose.staging.yml up -d --build
+#   python scripts/staging_smoke.py --api http://localhost:18000 --mcp http://localhost:18080 \
+#       --service-token staging-service-token --mcp-token staging-mcp-token
+#   docker compose -f backend/docker-compose.staging.yml down -v
+#
+# The tokens below are local test values only. External keys are optional: export
+# GOOGLE_MAPS_API_KEY / GEMINI_API_KEY in your shell to exercise roof enrichment and the advisor.
+name: maxergy-staging
+
+services:
+  maxergy-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: railway
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: staging-db-password
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      retries: 30
+
+  maxergy-api:
+    build:
+      context: ..
+      dockerfile: backend/DOCKERFILE
+    depends_on:
+      maxergy-db:
+        condition: service_healthy
+    ports:
+      - "18000:8000"
+    environment:
+      PORT: "8000"
+      ENVIRONMENT: production
+      FORWARDED_ALLOW_IPS: "*"
+      ALLOWED_HOSTS: localhost,127.0.0.1,maxergy-api
+      CORS_ORIGINS: http://localhost:5173
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      MCP_ENABLED: "true"
+      MCP_BASE_URL: http://maxergy-mcp:8080
+      MAXERGY_MCP_TOKEN: staging-mcp-token
+      MAXERGY_SERVICE_TOKEN: staging-service-token
+      # Railway hands out postgresql:// URLs; the API normalises them to psycopg 3.
+      DATABASE_URL: postgresql://postgres:staging-db-password@maxergy-db:5432/railway
+
+  maxergy-mcp:
+    # Railway builds this service with Railpack + uv; a uv image runs the same start command.
+    image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    working_dir: /app
+    command: ["uv", "run", "--no-dev", "maxergy-mcp"]
+    volumes:
+      - ./mcp:/app
+      - mcp-oauth:/data
+    ports:
+      - "18080:8080"
+    environment:
+      UV_PROJECT_ENVIRONMENT: /opt/venv   # keep the container's venv out of the mounted source
+      UV_LINK_MODE: copy
+      PORT: "8080"
+      PUBLIC_BASE_URL: http://localhost:18080
+      MAXERGY_AUTH_MODE: passphrase
+      MAXERGY_AUTH_PASSPHRASE: staging-passphrase
+      MAXERGY_OAUTH_STATE_PATH: /data/oauth.json
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      MAXERGY_API_BASE_URL: http://maxergy-api:8000
+      MAXERGY_SERVICE_TOKEN: staging-service-token
+      MAXERGY_INTERNAL_TOKENS: staging-mcp-token
+      LOG_LEVEL: INFO
+
+volumes:
+  mcp-oauth:
