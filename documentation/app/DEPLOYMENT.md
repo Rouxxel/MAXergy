@@ -100,24 +100,43 @@ changes without Railway access: `cd .railway && npx tsc --noEmit`.
 
 ## Smoke test
 
+`scripts/staging_smoke.py` runs every check (health, `/plan`, persistence via
+`/plan?assessment_id=`, `/benchmark`, `/assumptions`, service-token 401/200, `/location/enrich`,
+advisor, and on the MCP: wrong token 401, `energy_savings_overview` = app `/plan`, onboarding prompt,
+PVGIS, Google geocoding). Checks that need an external key report **EXTERNAL** instead of failing.
+
 ```bash
-API=https://<maxergy-api-domain>
-curl -s $API/                                                     # health
-curl -s -X POST $API/plan -H "Content-Type: application/json" \
-  --data @backend/tests/fixtures/model_input1.json                # recommended: full_upgrade
-curl -s -X POST $API/location/enrich -H "Content-Type: application/json" \
-  -d '{"postcode":"50667"}'                                       # lat/lon, roof, specific_yield (needs the Google key on the MCP)
+python scripts/staging_smoke.py --api https://<maxergy-api-domain>   --mcp https://<maxergy-mcp-domain> --mcp-token <MAXERGY_MCP_TOKEN> --service-token <MAXERGY_SERVICE_TOKEN>
+python scripts/demo_plan.py --api https://<maxergy-api-domain>        # the three demo households
 ```
 
 In claude.ai (connector at `https://<maxergy-mcp-domain>/mcp`), run `energy_savings_overview`:
 it calls `maxergy-api` over the private network. With `MCP_ENABLED=false` on the API, `/plan`
 must still return 200.
 
+### Local staging (no Railway)
+
+`backend/docker-compose.staging.yml` reproduces the Railway project locally — `maxergy-db`
+(Postgres 16), `maxergy-api` (the production image), `maxergy-mcp` (uv, same start command) on a
+private network with the `railway.ts` variables (local test tokens):
+
+```bash
+docker compose -f backend/docker-compose.staging.yml up -d --build   # optional: export GOOGLE_MAPS_API_KEY / GEMINI_API_KEY first
+python scripts/staging_smoke.py --api http://localhost:18000 --mcp http://localhost:18080   --service-token staging-service-token --mcp-token staging-mcp-token
+docker compose -f backend/docker-compose.staging.yml down -v
+```
+
+CI runs the same stack and script (`backend.yml`, job `supply-chain`). Last local run (2026-10-24):
+12 passed, 2 external — Google geocoding returns `REQUEST_DENIED` with the old Maps key (roof
+pre-fill needs a new key with the Geocoding + Solar APIs enabled); PVGIS, MCP ↔ API, persistence on
+Postgres and the Gemini advisor passed. This run found that the image lacked
+`documentation/data/test_profiles/` (`/benchmark` → 500); fixed in `backend/DOCKERFILE`.
+
 ## CI/CD (GitHub Actions)
 
 | Workflow | Runs | Jobs |
 | -------- | ---- | ---- |
-| `backend.yml` | `backend/**` (not `backend/mcp`), `scripts/**`, `tests/**`, data and recorded fixtures | engine tests, backend API tests (incl. fixture drift: recorded `/plan`, `/benchmark`, `/assumptions` vs. the live API), contract scripts; repository guards (old product name, legacy engine, absolute paths); image build from the repo root + container `/plan` smoke test; pip-audit/Trivy (advisory) |
+| `backend.yml` | `backend/**` (not `backend/mcp`), `scripts/**`, `tests/**`, data and recorded fixtures | engine tests, backend API tests (incl. fixture drift: recorded `/plan`, `/benchmark`, `/assumptions` vs. the live API), contract scripts; repository guards (old product name, legacy engine, absolute paths); image build from the repo root + local staging stack (`docker-compose.staging.yml`) with `staging_smoke.py`; pip-audit/Trivy (advisory) |
 | `mcp.yml` | `backend/mcp/**`, `backend/src/models/**` | `uv sync --locked`; tool/auth tests; `contract.py` drift vs. the backend schemas and `PROMPT.md` drift vs. `instructions.py` |
 | `frontend.yml` | `frontend/**` | type-check, lint, build (mocks); audit (advisory) |
 | `mobile.yml` | `frontend-mobile/**`, backend schemas/fixtures | type-check, Jest (unit + component); **live smoke**: backend started in the job, mobile service layer without mocks |
