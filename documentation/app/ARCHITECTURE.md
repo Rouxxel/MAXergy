@@ -121,15 +121,17 @@ Full contract: `documentation/app/API_CONTRACT.md`.
 
 ## Database
 
-PostgreSQL
+PostgreSQL on Railway (`maxergy-db`, attached to `maxergy-api` via `DATABASE_URL`); SQLite file
+locally when `DATABASE_URL` is unset. SQLAlchemy Core + Alembic migrations (`backend/migrations`),
+applied when the API starts.
 
 Tables:
 
-- users
-- assessments
-- households
-- scenarios
-- recommendations
+- `assessments` — id, created_at, JSON payload (the `HouseholdAssessment`); used by
+  `POST /plan?assessment_id=` and as advisor context
+
+Not stored (yet): users, plans/forecasts (recomputed from the assessment; the forecast cache is in
+memory), MCP OAuth clients (file on the `maxergy-mcp-oauth` volume).
 
 ## Forecast Pipeline
 

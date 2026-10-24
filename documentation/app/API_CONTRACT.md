@@ -22,7 +22,7 @@ Routers are mounted at the **root** of the API host (decision #13):
 | `POST` | `/assessment` | `HouseholdAssessment` | `AssessmentResponse` | v1 |
 | `POST` | `/forecast` | `HouseholdAssessment` | `ForecastResult` | **v2** (production engine) |
 | `POST` | `/recommendation` | `HouseholdAssessment` (+ `?metric=`) | `Recommendation` | **v2** |
-| `POST` | `/plan` | `HouseholdAssessment` (+ `?metric=`) | `PlanResponse` | **v2** |
+| `POST` | `/plan` | `HouseholdAssessment`, or none with `?assessment_id=` (+ `?metric=`) | `PlanResponse` | **v2** |
 | `GET` | `/benchmark` | – | `BenchmarkData` | **v2** (computed by the engine, cached 1 h) |
 | `GET` | `/assumptions` | – | `Assumptions` | **v2** |
 | `POST` | `/location/enrich` | `EnrichmentRequest` | `EnrichmentResponse` | **v2** (via the MCP; 503 when disabled) |
@@ -261,7 +261,10 @@ savings tools.
 { "assessment_id": "uuid", "status": "submitted", "message": "string" }
 ```
 
-Frontends must read `assessment_id` (not `id`).
+Frontends must read `assessment_id` (not `id`). Assessments are stored in the database and survive
+restarts: `POST /plan?assessment_id=<id>` (no body) returns the plan for a stored assessment (404
+unknown id; 422 when both or neither of body and `assessment_id` are sent), and the advisor uses a
+stored `assessment_id` as context when no `plan` is sent.
 
 ## 7. Advisor
 
@@ -288,6 +291,8 @@ Frontends must read `assessment_id` (not `id`).
 }
 ```
 
+- Without `plan` but with a stored `assessment_id`: the backend computes that assessment's plan and
+  grounds the answer in it (`context_used` contains `plan`).
 - With `plan`: the advisor answers grounded in that plan only (recommended scenario, the three
   numbers, instalment, break-even, top-3 ranked, rationale, warnings).
 - Without a plan: the advisor runs the shared onboarding script (MCP prompt `maxergy_advisor`) and

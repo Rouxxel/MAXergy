@@ -206,7 +206,7 @@ The frontend is a **mobile-first PWA shell** with mocked data, designed to be ea
 
 A milestone is marked ✅ only once it works end to end and is verified.
 
-**Shipped:** UI shell (web + mobile) with mock data, landing page, FastAPI backend, production energy model package (`scripts/energy_model/`) serving `POST /forecast`, recommendation service (`/recommendation`, `/plan`), engine defaults (`/assumptions`), MCP service on the production engine (via `/plan`), location enrichment via the MCP (`/location/enrich`), service-token auth between the services, Railway two-service config (`.railway/railway.ts`), web and mobile frontends on the live API (`POST /plan`, Zod-validated responses, mock mode replays a recorded backend response), assessment aligned with the engine (engine defaults, Germany + gas/oil only, roof/site-yield pre-fill via `/location/enrich`, monthly-bill shortcut, baseline-only path without a usable roof), honest results (year-1 net with the loan, after-payoff and long-term net, assumptions disclosure; same wording in web, mobile and the MCP), engine-computed landing benchmark (`/benchmark`), AI advisor grounded in the plan with chat onboarding (Gemini function calling, shared MCP onboarding script, `run_plan`), CI for backend/MCP/web/mobile with drift checks, guards and a live smoke job, demo script (`scripts/demo_plan.py`), price-model research.
+**Shipped:** UI shell (web + mobile) with mock data, landing page, FastAPI backend, production energy model package (`scripts/energy_model/`) serving `POST /forecast`, recommendation service (`/recommendation`, `/plan`), engine defaults (`/assumptions`), MCP service on the production engine (via `/plan`), location enrichment via the MCP (`/location/enrich`), service-token auth between the services, Railway two-service config (`.railway/railway.ts`), web and mobile frontends on the live API (`POST /plan`, Zod-validated responses, mock mode replays a recorded backend response), assessment aligned with the engine (engine defaults, Germany + gas/oil only, roof/site-yield pre-fill via `/location/enrich`, monthly-bill shortcut, baseline-only path without a usable roof), honest results (year-1 net with the loan, after-payoff and long-term net, assumptions disclosure; same wording in web, mobile and the MCP), engine-computed landing benchmark (`/benchmark`), AI advisor grounded in the plan with chat onboarding (Gemini function calling, shared MCP onboarding script, `run_plan`), CI for backend/MCP/web/mobile with drift checks, guards and a live smoke job, demo script (`scripts/demo_plan.py`), stored assessments (Postgres/SQLite via SQLAlchemy + Alembic; `/plan?assessment_id=`, advisor context), price-model research.
 
 **Known limitations today:** the two-service Railway config is written but not yet applied/verified on Railway (owner action, see `documentation/app/DEPLOYMENT.md`); roof pre-fill needs the MCP's Google key on Railway (skipped otherwise); the AI advisor needs `GEMINI_API_KEY` (503 otherwise) and the MCP for chat onboarding.
 
@@ -223,7 +223,7 @@ A milestone is marked ✅ only once it works end to end and is verified.
 | Benchmark & landing computed by the engine | ✅ done |
 | AI advisor grounded in the plan + MCP tools | ✅ done in code (full chat-onboarding live run pending Gemini quota) |
 | Tests, CI, guards, demo script | ✅ done in code (first green CI run and staging demo pending) |
-| Persistence (optional) | ⏳ planned |
+| Persistence (optional) | ✅ done in code (Railway Postgres `maxergy-db` pending `railway config apply`) |
 
 ## License
 

@@ -155,6 +155,9 @@ FORWARDED_ALLOW_IPS=*
 # Service-to-service auth (token the MCP sends; wrong token -> 401)
 MAXERGY_SERVICE_TOKEN=...
 
+# Persistence: Postgres on Railway; unset → SQLite file backend/maxergy.db (migrations run at startup)
+DATABASE_URL=postgresql://user:password@localhost:5432/maxergy
+
 # MCP enrichment for POST /location/enrich
 MCP_ENABLED=true
 MCP_BASE_URL=http://localhost:8080
@@ -228,7 +231,7 @@ canonical contract). The MAXergy backend provides the following endpoints:
 |---|---|---|---|
 | `GET` | `/` | Health check | works |
 | `GET` | `/benchmark` | Average German household benchmark for the landing pages | works; computed by the engine (same services as `/plan`), cached 1 h |
-| `POST` | `/assessment` | Submit household assessment | works (in-memory store) |
+| `POST` | `/assessment` | Submit household assessment | works; stored in the database (`DATABASE_URL`), survives restarts |
 | `POST` | `/forecast` | Generate energy forecast | works; production engine (`scripts/energy_model`); 422 for inputs the engine cannot model (e.g. heating fuel other than gas/oil) |
 | `POST` | `/recommendation` | Ranked scenarios + rationale (`?metric=cumulative_central\|monthly_net`) | works; shared recommendation service, reuses the cached forecast |
 | `POST` | `/plan` | Forecast + recommendation from one engine run | works; preferred by frontends and the MCP |
@@ -369,6 +372,23 @@ proxy's `X-Forwarded-For`.
 - No `GEMINI_API_KEY`: **503** in production; canned replies (with the plan's numbers) only when
   `ENVIRONMENT=development`. Gemini errors → 503 ("busy" for rate limits). Tests use a fake
   client (`backend/tests/test_advisor.py`) and never call the API.
+
+### Persistence
+
+`src/services/persistence/` — SQLAlchemy Core + Alembic (pinned in `requirements.txt`):
+
+- `database.py` — engine from `DATABASE_URL` (Railway Postgres via psycopg 3; `postgres://` /
+  `postgresql://` URLs are normalised) or the local SQLite file `backend/maxergy.db` when unset;
+  `run_migrations()` applies `backend/migrations` (Alembic) on startup.
+- `assessment_repository.py` — `save_assessment` / `get_assessment` (table `assessments`: id,
+  created_at, JSON payload).
+- Used by `POST /assessment` (stores), `POST /plan?assessment_id=` (plan for a stored assessment)
+  and `POST /advisor/chat` (with `assessment_id` and no `plan`, the advisor is grounded in the
+  stored assessment's plan).
+- Schema changes: add a revision file under `migrations/versions/` (format of `script.py.mako`;
+  set `down_revision` to the previous revision id). There is no `alembic.ini`: migrations are run
+  programmatically by `run_migrations()`. Tests apply every migration to a temporary SQLite
+  database (`backend/conftest.py`).
 
 ## Models (`src/models/`)
 

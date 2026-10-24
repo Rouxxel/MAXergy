@@ -9,6 +9,7 @@ on 2026-12-01).
 | ------- | ------ | ----- | ------ |
 | `maxergy-api` | repo root | Dockerfile `backend/DOCKERFILE` (context = repo root, so the image contains `backend/`, `scripts/` and `data/`) | FastAPI backend, port 8000 |
 | `maxergy-mcp` | `backend/mcp` | Railpack + uv, start `uv run --no-dev maxergy-mcp` | MCP server at `/mcp`, port 8080 |
+| `maxergy-db` | Railway Postgres | managed | `assessments` table for `maxergy-api` |
 
 ```text
 web / mobile ──HTTPS──► maxergy-api (public domain)
@@ -41,6 +42,7 @@ secret lives on one service; the other service references it.
 | `MCP_BASE_URL` | `http://${{maxergy-mcp.RAILWAY_PRIVATE_DOMAIN}}:8080` | |
 | `MAXERGY_MCP_TOKEN` | secret | Sent to the MCP; the MCP lists it in `MAXERGY_INTERNAL_TOKENS` |
 | `MAXERGY_SERVICE_TOKEN` | secret | Accepted from the MCP; grants the `service_request_limit` (300/min) |
+| `DATABASE_URL` | `${{maxergy-db.DATABASE_URL}}` | Stored assessments (Postgres `maxergy-db`, defined in `railway.ts`); Alembic migrations run on API start. Unset → SQLite inside the container (lost on redeploy) |
 
 ### `maxergy-mcp`
 
