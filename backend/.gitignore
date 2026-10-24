@@ -267,3 +267,5 @@ Thumbs.db
 ecs-task-definition-final.json
 trust-policy.json
 apprunner-service.json
+# Local SQLite database (persistence; DATABASE_URL unset)
+maxergy.db

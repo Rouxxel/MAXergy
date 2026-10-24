@@ -4,6 +4,8 @@
  *   maxergy-api  FastAPI backend (backend/), Docker build from the repo root so the image
  *                contains the production engine (scripts/) and its data (data/).
  *   maxergy-mcp  MCP service (backend/mcp/), Railpack + uv.
+ *   maxergy-db   Postgres for stored assessments (maxergy-api DATABASE_URL; Alembic migrations
+ *                run when the API starts).
  *
  * The services talk over Railway private networking:
  *   maxergy-mcp → maxergy-api  POST /plan, GET /assumptions   (bearer MAXERGY_SERVICE_TOKEN)
@@ -15,7 +17,7 @@
  * Usage (from the repo root): cd .railway && npm ci && cd .. && railway config plan
  * Type-check without Railway access: cd .railway && npx tsc --noEmit
  */
-import { defineRailway, github, preserve, project, service, volume } from "railway/iac";
+import { defineRailway, github, postgres, preserve, project, service, volume } from "railway/iac";
 
 const REPO = "Rouxxel/MAXergy";
 const BRANCH = "main";
@@ -26,6 +28,7 @@ export default defineRailway(() => {
   const branch = BRANCH;
 
   const mcpOauthState = volume("maxergy-mcp-oauth", { sizeMB: 512 });
+  const db = postgres("maxergy-db");
 
   const api = service("maxergy-api", {
     source: github(REPO, { branch }),
@@ -48,6 +51,7 @@ export default defineRailway(() => {
       MCP_BASE_URL: `http://\${{maxergy-mcp.RAILWAY_PRIVATE_DOMAIN}}:${MCP_PORT}`,
       MAXERGY_MCP_TOKEN: preserve(),
       MAXERGY_SERVICE_TOKEN: preserve(),
+      DATABASE_URL: db.env.DATABASE_URL,
     },
   });
 
@@ -74,6 +78,6 @@ export default defineRailway(() => {
   });
 
   return project("maxergy", {
-    resources: [api, mcp, mcpOauthState],
+    resources: [api, mcp, mcpOauthState, db],
   });
 });
