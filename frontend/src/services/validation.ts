@@ -322,17 +322,25 @@ export const PlanResponseSchema = z.object({
 }) satisfies z.ZodType<PlanResponse, z.ZodTypeDef, unknown>;
 
 // Advisor chat schemas
+const AdvisorChatMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().max(4000),
+});
+
 export const AdvisorChatRequestSchema = z.object({
   user_message: z.string().min(1).max(1000),
+  plan: PlanResponseSchema.nullish(),
   forecast_result: ForecastResultSchema.nullish(),
   assessment_id: z.string().nullish(),
-  conversation_history: z.array(z.record(z.unknown())).max(20).optional(),
+  conversation_history: z.array(AdvisorChatMessageSchema).max(20).optional(),
 }) satisfies z.ZodType<AdvisorChatRequest, z.ZodTypeDef, unknown>;
 
 export const AdvisorChatResponseSchema = z.object({
   advisor_message: z.string(),
   context_used: z.array(z.string()).default([]),
   suggestions: z.array(z.string()).default([]),
+  assessment: HouseholdAssessmentSchema.nullish(),
+  plan: PlanResponseSchema.nullish(),
 }) satisfies z.ZodType<AdvisorChatResponse, z.ZodTypeDef, unknown>;
 
 // Assessment response schema

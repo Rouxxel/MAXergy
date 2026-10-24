@@ -229,17 +229,29 @@ export interface AssessmentResponse {
   message: string;
 }
 
+export interface AdvisorChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export interface AdvisorChatRequest {
   user_message: string;
+  /** Plan the user is looking at; null → the advisor runs the onboarding in chat. */
+  plan?: PlanResponse | null;
+  /** @deprecated use `plan` */
   forecast_result?: ForecastResult | null;
   assessment_id?: string | null;
-  conversation_history?: Array<Record<string, unknown>>;
+  /** Earlier turns, oldest first (max 20). */
+  conversation_history?: AdvisorChatMessage[];
 }
 
 export interface AdvisorChatResponse {
   advisor_message: string;
   context_used: string[];
   suggestions: string[];
+  /** Set when chat onboarding computed a plan (same services as POST /plan). */
+  assessment?: HouseholdAssessment | null;
+  plan?: PlanResponse | null;
 }
 
 export interface EnrichmentRequest {

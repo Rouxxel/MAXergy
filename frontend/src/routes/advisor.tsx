@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import { AppShell, BrandMark } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ApiError } from "@/services/apiClient";
 import { postAdvisorChat } from "@/services/endpoints";
 import { useResultsStore } from "@/stores/resultsStore";
 import { useAssessmentStore } from "@/stores/assessmentStore";
@@ -21,18 +22,25 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   suggestions?: string[];
+  /** The advisor computed a plan in this turn (chat onboarding). */
+  planReady?: boolean;
   createdAt: number;
 }
 
+const WELCOME_WITH_PLAN =
+  "Hi, I'm your MAXergy advisor. Ask me anything about your plan — why this bundle, the loan, or what changes after payoff.";
+const WELCOME_WITHOUT_PLAN =
+  "Hi, I'm your MAXergy advisor. You haven't completed an assessment yet — I can walk you through it here, one question at a time, or you can use the assessment form.";
+
 function Advisor() {
-  const { forecast } = useResultsStore();
+  const { forecast, recommendation, setPlan } = useResultsStore();
   const { submittedId } = useAssessmentStore();
+  const plan = forecast && recommendation ? { forecast, recommendation } : null;
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content:
-        "Greetings, I'm your MAXergy advisor. Ask me anything about your recommendation, savings or financing options. \n\n I can also perform the onboarding process seamlessly on this chat thanks to my patented MCP",
+      content: plan ? WELCOME_WITH_PLAN : WELCOME_WITHOUT_PLAN,
       createdAt: Date.now(),
     },
   ]);
@@ -43,13 +51,19 @@ function Advisor() {
   const MAX_INPUT_LENGTH = 1000;
 
   const send = useMutation({
-    mutationFn: (text: string) =>
+    mutationFn: ({ text, history }: { text: string; history: Message[] }) =>
       postAdvisorChat({
         user_message: text,
-        forecast_result: forecast || null,
-        assessment_id: submittedId || "",
+        plan,
+        assessment_id: submittedId || null,
+        conversation_history: history
+          .filter((m) => m.id !== "welcome")
+          .slice(-20)
+          .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) })),
       }),
     onSuccess: (res) => {
+      // Chat onboarding finished: the plan comes from the same services as POST /plan.
+      if (res.plan) setPlan(res.plan);
       setMessages((m) => [
         ...m,
         {
@@ -57,6 +71,7 @@ function Advisor() {
           role: "assistant",
           content: res.advisor_message,
           suggestions: res.suggestions,
+          planReady: !!res.plan,
           createdAt: Date.now(),
         },
       ]);
@@ -67,7 +82,7 @@ function Advisor() {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: "Sorry, I couldn't process your request. Please try again.",
+          content: advisorErrorMessage(error),
           createdAt: Date.now(),
         },
       ]);
@@ -94,7 +109,7 @@ function Advisor() {
       },
     ]);
     setInput("");
-    send.mutate(trimmed);
+    send.mutate({ text: trimmed, history: messages });
   };
 
   return (
@@ -111,7 +126,14 @@ function Advisor() {
 
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto pb-4">
         {messages.map((m) => (
-          <Bubble key={m.id} role={m.role} content={m.content} suggestions={m.suggestions} />
+          <div key={m.id} className="space-y-2">
+            <Bubble role={m.role} content={m.content} suggestions={m.suggestions} />
+            {m.planReady ? (
+              <Button asChild size="sm" className="bg-primary text-primary-foreground">
+                <Link to="/results">See your results</Link>
+              </Button>
+            ) : null}
+          </div>
         ))}
         {send.isPending ? <Bubble role="assistant" content="…" pulse /> : null}
       </div>
@@ -140,6 +162,18 @@ function Advisor() {
       </form>
     </AppShell>
   );
+}
+
+/** The backend's `detail` (e.g. "The AI advisor is busy right now…") when available. */
+function advisorErrorMessage(error: unknown): string {
+  const body = error instanceof ApiError ? error.body : null;
+  const detail =
+    body && typeof body === "object" && "detail" in body
+      ? (body as { detail: unknown }).detail
+      : null;
+  return typeof detail === "string"
+    ? `Sorry — ${detail}`
+    : "Sorry, I couldn't process your request. Please try again.";
 }
 
 function Bubble({
@@ -202,12 +236,7 @@ function Bubble({
                 </code>
               ),
               a: ({ children, href }) => (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
+                <a href={href} target="_blank" rel="noopener noreferrer" className="underline">
                   {children}
                 </a>
               ),

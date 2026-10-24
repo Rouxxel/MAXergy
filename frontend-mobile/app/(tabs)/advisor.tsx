@@ -8,6 +8,7 @@ import { Header } from "@/components/header";
 import { BackButton } from "@/components/back-button";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { ApiError } from "@/services/apiClient";
 import { postAdvisorChat } from "@/services/endpoints";
 import { useResultsStore } from "@/stores/resultsStore";
 import { useAssessmentStore } from "@/stores/assessmentStore";
@@ -19,19 +20,33 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   suggestions?: string[];
+  /** The advisor computed a plan in this turn (chat onboarding). */
+  planReady?: boolean;
   createdAt: number;
+}
+
+const WELCOME_WITH_PLAN =
+  "Hi, I'm your MAXergy advisor. Ask me anything about your plan — why this bundle, the loan, or what changes after payoff.";
+const WELCOME_WITHOUT_PLAN =
+  "Hi, I'm your MAXergy advisor. You haven't completed an assessment yet — I can walk you through it here, one question at a time, or you can use the assessment form.";
+
+/** The backend's `detail` (e.g. "The AI advisor is busy right now…") when available. */
+function advisorErrorMessage(error: unknown): string {
+  const body = error instanceof ApiError ? error.body : null;
+  const detail = body && typeof body === "object" && "detail" in body ? (body as { detail: unknown }).detail : null;
+  return typeof detail === "string" ? `Sorry — ${detail}` : "Sorry, I couldn't process your request. Please try again.";
 }
 
 export default function Advisor() {
   const router = useRouter();
-  const { forecast } = useResultsStore();
+  const { forecast, recommendation, setPlan } = useResultsStore();
   const { submittedId } = useAssessmentStore();
+  const plan = forecast && recommendation ? { forecast, recommendation } : null;
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content:
-        "Greetings, I'm your MAXergy advisor. Ask me anything about your recommendation, savings or financing options. \n\n I can also perform the onboarding process seamlessly on this chat thanks to my patented MCP",
+      content: plan ? WELCOME_WITH_PLAN : WELCOME_WITHOUT_PLAN,
       createdAt: Date.now(),
     },
   ]);
@@ -39,13 +54,19 @@ export default function Advisor() {
   const scrollRef = useRef<ScrollView>(null);
 
   const send = useMutation({
-    mutationFn: (text: string) =>
+    mutationFn: ({ text, history }: { text: string; history: Message[] }) =>
       postAdvisorChat({
         user_message: text,
-        forecast_result: forecast || null,
-        assessment_id: submittedId || "",
+        plan,
+        assessment_id: submittedId || null,
+        conversation_history: history
+          .filter((m) => m.id !== "welcome")
+          .slice(-20)
+          .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) })),
       }),
     onSuccess: (res) => {
+      // Chat onboarding finished: the plan comes from the same services as POST /plan.
+      if (res.plan) setPlan(res.plan);
       setMessages((m) => [
         ...m,
         {
@@ -53,6 +74,7 @@ export default function Advisor() {
           role: "assistant",
           content: res.advisor_message,
           suggestions: res.suggestions,
+          planReady: !!res.plan,
           createdAt: Date.now(),
         },
       ]);
@@ -63,7 +85,7 @@ export default function Advisor() {
         {
           id: randomId(),
           role: "assistant",
-          content: "Sorry, I couldn't process your request. Please try again.",
+          content: advisorErrorMessage(error),
           createdAt: Date.now(),
         },
       ]);
@@ -90,7 +112,7 @@ export default function Advisor() {
       },
     ]);
     setInput("");
-    send.mutate(trimmed);
+    send.mutate({ text: trimmed, history: messages });
   };
 
   return (
@@ -113,13 +135,19 @@ export default function Advisor() {
       >
         <View className="space-y-4">
           {messages.map((m) => (
-            <Bubble 
-              key={m.id} 
-              role={m.role} 
-              content={m.content} 
-              suggestions={m.suggestions} 
-              onSuggestionPress={submit}
-            />
+            <View key={m.id} className="space-y-2">
+              <Bubble
+                role={m.role}
+                content={m.content}
+                suggestions={m.suggestions}
+                onSuggestionPress={submit}
+              />
+              {m.planReady ? (
+                <Button onPress={() => router.push("/results")} className="bg-primary self-start px-4 h-9">
+                  See your results
+                </Button>
+              ) : null}
+            </View>
           ))}
           {send.isPending ? <Bubble role="assistant" content="…" pulse /> : null}
         </View>
